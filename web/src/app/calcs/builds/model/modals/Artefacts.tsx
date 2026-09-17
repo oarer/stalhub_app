@@ -1,0 +1,397 @@
+'use client'
+
+import { Icon } from '@iconify/react'
+import { useSuspenseQuery } from '@tanstack/react-query'
+import { useCallback, useEffect, useMemo, useState } from 'react'
+import { Button } from '@/components/ui/Button'
+import { Card } from '@/components/ui/Card'
+import { Combobox, type ComboboxOption } from '@/components/ui/Combobox'
+import Input from '@/components/ui/Input'
+import { getLocale } from '@/lib/getLocale'
+import { itemsQueries } from '@/queries/calcs/items.queries'
+import { ItemsList } from '@/shared/components/ItemsList'
+import { useBuildStore } from '@/stores/useBuild.store'
+import type { Art, ModalProps } from '@/types/build.type'
+import type { ArtQuality, Item } from '@/types/item.type'
+import { ArtifactStatsPanel } from '@/views/calcs/builds/components/ArtifactStatsPanel'
+import { ArtifactSlots } from '@/views/calcs/builds/model/components/artifacts/ArtifactSlots'
+import { isDebuffColor } from '@/views/calcs/builds/utils/artCalculations'
+import { computeArtifactStatsFromParsed } from '@/views/calcs/builds/utils/computeArtifactStats'
+import { filterItemsByEffects } from '@/views/calcs/builds/utils/effectFilters'
+import { parseItemStats } from '@/views/calcs/builds/utils/parseArtifact'
+
+export default function ArtModal({ onClose }: ModalProps) {
+	const locale = getLocale()
+
+	const query = useSuspenseQuery(itemsQueries.get({ type: 'artefact' }))
+	const items = (query.data as Item[] | undefined) ?? []
+
+	const addArt = useBuildStore((s) => s.addArt)
+	const defaults = useBuildStore((s) => s.defaults)
+	const setContainer = useBuildStore((s) => s.setContainer)
+	const build = useBuildStore((s) => s.build)
+	const updateArt = useBuildStore((s) => s.updateArt)
+	const removeArt = useBuildStore((s) => s.removeArt)
+	const copyArt = useBuildStore((s) => s.copyArt)
+
+	const [selectedSlot, setSelectedSlot] = useState<number>(0)
+	const [copyMode, setCopyMode] = useState(false)
+	const [filter, setFilter] = useState('')
+	const [selectedEffectStats, setSelectedEffectStats] = useState<string[]>([])
+	const [percentState, setPercentState] = useState<number>(100)
+	const [potentialState, setPotentialState] = useState<number>(0)
+	const [qualityOverrides, setQualityOverrides] = useState<
+		Record<string, ArtQuality | undefined>
+	>({})
+
+	const getArtAndItemBySlot = useCallback(
+		(slotIndex: number) => {
+			const instanceId = build.container?.slots[slotIndex] ?? null
+			if (!instanceId) {
+				return {
+					art: null,
+					item: null,
+					parsed: null,
+					itemName: undefined,
+					qualityClass: undefined,
+				}
+			}
+
+			const art =
+				(build.arts as Art[]).find(
+					(a) => a.instance_id === instanceId
+				) ?? null
+
+			const item = art
+				? (items.find((it) => it.id === art.item_id) ?? null)
+				: null
+
+			const parsed = item ? parseItemStats(item, locale) : null
+
+			const qualityClass = art?.quality_class ?? undefined
+
+			return { art, item, parsed, itemName: item?.name, qualityClass }
+		},
+		[build.container?.slots, build.arts, items, locale]
+	)
+
+	const handleAdd = (itemId: string) => {
+		if (copyMode) return
+		const item = items.find((it) => it.id === itemId)
+		const parsed = item ? parseItemStats(item, locale) : null
+		const addStatKeys = parsed ? Object.keys(parsed.addStats ?? {}) : []
+		const data: Partial<Art> | undefined =
+			(defaults.art.potential ?? 0) >= 15 &&
+			addStatKeys.length > 0 &&
+			addStatKeys.length <= 3
+				? { selected_stats: addStatKeys }
+				: undefined
+		addArt(itemId, data, selectedSlot)
+	}
+
+	const handleCreateContainer = () => {
+		setContainer('g35n', 6)
+	}
+
+	const handleSelectSlot = (slot: number) => {
+		if (copyMode) {
+			const sourceInstanceId = build.container?.slots[selectedSlot]
+			if (sourceInstanceId && slot !== selectedSlot) {
+				copyArt(sourceInstanceId, slot)
+			}
+			setCopyMode(false)
+		} else {
+			setSelectedSlot(slot)
+		}
+	}
+
+	const selectedStatsData = useMemo(() => {
+		const { art, parsed, itemName } = getArtAndItemBySlot(selectedSlot)
+		if (!art || !parsed) return null
+
+		const stats = computeArtifactStatsFromParsed(
+			art,
+			parsed,
+			art.selected_stats
+		)
+
+		return {
+			art,
+			instanceId: art.instance_id,
+			stats,
+			parsed,
+			itemName,
+			color: art.quality_class,
+		}
+	}, [selectedSlot, getArtAndItemBySlot])
+
+	const addOptions = useMemo(() => {
+		if (!selectedStatsData?.parsed) return []
+
+		return Object.keys(selectedStatsData.parsed.addStats ?? {}).map(
+			(k) => ({
+				value: k,
+				label: selectedStatsData.parsed.displayNames?.[k] ?? k,
+			})
+		)
+	}, [selectedStatsData?.parsed])
+
+	const parsedItemsMap = useMemo(() => {
+		const map = new Map<string, ReturnType<typeof parseItemStats>>()
+		for (const item of items) {
+			map.set(item.id, parseItemStats(item, locale))
+		}
+		return map
+	}, [items, locale])
+
+	const effectFilterMap = useMemo(() => {
+		const posSet = new Set<string>()
+		const negSet = new Set<string>()
+
+		for (const parsed of parsedItemsMap.values()) {
+			const allStats = { ...parsed.statRanges, ...parsed.addStats }
+			for (const [key, val] of Object.entries(allStats)) {
+				if (isDebuffColor(val.color)) {
+					negSet.add(key)
+				} else {
+					posSet.add(key)
+				}
+			}
+		}
+
+		return { posSet, negSet }
+	}, [parsedItemsMap])
+
+	const effectOptions = useMemo<ComboboxOption[]>(() => {
+		const { posSet, negSet } = effectFilterMap
+		const posLabels = new Map<string, string>()
+		const negLabels = new Map<string, string>()
+
+		for (const parsed of parsedItemsMap.values()) {
+			const allStats = { ...parsed.statRanges, ...parsed.addStats }
+			for (const [key] of Object.entries(allStats)) {
+				const display = parsed.displayNames[key] ?? key
+				if (negSet.has(key)) {
+					negLabels.set(key, display)
+				} else if (posSet.has(key)) {
+					posLabels.set(key, display)
+				}
+			}
+		}
+
+		return [
+			...Array.from(posLabels.entries()).map(([value, label]) => ({
+				value,
+				label,
+			})),
+			...Array.from(negLabels.entries()).map(([value, label]) => ({
+				value,
+				label,
+			})),
+		]
+	}, [parsedItemsMap, effectFilterMap])
+
+	const effectFilteredItems = useMemo(() => {
+		if (selectedEffectStats.length === 0) return items
+
+		const { posSet } = effectFilterMap
+		const positiveKeys = selectedEffectStats.filter((k) => posSet.has(k))
+		const negativeKeys = selectedEffectStats.filter((k) => !posSet.has(k))
+
+		return filterItemsByEffects(items, locale, positiveKeys, negativeKeys)
+	}, [items, locale, selectedEffectStats, effectFilterMap])
+
+	useEffect(() => {
+		if (!selectedStatsData?.art) {
+			setPercentState(100)
+			setPotentialState(0)
+			return
+		}
+		setPercentState(selectedStatsData.art.percent ?? 100)
+		setPotentialState(selectedStatsData.art.potential ?? 0)
+	}, [
+		selectedStatsData?.art?.instance_id,
+		selectedStatsData?.art,
+		selectedStatsData?.art?.percent,
+		selectedStatsData?.art?.potential,
+	])
+
+	const sendUpdate = useCallback(
+		(payload: {
+			instanceId?: string
+			type: 'percent' | 'potential'
+			value: number
+		}) => {
+			const { instanceId, type, value } = payload
+			if (!instanceId) {
+				return
+			}
+
+			if (type === 'percent') {
+				updateArt(instanceId, { percent: value })
+			} else {
+				updateArt(instanceId, { potential: value })
+			}
+		},
+		[updateArt]
+	)
+
+	const handlePercentClick = useCallback(
+		(value: number) => {
+			setPercentState(value)
+			const instanceId = selectedStatsData?.instanceId
+			sendUpdate({ instanceId, type: 'percent', value })
+		},
+		[selectedStatsData?.instanceId, sendUpdate]
+	)
+
+	const handlePercentInputChange = useCallback(
+		(value: number) => {
+			setPercentState(value)
+			const instanceId = selectedStatsData?.instanceId
+			sendUpdate({ instanceId, type: 'percent', value })
+		},
+		[selectedStatsData?.instanceId, sendUpdate]
+	)
+
+	const setAllAddStats = useCallback(
+		(instanceId: string | undefined) => {
+			if (!instanceId || !selectedStatsData?.parsed) return
+			const addStatKeys = Object.keys(
+				selectedStatsData.parsed.addStats ?? {}
+			)
+			if (addStatKeys.length <= 3) {
+				updateArt(instanceId, { selected_stats: addStatKeys })
+			}
+		},
+		[selectedStatsData?.parsed, updateArt]
+	)
+
+	const handlePotentialClick = useCallback(
+		(value: number) => {
+			setPotentialState(value)
+			const instanceId = selectedStatsData?.instanceId
+			sendUpdate({ instanceId, type: 'potential', value })
+			if (value >= 15) setAllAddStats(instanceId)
+		},
+		[selectedStatsData?.instanceId, sendUpdate, setAllAddStats]
+	)
+
+	const handlePotentialInputChange = useCallback(
+		(value: number) => {
+			setPotentialState(value)
+			const instanceId = selectedStatsData?.instanceId
+			sendUpdate({ instanceId, type: 'potential', value })
+			if (value >= 15) setAllAddStats(instanceId)
+		},
+		[selectedStatsData?.instanceId, sendUpdate, setAllAddStats]
+	)
+
+	const handleQualitySelect = useCallback(
+		(instanceId: string | undefined, choice: ArtQuality) => {
+			if (!instanceId) return
+
+			setQualityOverrides((prev) => ({
+				...prev,
+				[instanceId]: choice,
+			}))
+
+			updateArt(instanceId, { quality_class: choice })
+		},
+		[updateArt]
+	)
+
+	const handleSelectedStatsChange = useCallback(
+		(next: string[]) => {
+			if (selectedStatsData?.instanceId) {
+				updateArt(selectedStatsData.instanceId, {
+					selected_stats: next,
+				})
+			}
+		},
+		[selectedStatsData?.instanceId, updateArt]
+	)
+
+	return (
+		<div className="flex flex-col gap-4 text-nowrap">
+			<div className="z-999 flex flex-col gap-4 md:flex-row">
+				<Card.Root className="w-full md:min-w-70">
+					<Card.Header>
+						<Input
+							className="px-2 text-[14px]"
+							label="ui.input_label"
+							onChange={(e) => setFilter(e.target.value)}
+							value={filter}
+						/>
+						<Combobox
+							className="mt-2"
+							multiple
+							onValuesChange={setSelectedEffectStats}
+							options={effectOptions}
+							placeholder="build.labels.effects"
+							translateOptions={false}
+							values={selectedEffectStats}
+							zIndex={999999}
+						/>
+					</Card.Header>
+
+					<ItemsList
+						className="max-h-90 overflow-y-auto"
+						favoriteType="artefact"
+						items={effectFilteredItems}
+						locale={locale}
+						onSelectItem={handleAdd}
+						preserveOrder={selectedEffectStats.length > 0}
+						query={filter}
+					/>
+				</Card.Root>
+
+				<Card.Root className="w-full md:min-w-90">
+					<Button
+						aria-label="Close modal"
+						className="absolute top-2.5 right-4 flex cursor-pointer items-center justify-center rounded-full p-2.5"
+						onClick={onClose}
+						variant={'ghost'}
+					>
+						<Icon className="text-lg" icon="lucide:x" />
+					</Button>
+					<Card.Content className="flex flex-col gap-4">
+						<ArtifactStatsPanel
+							addOptions={addOptions}
+							art={selectedStatsData?.art ?? null}
+							color={selectedStatsData?.color}
+							container={build?.container?.id ?? null}
+							itemName={selectedStatsData?.itemName}
+							locale={locale}
+							onPercentChange={handlePercentClick}
+							onPercentInputChange={handlePercentInputChange}
+							onPotentialChange={handlePotentialClick}
+							onPotentialInputChange={handlePotentialInputChange}
+							onQualitySelect={handleQualitySelect}
+							onSelectedStatsChange={handleSelectedStatsChange}
+							parsed={selectedStatsData?.parsed ?? null}
+							percentState={percentState}
+							potentialState={potentialState}
+							qualityOverrides={qualityOverrides}
+							stats={selectedStatsData?.stats ?? null}
+						/>
+					</Card.Content>
+				</Card.Root>
+			</div>
+
+			<ArtifactSlots
+				arts={build.arts as Art[]}
+				copyMode={copyMode}
+				items={items}
+				locale={locale}
+				onCancelCopyMode={() => setCopyMode(false)}
+				onCreateContainer={handleCreateContainer}
+				onRemove={removeArt}
+				onSelectSlot={handleSelectSlot}
+				selectedSlot={selectedSlot}
+				setCopyMode={setCopyMode}
+				slots={build.container?.slots ?? []}
+			/>
+		</div>
+	)
+}

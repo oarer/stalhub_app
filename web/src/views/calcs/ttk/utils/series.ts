@@ -1,0 +1,75 @@
+import type { Item } from '@/types/item.type'
+import type { TTKSeries } from '../components/TTKChart'
+import type { HitZone } from '../constants/ttk'
+import type { ModuleDamageMods } from './damage'
+import { getDamageBlock } from './itemStats'
+import { calcTTKAtDist } from './ttk'
+
+export function buildSeries(
+	weapon: Item,
+	ammo: Item | null,
+	bulletRes: number,
+	vitality: number,
+	hitZone: HitZone,
+	variantIndex: number,
+	useBurstRof: boolean,
+	plate?: Item | null,
+	plateDurability?: number,
+	moduleMods?: ModuleDamageMods,
+	holdTime = 0
+): TTKSeries {
+	const block = getDamageBlock(weapon)
+	const label =
+		weapon.name?.type === 'translation' ? (weapon.name.lines?.ru ?? '') : ''
+
+	if (!block) return { label, color: '', labelColor: '', points: [] }
+
+	const step = 1
+	const points: { x: number; y: number; shots: number }[] = []
+
+	for (let d = 0; d <= block.maxDistance; d += step) {
+		const result = calcTTKAtDist(
+			weapon,
+			ammo,
+			bulletRes,
+			vitality,
+			hitZone,
+			d,
+			variantIndex,
+			useBurstRof,
+			plate,
+			plateDurability,
+			moduleMods,
+			holdTime
+		)
+		points.push({
+			x: d,
+			y: result.ttk,
+			shots: result.shots,
+		})
+	}
+
+	if (points[points.length - 1]?.x !== block.maxDistance) {
+		const result = calcTTKAtDist(
+			weapon,
+			ammo,
+			bulletRes,
+			vitality,
+			hitZone,
+			block.maxDistance,
+			variantIndex,
+			useBurstRof,
+			plate,
+			plateDurability,
+			moduleMods,
+			holdTime
+		)
+		points.push({
+			x: block.maxDistance,
+			y: result.ttk,
+			shots: result.shots,
+		})
+	}
+
+	return { label, color: '', labelColor: '', points }
+}

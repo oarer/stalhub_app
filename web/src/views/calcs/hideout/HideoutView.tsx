@@ -1,0 +1,296 @@
+'use client'
+
+import { ReactFlow } from '@xyflow/react'
+import '@xyflow/react/dist/style.css'
+import { useSuspenseQuery } from '@tanstack/react-query'
+import Image from 'next/image'
+import { useTranslations } from 'next-intl'
+import { useMemo } from 'react'
+import { montserrat } from '@/app/fonts'
+import Input from '@/components/ui/Input'
+import Sidebar from '@/components/ui/sideBar/SideBar'
+import type { ColumnDef } from '@/components/ui/Table'
+import { flexRender, Table, useTableSort } from '@/components/ui/Table'
+import { useSearchItem } from '@/hooks/useSearchItem'
+import { getLocale } from '@/lib/getLocale'
+import { hideoutQueries } from '@/queries/calcs/hideout.queries'
+import type { Recipe } from '@/types/hideout.type'
+import type { Locale } from '@/types/item.type'
+import { CenterOnNode } from './components/CenterOnNode'
+import { nodeTypes } from './components/CustomNode'
+import { RecipeSidebar } from './components/RecipeSidebar'
+import { useHideoutGraph } from './hooks/useHideoutGraph'
+import type { IngredientRows } from './types'
+import { normalizeItemId } from './utils/hideoutUtils'
+
+type HideoutViewProps = {
+	variant?: 'page' | 'widget'
+}
+
+export function HideoutView({ variant = 'page' }: HideoutViewProps) {
+	const t = useTranslations()
+	const { data: hideoutData } = useSuspenseQuery(hideoutQueries.get())
+	const { items } = useSearchItem()
+	const locale = getLocale()
+
+	const {
+		nodes,
+		edges,
+		onNodesChange,
+		centerTarget,
+		selectedItem,
+		handleItemChange,
+		desiredQuantity,
+		expandedNodes,
+		manualPrices,
+		handlePriceChange,
+	} = useHideoutGraph(hideoutData, items, locale)
+
+	const ingredients = useMemo<IngredientRows[]>(() => {
+		if (!hideoutData || !items || !selectedItem) return []
+
+		const localeTyped = locale as Locale
+		const itemMap = new Map<string, (typeof items)[0]>()
+		for (const item of items) {
+			itemMap.set(normalizeItemId(item.data), item)
+		}
+
+		const recipeMap = new Map<string, Recipe>()
+		for (const recipe of hideoutData.recipes) {
+			for (const res of recipe.result) {
+				recipeMap.set(normalizeItemId(res.item), recipe)
+			}
+		}
+
+		const rootRecipe = recipeMap.get(selectedItem)
+		if (!rootRecipe) return []
+
+		const getItemInfo = (id: string) => {
+			const entry = itemMap.get(id)
+			return {
+				name:
+					entry?.name[localeTyped] ??
+					Object.values(entry?.name ?? {})[0] ??
+					id,
+				icon: entry?.icon
+					? `https://cdn.stalhub.dev/db${entry.icon}`
+					: '',
+			}
+		}
+
+		const rows: IngredientRows[] = []
+
+		const visited = new Set<string>()
+
+		const traverse = (
+			itemId: string,
+			quantityNeeded: number,
+			depth: number
+		) => {
+			if (visited.has(itemId)) return
+			visited.add(itemId)
+
+			const recipe = recipeMap.get(itemId)
+			if (!recipe) return
+
+			const perCraft =
+				recipe.result.find((r) => normalizeItemId(r.item) === itemId)
+					?.amount ?? 1
+
+			const multiplier = quantityNeeded / perCraft
+
+			for (const ing of recipe.ingredients) {
+				const ingId = normalizeItemId(ing.item)
+				const { name, icon } = getItemInfo(ingId)
+				const total = Math.ceil(multiplier * ing.amount)
+				const price = manualPrices[ingId] ?? ing.price ?? 0
+
+				rows.push({
+					id: ingId,
+					name,
+					icon,
+					perCraft: ing.amount,
+					total,
+					price,
+					totalPrice: price * total,
+					depth,
+					energy: recipe.energy,
+				})
+
+				if (expandedNodes.has(ingId)) {
+					traverse(ingId, total, depth + 1)
+				}
+			}
+		}
+
+		traverse(selectedItem, desiredQuantity, 0)
+
+		return rows
+	}, [
+		hideoutData,
+		items,
+		selectedItem,
+		desiredQuantity,
+		expandedNodes,
+		manualPrices,
+		locale,
+	])
+
+	const columns: ColumnDef<IngredientRows>[] = useMemo(
+		() => [
+			{
+				accessorKey: 'name',
+				header: t('hideout.item'),
+				cell: ({ row }) => (
+					<div className="flex items-center gap-2">
+						{row.original.icon && (
+							<Image
+								alt={row.original.name}
+								className="size-7 object-contain"
+								height={26}
+								src={row.original.icon}
+								width={26}
+							/>
+						)}
+						<span className="max-w-32 truncate">
+							{row.original.name}
+						</span>
+					</div>
+				),
+			},
+			{
+				accessorKey: 'perCraft',
+				header: t('hideout.perCraft'),
+				cell: ({ row }) => (
+					<span className={montserrat.className}>
+						{row.original.perCraft}
+					</span>
+				),
+			},
+			{
+				accessorKey: 'total',
+				header: t('hideout.total'),
+				cell: ({ row }) => (
+					<span className={montserrat.className}>
+						{row.original.total}
+					</span>
+				),
+			},
+			{
+				accessorKey: 'price',
+				header: t('hideout.pricePerUnit'),
+				cell: ({ row }) => (
+					<Input
+						className="w-24"
+						min={0}
+						onChange={(e) => {
+							const raw = e.target.value
+							handlePriceChange(
+								row.original.id,
+								raw === '' ? null : Number(raw)
+							)
+						}}
+						type="number"
+						value={row.original.price}
+					/>
+				),
+			},
+			{
+				accessorKey: 'totalPrice',
+				header: t('hideout.totalPrice'),
+				cell: ({ row }) => (
+					<span className={montserrat.className}>
+						{row.original.totalPrice.toLocaleString()}₽
+					</span>
+				),
+			},
+			{
+				accessorKey: 'totalEnergy',
+				header: t('hideout.energy'),
+				cell: ({ row }) => (
+					<span className={montserrat.className}>
+						{row.original.energy.toLocaleString()}
+					</span>
+				),
+			},
+		],
+		[t, handlePriceChange]
+	)
+
+	const { table } = useTableSort(ingredients, columns)
+
+	return (
+		<div
+			className={
+				variant === 'widget' ? 'h-full w-full' : 'h-screen w-full pt-24'
+			}
+		>
+			<ReactFlow
+				defaultEdgeOptions={{
+					style: {
+						strokeWidth: 2,
+						stroke: 'var(--border-secondary)',
+					},
+				}}
+				edges={edges}
+				nodes={nodes}
+				nodesConnectable={false}
+				nodesDraggable
+				nodeTypes={nodeTypes}
+				onNodesChange={onNodesChange}
+			>
+				<CenterOnNode centerTarget={centerTarget} />
+				<RecipeSidebar
+					hideoutData={hideoutData}
+					items={items}
+					locale={locale}
+					onItemChange={handleItemChange}
+					selectedItem={selectedItem}
+				/>
+			</ReactFlow>
+
+			{ingredients.length > 0 && (
+				<Sidebar
+					buttonSideClass="bg-primary/50"
+					className="max-h-100"
+					defaultOpen={false}
+					side="right"
+				>
+					<Table.Root className="font-semibold">
+						<Table.Header>
+							{table.getHeaderGroups().map((headerGroup) => (
+								<Table.Row key={headerGroup.id}>
+									{headerGroup.headers.map((header) => (
+										<Table.SortableHeader
+											column={header.column}
+											key={header.id}
+										>
+											{flexRender(
+												header.column.columnDef.header,
+												header.getContext()
+											)}
+										</Table.SortableHeader>
+									))}
+								</Table.Row>
+							))}
+						</Table.Header>
+						<Table.Body>
+							{table.getRowModel().rows.map((row) => (
+								<Table.Row key={row.id}>
+									{row.getVisibleCells().map((cell) => (
+										<Table.Cell key={cell.id}>
+											{flexRender(
+												cell.column.columnDef.cell,
+												cell.getContext()
+											)}
+										</Table.Cell>
+									))}
+								</Table.Row>
+							))}
+						</Table.Body>
+					</Table.Root>
+				</Sidebar>
+			)}
+		</div>
+	)
+}

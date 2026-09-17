@@ -1,0 +1,279 @@
+'use client'
+
+import { Icon } from '@iconify/react'
+import { useSuspenseQuery } from '@tanstack/react-query'
+import Image from 'next/image'
+import { useTranslations } from 'next-intl'
+import { useEffect, useMemo, useState } from 'react'
+import { Button } from '@/components/ui/Button'
+import { HoverCard } from '@/components/ui/HoverCard'
+import { getLocale } from '@/lib/getLocale'
+import { itemsQueries } from '@/queries/calcs/items.queries'
+import { useBuildStore } from '@/stores/useBuild.store'
+import { BoostButtons, type BoostCategory } from '@/types/build.type'
+import {
+	type AddStatBlock,
+	type ElementListBlock,
+	InfoColor,
+	type Item,
+	infoColorMap,
+} from '@/types/item.type'
+import { messageToString } from '@/utils/itemUtils'
+import { ListBlock } from '@/views/items/components/blocks'
+import type { StatFilterGroup } from './ItemPickerModal'
+import { ItemPickerModal } from './ItemPickerModal'
+
+const CATEGORIES = Object.keys(BoostButtons) as BoostCategory[]
+
+function getBoostsByCategory(items: Item[], category: BoostCategory): Item[] {
+	const catLower = category.toLowerCase()
+	return items.filter((item) => {
+		if (!item.infoBlocks) return false
+		return item.infoBlocks.some((block) =>
+			JSON.stringify(block).toLowerCase().includes(catLower)
+		)
+	})
+}
+
+function BoostSelectModal({
+	category,
+	items,
+	selectedBoostId,
+	onSelect,
+	onRemove,
+}: {
+	category: BoostCategory
+	items: Item[]
+	selectedBoostId: string | null
+	onSelect: (boostId: string) => void
+	onRemove: () => void
+}) {
+	const locale = getLocale()
+	const t = useTranslations()
+
+	const [showModal, setShowModal] = useState(false)
+	const [previewId, setPreviewId] = useState<string | null>(selectedBoostId)
+
+	const categoryItems = useMemo(
+		() => getBoostsByCategory(items, category),
+		[items, category]
+	)
+
+	const [selectedEffects, setSelectedEffects] = useState<string[]>([])
+
+	const effectOptions = useMemo(() => {
+		const map = new Map<string, string>()
+		for (const item of categoryItems) {
+			for (const block of item.infoBlocks) {
+				if (block.type !== 'list' && block.type !== 'addStat') continue
+				for (const el of block.elements) {
+					if (el.type !== 'numeric') continue
+					const name = el.name
+					const key =
+						name.type === 'translation' && name.key
+							? name.key
+							: name.type === 'text' && name.text
+								? name.text
+								: null
+					if (!key || map.has(key)) continue
+					map.set(key, messageToString(name, locale))
+				}
+			}
+		}
+		return Array.from(map.entries())
+			.map(([value, label]) => ({ value, label }))
+			.sort((a, b) => b.label.localeCompare(a.label))
+	}, [categoryItems, locale])
+
+	const statFilteredItems = useMemo(() => {
+		if (selectedEffects.length === 0) return categoryItems
+		return categoryItems.filter((item) => {
+			const itemKeys = new Set<string>()
+			for (const block of item.infoBlocks) {
+				if (block.type !== 'list' && block.type !== 'addStat') continue
+				for (const el of block.elements) {
+					if (el.type !== 'numeric') continue
+					const name = (
+						el as {
+							name: { type: string; key?: string; text?: string }
+						}
+					).name
+					const key =
+						name.type === 'translation' && name.key
+							? name.key
+							: name.type === 'text' && name.text
+								? name.text
+								: null
+					if (key) itemKeys.add(key)
+				}
+			}
+			return selectedEffects.every((k) => itemKeys.has(k))
+		})
+	}, [categoryItems, selectedEffects])
+
+	const statFilters: StatFilterGroup[] | undefined =
+		effectOptions.length > 0
+			? [
+					{
+						label: 'build.labels.effects',
+						options: effectOptions,
+						values: selectedEffects,
+						onValuesChange: setSelectedEffects,
+					},
+				]
+			: undefined
+
+	const selectedItemData =
+		categoryItems.find((i) => i.id === selectedBoostId) ?? null
+
+	useEffect(() => {
+		setPreviewId(selectedBoostId)
+	}, [selectedBoostId])
+
+	const handleConfirm = () => {
+		if (!previewId) return
+		onSelect(previewId)
+		setShowModal(false)
+	}
+
+	const handleModalOpenChange = (open: boolean) => {
+		setShowModal(open)
+		if (!open) {
+			setPreviewId(selectedBoostId)
+			setSelectedEffects([])
+		}
+	}
+
+	return (
+		<div className="relative size-14">
+			<button
+				className="flex size-14 cursor-pointer items-center justify-center rounded-xl bg-white/60 p-2 shadow-sm transition hover:bg-neutral-300 dark:bg-neutral-800/50 dark:hover:bg-neutral-800"
+				onClick={() => setShowModal(true)}
+				type="button"
+			>
+				{selectedBoostId && selectedItemData ? (
+					<HoverCard.Root>
+						<HoverCard.Trigger className="flex items-center">
+							<Image
+								alt={messageToString(
+									selectedItemData.name,
+									locale
+								)}
+								className="size-12 object-contain"
+								height={42}
+								src={`https://cdn.stalhub.dev/db/icons/${selectedItemData.category}/${selectedItemData.id}.png`}
+								width={42}
+							/>
+						</HoverCard.Trigger>
+
+						<HoverCard.Content className="min-w-80" side="top">
+							<div className="relative gap-2">
+								<p
+									className="mb-4"
+									style={{
+										color:
+											infoColorMap[
+												selectedItemData.color as InfoColor
+											] || InfoColor.DEFAULT,
+									}}
+								>
+									{messageToString(
+										selectedItemData.name,
+										locale
+									)}
+								</p>
+
+								{selectedItemData?.infoBlocks
+									.filter(
+										(
+											b
+										): b is
+											| AddStatBlock
+											| ElementListBlock =>
+											(b.type === 'list' ||
+												b.type === 'addStat') &&
+											Array.isArray(b.elements) &&
+											b.elements.length > 0
+									)
+									.filter(
+										(_, idx) =>
+											idx !== 0 && idx !== 5 && idx !== 1
+									)
+									.map((block, idx) => (
+										<ListBlock
+											block={block}
+											className="text-sm"
+											key={idx}
+											locale={locale}
+											numericVariants={0}
+											withCard={false}
+										/>
+									))}
+							</div>
+						</HoverCard.Content>
+					</HoverCard.Root>
+				) : (
+					<Icon className="size-7" icon={BoostButtons[category]} />
+				)}
+			</button>
+
+			{selectedBoostId && selectedItemData && (
+				<Button
+					aria-label={t('build.labels.delete')}
+					className="absolute -top-1 -right-1 z-10 flex size-7 items-center justify-center rounded-full p-0 ring-transparent"
+					onClick={onRemove}
+					title={t('build.labels.delete')}
+					type="button"
+					variant="danger"
+				>
+					<Icon className="text-lg" icon="lucide:trash" />
+				</Button>
+			)}
+
+			<ItemPickerModal
+				emptyTitle="modals.builds.consumables.header"
+				favoriteType="boost"
+				items={statFilteredItems}
+				locale={locale}
+				onConfirm={handleConfirm}
+				previewId={previewId}
+				setPreviewId={setPreviewId}
+				setShowModal={handleModalOpenChange}
+				showModal={showModal}
+				statFilters={statFilters}
+				title={`${t('modals.builds.consumables.pick_boost')} ${t(
+					`boost.${category.split('.').pop()!}`
+				)}`}
+			/>
+		</div>
+	)
+}
+
+export default function ConsumablesModalLite() {
+	const { data: items } = useSuspenseQuery(
+		itemsQueries.get({ type: 'consumables' })
+	)
+
+	const boost = useBuildStore((s) => s.build.boost)
+	const setBoost = useBuildStore((s) => s.setBoost)
+	const removeBoost = useBuildStore((s) => s.removeBoost)
+
+	const handleSelect = (category: BoostCategory) => (boostId: string) => {
+		setBoost(category, boostId)
+	}
+
+	return (
+		<div className="grid w-full grid-cols-3 justify-items-center gap-4">
+			{CATEGORIES.map((category) => (
+				<BoostSelectModal
+					category={category}
+					items={items}
+					key={category}
+					onRemove={() => removeBoost(category)}
+					onSelect={handleSelect(category)}
+					selectedBoostId={boost[category]}
+				/>
+			))}
+		</div>
+	)
+}

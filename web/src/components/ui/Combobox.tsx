@@ -1,0 +1,496 @@
+'use client'
+
+import { Icon } from '@iconify/react'
+import { useVirtualizer } from '@tanstack/react-virtual'
+import { AnimatePresence, motion } from 'framer-motion'
+import { useTranslations } from 'next-intl'
+import {
+	type CSSProperties,
+	useCallback,
+	useEffect,
+	useLayoutEffect,
+	useMemo,
+	useRef,
+	useState,
+} from 'react'
+import { createPortal } from 'react-dom'
+import { cn } from '@/lib/cn'
+
+export interface ComboboxOption {
+	value: string
+	label: string
+	disabled?: boolean
+	type?: 'option' | 'header'
+}
+
+interface ComboboxBaseProps {
+	options: ComboboxOption[]
+	placeholder?: string
+	searchPlaceholder?: string
+	emptyText?: string
+	translateOptions?: boolean
+	className?: string
+	disabled?: boolean
+	zIndex?: number
+}
+
+interface ComboboxSingleProps extends ComboboxBaseProps {
+	multiple?: false
+	value?: string
+	onValueChange?: (value: string) => void
+}
+
+interface ComboboxMultipleProps extends ComboboxBaseProps {
+	multiple: true
+	values?: string[]
+	onValuesChange?: (values: string[]) => void
+	maxSelected?: number
+}
+
+export type ComboboxProps = ComboboxSingleProps | ComboboxMultipleProps
+
+const dropdownVariants = {
+	hidden: { opacity: 0, scale: 0.98, y: -6 },
+	visible: {
+		opacity: 1,
+		scale: 1,
+		y: 0,
+		transition: {
+			duration: 0.16,
+			staggerChildren: 0.03,
+		},
+	},
+}
+
+export function Combobox(props: ComboboxProps) {
+	const {
+		options,
+		placeholder = 'ui.combobox.default.placeholder',
+		searchPlaceholder = 'ui.combobox.default.search.button',
+		emptyText = 'ui.combobox.default.search.notFound',
+		translateOptions = true,
+		className,
+		disabled = false,
+	} = props
+
+	const isMultiple = props.multiple === true
+	const maxSelected = isMultiple ? props.maxSelected : undefined
+
+	const selectedSet = useMemo(() => {
+		if (props.multiple) {
+			return new Set(props.values)
+		}
+
+		return new Set(props.value ? [props.value] : [])
+	}, [props])
+
+	const t = useTranslations()
+	const optionLabel = (label: string) => (translateOptions ? t(label) : label)
+
+	const [open, setOpen] = useState(false)
+	const [search, setSearch] = useState('')
+	const [highlightedIndex, setHighlightedIndex] = useState(0)
+	const [mounted, setMounted] = useState(false)
+	const [dropdownStyle, setDropdownStyle] = useState<CSSProperties>({})
+
+	const triggerRef = useRef<HTMLButtonElement>(null)
+	const inputRef = useRef<HTMLInputElement>(null)
+	const wrapperRef = useRef<HTMLDivElement>(null)
+	const dropdownRef = useRef<HTMLDivElement>(null)
+	const parentRef = useRef<HTMLDivElement>(null)
+
+	const filtered = useMemo(() => {
+		if (!search) return options
+		const lower = search.toLowerCase()
+		return options.filter((o) => {
+			const label = translateOptions ? t(o.label) : o.label
+			return label.toLowerCase().includes(lower)
+		})
+	}, [options, search, translateOptions, t])
+
+	const selectedCount = isMultiple
+		? (props.values?.length ?? 0)
+		: selectedSet.size
+
+	const maxReached =
+		isMultiple &&
+		typeof maxSelected === 'number' &&
+		selectedCount >= maxSelected
+
+	useEffect(() => {
+		setMounted(true)
+	}, [])
+
+	useEffect(() => {
+		setHighlightedIndex(0)
+	}, [])
+
+	const updateDropdownPosition = useCallback(() => {
+		const wrapper = wrapperRef.current
+		const trigger = triggerRef.current
+
+		if (!wrapper || !trigger) return
+
+		const wrapperRect = wrapper.getBoundingClientRect()
+		const triggerRect = trigger.getBoundingClientRect()
+
+		const width = Math.max(triggerRect.width, 240)
+
+		setDropdownStyle({
+			position: 'fixed',
+			top: triggerRect.bottom + 8,
+			left: wrapperRect.left + wrapperRect.width / 2 - width / 2,
+			width,
+			zIndex: 9999999,
+			maxHeight: `calc(100vh - ${Math.round(triggerRect.bottom + 24)}px)`,
+		})
+	}, [])
+
+	useEffect(() => {
+		if (open) {
+			requestAnimationFrame(() => {
+				inputRef.current?.focus()
+			})
+		} else {
+			setSearch('')
+		}
+	}, [open])
+
+	useLayoutEffect(() => {
+		if (!open) return
+
+		updateDropdownPosition()
+
+		const onScroll = () => updateDropdownPosition()
+		const onResize = () => updateDropdownPosition()
+
+		window.addEventListener('scroll', onScroll, true)
+		window.addEventListener('resize', onResize)
+
+		return () => {
+			window.removeEventListener('scroll', onScroll, true)
+			window.removeEventListener('resize', onResize)
+		}
+	}, [open, updateDropdownPosition])
+
+	useEffect(() => {
+		if (!open) return
+
+		function handleClick(e: MouseEvent) {
+			const target = e.target as Node
+
+			if (
+				wrapperRef.current?.contains(target) ||
+				dropdownRef.current?.contains(target)
+			) {
+				return
+			}
+
+			setOpen(false)
+		}
+
+		document.addEventListener('mousedown', handleClick)
+		return () => document.removeEventListener('mousedown', handleClick)
+	}, [open])
+
+	useEffect(() => {
+		if (!open) return
+
+		function handleKey(e: KeyboardEvent) {
+			if (e.key === 'Escape') {
+				setOpen(false)
+				triggerRef.current?.focus()
+			}
+		}
+
+		document.addEventListener('keydown', handleKey)
+		return () => document.removeEventListener('keydown', handleKey)
+	}, [open])
+
+	const select = useCallback(
+		(optionValue: string) => {
+			if (props.multiple) {
+				const current = new Set(props.values ?? [])
+				const isAdding = !current.has(optionValue)
+
+				if (isAdding && maxReached) return
+
+				if (current.has(optionValue)) {
+					current.delete(optionValue)
+				} else {
+					current.add(optionValue)
+				}
+
+				props.onValuesChange?.(Array.from(current))
+				return
+			}
+
+			props.onValueChange?.(
+				optionValue === props.value ? '' : optionValue
+			)
+			setOpen(false)
+			triggerRef.current?.focus()
+		},
+		[props, maxReached]
+	)
+
+	const removeTag = useCallback(
+		(val: string) => {
+			if (!props.multiple) return
+
+			props.onValuesChange?.(
+				(props.values ?? []).filter((v) => v !== val)
+			)
+		},
+		[props]
+	)
+
+	const handleKeyDown: React.KeyboardEventHandler<HTMLInputElement> =
+		useCallback(
+			(e) => {
+				if (!open) return
+
+				const isSelectable = (option: ComboboxOption) =>
+					!option.disabled && option.type !== 'header'
+
+				const nextIndex = (from: number, dir: 1 | -1) => {
+					let i = from
+					for (let steps = 0; steps < filtered.length; steps++) {
+						i = (i + dir + filtered.length) % filtered.length
+						if (isSelectable(filtered[i])) return i
+					}
+					return from
+				}
+
+				switch (e.key) {
+					case 'ArrowDown':
+						e.preventDefault()
+						setHighlightedIndex((prev) => nextIndex(prev, 1))
+						break
+
+					case 'ArrowUp':
+						e.preventDefault()
+						setHighlightedIndex((prev) => nextIndex(prev, -1))
+						break
+
+					case 'Enter': {
+						e.preventDefault()
+						const item = filtered[highlightedIndex]
+						if (item && isSelectable(item)) {
+							select(item.value)
+						}
+						break
+					}
+
+					case 'Home':
+						e.preventDefault()
+						setHighlightedIndex(0)
+						break
+
+					case 'End':
+						e.preventDefault()
+						setHighlightedIndex(filtered.length - 1)
+						break
+				}
+			},
+			[open, filtered, highlightedIndex, select]
+		)
+
+	const rowVirtualizer = useVirtualizer({
+		count: filtered.length,
+		getScrollElement: () => parentRef.current,
+		estimateSize: () => 36,
+		overscan: 2,
+	})
+
+	const selectedLabels = options.filter((o) => selectedSet.has(o.value))
+	const hasSelection = selectedLabels.length > 0
+
+	// ну вот нахуй ты сюда классы въебал
+	return (
+		<div className={cn('relative w-full', className)} ref={wrapperRef}>
+			<button
+				className="flex min-h-10 w-full cursor-pointer items-center justify-between rounded-lg border-2 border-primary/40 bg-card px-3 py-2 font-semibold text-sm"
+				disabled={disabled}
+				onClick={() => setOpen((prev) => !prev)}
+				ref={triggerRef}
+				type="button"
+			>
+				{isMultiple ? (
+					<div className="flex w-0 flex-1 gap-1 overflow-hidden">
+						{hasSelection ? (
+							selectedLabels.map((opt) => (
+								<div
+									className="flex min-w-0 shrink items-center gap-1 rounded bg-muted px-1.5 py-0.5 text-xs"
+									key={opt.value}
+								>
+									<p className="min-w-0 flex-1 truncate">
+										{optionLabel(opt.label)}
+									</p>
+
+									<span
+										className="shrink-0 cursor-pointer"
+										onClick={(e) => {
+											e.stopPropagation()
+											removeTag(opt.value)
+										}}
+									>
+										<Icon icon="lucide:x" />
+									</span>
+								</div>
+							))
+						) : (
+							<span>{t(placeholder)}</span>
+						)}
+					</div>
+				) : (
+					<span className="truncate">
+						{hasSelection
+							? optionLabel(selectedLabels[0].label)
+							: t(placeholder)}
+					</span>
+				)}
+
+				<Icon
+					className={cn(
+						'ml-1 transition-transform',
+						open && 'rotate-90'
+					)}
+					icon="lucide:chevron-right"
+				/>
+			</button>
+			{mounted &&
+				createPortal(
+					<AnimatePresence>
+						{open && (
+							<motion.div
+								animate="visible"
+								className="overflow-hidden rounded-lg border-2 border-primary/40 bg-card shadow-xl"
+								exit="hidden"
+								initial="hidden"
+								ref={dropdownRef}
+								style={dropdownStyle}
+								variants={dropdownVariants}
+							>
+								<div className="flex items-center gap-2 border-primary/40 border-b-2 px-3 py-2">
+									<Icon icon="lucide:search" />
+									<input
+										className="w-full bg-transparent font-bold outline-none"
+										onChange={(e) =>
+											setSearch(e.target.value)
+										}
+										onKeyDown={handleKeyDown}
+										placeholder={t(searchPlaceholder)}
+										ref={inputRef}
+										value={search}
+									/>
+								</div>
+
+								{filtered.length === 0 ? (
+									<div className="px-3 py-6 text-center font-bold text-sm">
+										{t(emptyText)}
+									</div>
+								) : (
+									<div
+										className="max-h-60 overflow-y-auto"
+										ref={parentRef}
+									>
+										<div
+											style={{
+												height: `${rowVirtualizer.getTotalSize()}px`,
+												width: '100%',
+												position: 'relative',
+											}}
+										>
+											{rowVirtualizer
+												.getVirtualItems()
+												.map((virtualItem) => {
+													const option =
+														filtered[
+															virtualItem.index
+														]
+
+													if (
+														option.type === 'header'
+													) {
+														return (
+															<div
+																className="pointer-events-none absolute top-0 left-0 flex w-full items-center px-3 font-bold text-muted-foreground text-xs uppercase tracking-wide"
+																key={
+																	option.value
+																}
+																style={{
+																	height: `${virtualItem.size}px`,
+																	transform: `translateY(${virtualItem.start}px)`,
+																}}
+															>
+																{optionLabel(
+																	option.label
+																)}
+															</div>
+														)
+													}
+
+													const isSelected =
+														selectedSet.has(
+															option.value
+														)
+
+													const optionDisabled =
+														option.disabled ||
+														(maxReached &&
+															!isSelected)
+
+													return (
+														<div
+															className={cn(
+																'absolute top-0 left-0 flex w-full cursor-pointer items-center gap-2 rounded px-2 py-1.5 font-semibold text-sm transition-colors hover:bg-muted/50',
+																optionDisabled &&
+																	'cursor-not-allowed text-muted-foreground opacity-50',
+																highlightedIndex ===
+																	virtualItem.index &&
+																	'bg-muted/50'
+															)}
+															key={option.value}
+															onClick={() => {
+																if (
+																	!optionDisabled
+																) {
+																	select(
+																		option.value
+																	)
+																}
+															}}
+															style={{
+																height: `${virtualItem.size}px`,
+																transform: `translateY(${virtualItem.start}px)`,
+															}}
+														>
+															<Icon
+																className={cn(
+																	'h-4 w-4',
+																	!isSelected &&
+																		'invisible'
+																)}
+																icon="lucide:check"
+															/>
+
+															<span className="truncate text-left">
+																{optionLabel(
+																	option.label
+																)}
+															</span>
+														</div>
+													)
+												})}
+										</div>
+									</div>
+								)}
+							</motion.div>
+						)}
+					</AnimatePresence>,
+					document.body
+				)}
+		</div>
+	)
+}

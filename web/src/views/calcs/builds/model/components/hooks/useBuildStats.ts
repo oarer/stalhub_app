@@ -1,0 +1,245 @@
+'use client'
+
+import { useMemo } from 'react'
+import {
+	applySicknessEffects,
+	computeSicknessEffects,
+} from '@/constants/sickness'
+import { getLocale } from '@/lib/getLocale'
+import { useBuildStore } from '@/stores/useBuild.store'
+import type { Build } from '@/types/build.type'
+import { REACTION_KEYS } from '@/types/build.type'
+import type { BuildStats } from './buildStatsUtils'
+import {
+	applyContainerModifiers,
+	buildAllStatKeys,
+	buildDisplayNamesMap,
+	computeArtifactStats,
+	computeIsPercentMap,
+	getStatsFromItem,
+} from './buildStatsUtils'
+import { BUILD_HIDDEN_STAT_KEYS } from './itemStatsUtils'
+import { useBuildItems } from './useBuildItems'
+import { useContainerModifiers } from './useContainerModifiers'
+import { useDerivedStats } from './useDerivedStats'
+
+export { type BuildStats, roundNumber } from './buildStatsUtils'
+
+export function useBuildStats(buildOverride?: Build) {
+	const storeBuild = useBuildStore((s) => s.build)
+	const build = buildOverride ?? storeBuild
+	const locale = getLocale()
+	const { armors, containers, artefacts, consumables, allItems } =
+		useBuildItems()
+
+	const containerItem = useMemo(
+		() => containers.find((c) => c.id === build.container?.id),
+		[containers, build.container?.id]
+	)
+
+	const containerModifiers = useContainerModifiers(containerItem)
+
+	const allStatKeys = useMemo(() => {
+		return buildAllStatKeys(
+			build,
+			armors,
+			containers,
+			artefacts,
+			consumables
+		)
+	}, [build, armors, containers, artefacts, consumables])
+
+	const displayNamesMap = useMemo(() => {
+		return buildDisplayNamesMap(allStatKeys, allItems, locale)
+	}, [allItems, allStatKeys, locale])
+
+	const stats = useMemo<BuildStats>(() => {
+		// статы армора и контейнера - без модификаторов
+		const baseResult: BuildStats = {}
+
+		const armorItem = armors.find((a) => a.id === build.armor?.id)
+		if (armorItem && build.armor) {
+			const level = build.armor.level ?? 0
+			const armorStats = getStatsFromItem(armorItem, allStatKeys, level)
+			for (const [key, val] of Object.entries(armorStats)) {
+				baseResult[key] = (baseResult[key] ?? 0) + val
+			}
+		}
+
+		if (containerItem) {
+			const containerStats = getStatsFromItem(containerItem, allStatKeys)
+			for (const [key, val] of Object.entries(containerStats)) {
+				baseResult[key] = (baseResult[key] ?? 0) + val
+			}
+		}
+
+		// статы артефактов - применяем модификаторы контейнера
+		const artResult: BuildStats = {}
+		for (const art of build.arts) {
+			const artStats = computeArtifactStats(art, artefacts, locale)
+			for (const [key, val] of Object.entries(artStats)) {
+				if (val !== 0) {
+					artResult[key] = (artResult[key] ?? 0) + val
+				}
+			}
+		}
+
+		const artWithModifiers = applyContainerModifiers(
+			artResult,
+			containerModifiers.effectiveness,
+			containerModifiers.innerProtection
+		)
+
+		// объединяем: база + артефакты с модификаторами
+		const result: BuildStats = { ...baseResult }
+		for (const [key, val] of Object.entries(artWithModifiers)) {
+			result[key] = (result[key] ?? 0) + val
+		}
+
+		for (const boostId of Object.values(build.boost).filter(Boolean)) {
+			const boostItem = consumables.find((c) => c.id === boostId)
+			if (boostItem) {
+				const boostStats = getStatsFromItem(boostItem, allStatKeys)
+				for (const [key, val] of Object.entries(boostStats)) {
+					if (val !== 0) {
+						result[key] = (result[key] ?? 0) + val
+					}
+				}
+			}
+		}
+
+		// реакция: если выбрана, её процент прибавляется к живучести и выносливости
+		if (build.reaction) {
+			const reactionVal = result[build.reaction] ?? 0
+			if (reactionVal !== 0) {
+				result['stalker.artefact_properties.factor.health_bonus'] =
+					(result[
+						'stalker.artefact_properties.factor.health_bonus'
+					] ?? 0) + reactionVal
+				result[
+					'stalker.artefact_properties.factor.stamina_regeneration_bonus'
+				] =
+					(result[
+						'stalker.artefact_properties.factor.stamina_regeneration_bonus'
+					] ?? 0) + reactionVal
+			}
+		}
+
+		// дебафы (заражения/болезни)
+		const sicknessEffects = computeSicknessEffects(build.sickness)
+		return applySicknessEffects(result, sicknessEffects)
+	}, [
+		build,
+		armors,
+		containerItem,
+		artefacts,
+		consumables,
+		allStatKeys,
+		locale,
+		containerModifiers,
+	])
+
+	const containerStats = useMemo<BuildStats>(() => {
+		const result: BuildStats = {}
+
+		if (!containerItem) return result
+
+		const containerOnlyStats = getStatsFromItem(containerItem, allStatKeys)
+		for (const [key, val] of Object.entries(containerOnlyStats)) {
+			result[key] = val
+		}
+
+		for (const art of build.arts) {
+			const artStats = computeArtifactStats(art, artefacts, locale)
+			for (const [key, val] of Object.entries(artStats)) {
+				if (val !== 0) {
+					result[key] = (result[key] ?? 0) + val
+				}
+			}
+		}
+
+		const modified = applyContainerModifiers(
+			result,
+			containerModifiers.effectiveness,
+			containerModifiers.innerProtection
+		)
+
+		if (build.reaction) {
+			const reactionVal = modified[build.reaction] ?? 0
+			if (reactionVal !== 0) {
+				modified['stalker.artefact_properties.factor.health_bonus'] =
+					(modified[
+						'stalker.artefact_properties.factor.health_bonus'
+					] ?? 0) + reactionVal
+				modified[
+					'stalker.artefact_properties.factor.stamina_regeneration_bonus'
+				] =
+					(modified[
+						'stalker.artefact_properties.factor.stamina_regeneration_bonus'
+					] ?? 0) + reactionVal
+			}
+		}
+
+		return applySicknessEffects(
+			modified,
+			computeSicknessEffects(build.sickness)
+		)
+	}, [
+		build,
+		containerItem,
+		artefacts,
+		allStatKeys,
+		locale,
+		containerModifiers,
+	])
+
+	const { prime, hps, stopping } = useDerivedStats(stats)
+	const sortedStats = useMemo(() => {
+		return Object.entries(stats)
+			.filter(
+				([key, val]) => val !== 0 && !BUILD_HIDDEN_STAT_KEYS.has(key)
+			)
+			.sort(([keyA], [keyB]) => {
+				const nameA = displayNamesMap[keyA] ?? keyA
+				const nameB = displayNamesMap[keyB] ?? keyB
+				return nameA.localeCompare(nameB)
+			})
+	}, [stats, displayNamesMap])
+
+	const sortedContainerStats = useMemo(() => {
+		return Object.entries(containerStats)
+			.filter(
+				([key, val]) => val !== 0 && !BUILD_HIDDEN_STAT_KEYS.has(key)
+			)
+			.sort(([keyA], [keyB]) => {
+				const nameA = displayNamesMap[keyA] ?? keyA
+				const nameB = displayNamesMap[keyB] ?? keyB
+				return nameA.localeCompare(nameB)
+			})
+	}, [containerStats, displayNamesMap])
+
+	const isPercentMap = useMemo(
+		() => computeIsPercentMap(build.arts, artefacts, locale),
+		[build.arts, artefacts, locale]
+	)
+
+	const availableReactions = useMemo(() => {
+		const keys = Object.values(REACTION_KEYS)
+		return keys.filter((key) => (stats[key] ?? 0) !== 0)
+	}, [stats])
+
+	return {
+		stats,
+		containerStats,
+		displayNamesMap,
+		isPercentMap,
+		sortedStats,
+		sortedContainerStats,
+		prime,
+		hps,
+		stopping,
+		hasContainer: !!build.container,
+		availableReactions,
+		selectedReaction: build.reaction ?? null,
+	}
+}

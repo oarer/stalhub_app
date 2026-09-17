@@ -1,0 +1,47 @@
+import { Icon } from '@iconify/react'
+
+import type { VariantProps } from 'class-variance-authority'
+import { forwardRef } from 'react'
+
+import { buttonVariants } from '@/constants/ui/button.const'
+import { cn } from '@/lib/cn'
+
+interface IButtonProps
+	extends React.ButtonHTMLAttributes<HTMLButtonElement>,
+		VariantProps<typeof buttonVariants> {
+	loading?: boolean
+	disabled?: boolean
+}
+
+const Button = forwardRef<HTMLButtonElement, IButtonProps>(
+	({ className, variant, size, loading, children, ...props }, ref) => {
+		return (
+			<button
+				className={cn(
+					buttonVariants({
+						variant,
+						size,
+						disabled: props.disabled,
+						loading: loading,
+					}),
+					className
+				)}
+				disabled={loading || props.disabled}
+				ref={ref}
+				{...props}
+			>
+				{loading ? (
+					<Icon
+						className="animate-spin text-xl"
+						icon="lucide:loader-circle"
+					/>
+				) : (
+					children
+				)}
+			</button>
+		)
+	}
+)
+Button.displayName = 'UI.Button'
+
+export { Button, buttonVariants }

@@ -1,0 +1,164 @@
+'use client'
+
+import type React from 'react'
+import { createContext, useCallback, useContext, useState } from 'react'
+
+import { cn } from '@/lib/cn'
+
+type TabsContextValue = {
+	value: string
+	onValueChange: (value: string) => void
+}
+
+const TabsContext = createContext<TabsContextValue | null>(null)
+
+interface TabsProps extends React.HTMLAttributes<HTMLDivElement> {
+	defaultValue?: string
+	value?: string
+	onValueChange?: (value: string) => void
+}
+
+function TabsRoot({
+	defaultValue,
+	value,
+	onValueChange,
+	className,
+	children,
+	...props
+}: TabsProps) {
+	const [internalValue, setInternalValue] = useState(defaultValue || '')
+
+	const isControlled = value !== undefined
+	const currentValue = isControlled ? (value as string) : internalValue
+
+	const handleValueChange = useCallback(
+		(newValue: string) => {
+			if (!isControlled) {
+				setInternalValue(newValue)
+			}
+			onValueChange?.(newValue)
+		},
+		[isControlled, onValueChange]
+	)
+
+	return (
+		<TabsContext.Provider
+			value={{ value: currentValue, onValueChange: handleValueChange }}
+		>
+			<div className={cn(className)} {...props}>
+				{children}
+			</div>
+		</TabsContext.Provider>
+	)
+}
+
+type TabsListProps = React.HTMLAttributes<HTMLDivElement>
+
+function TabsList({ className, children, ...props }: TabsListProps) {
+	return (
+		<div
+			className={cn(
+				'bg-card/50',
+				'items-center justify-center rounded-lg p-2',
+				'backdrop-blur-sm',
+				'ring-2 ring-primary/30',
+				'gap-2',
+				className
+			)}
+			role="tablist"
+			{...props}
+		>
+			{children}
+		</div>
+	)
+}
+
+interface TabsTriggerProps
+	extends React.ButtonHTMLAttributes<HTMLButtonElement> {
+	value: string
+}
+
+function TabsTrigger({
+	className,
+	value,
+	children,
+	disabled,
+	...props
+}: TabsTriggerProps) {
+	const context = useContext(TabsContext)
+	if (!context) throw new Error('TabsTrigger must be used within Tabs')
+
+	const isActive = context.value === value
+
+	return (
+		<button
+			aria-selected={isActive}
+			className={cn(
+				'inline-flex items-center justify-center gap-3 rounded-md bg-card px-3 py-1.5 font-semibold text-sm transition-all md:text-[16px]',
+				'cursor-pointer select-none',
+
+				'text-muted-foreground',
+
+				'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
+				'focus-visible:ring-offset-background',
+
+				'hover:bg-muted/50',
+
+				'data-[state=active]:bg-primary/40 data-[state=active]:text-foreground',
+				'data-[state=active]:shadow-sm',
+
+				'disabled:pointer-events-none disabled:opacity-50',
+
+				className
+			)}
+			data-state={isActive ? 'active' : 'inactive'}
+			disabled={disabled}
+			onClick={() => context.onValueChange(value)}
+			role="tab"
+			{...props}
+		>
+			{children}
+		</button>
+	)
+}
+
+interface TabsContentProps extends React.HTMLAttributes<HTMLDivElement> {
+	value: string
+}
+
+function TabsContent({
+	className,
+	value,
+	children,
+	...props
+}: TabsContentProps) {
+	const context = useContext(TabsContext)
+	if (!context) throw new Error('TabsContent must be used within Tabs')
+
+	const isActive = context.value === value
+
+	if (!isActive) return null
+
+	return (
+		<div
+			className={cn(
+				'mt-4 rounded-lg',
+				'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
+				'focus-visible:ring-offset-background',
+				className
+			)}
+			role="tabpanel"
+			tabIndex={0}
+			{...props}
+		>
+			{children}
+		</div>
+	)
+}
+
+export const Tabs = {
+	Root: TabsRoot,
+	List: TabsList,
+	Trigger: TabsTrigger,
+	Content: TabsContent,
+}
