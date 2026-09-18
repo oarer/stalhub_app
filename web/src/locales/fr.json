@@ -2396,6 +2396,10 @@
 		"password": "Mot de passe",
 		"login": "Se connecter",
 		"loginByPassword": "Par mot de passe",
+		"loginThroughWebsite": "Se connecter via le site web",
+		"loginThroughWebsiteDesc": "Continuez dans votre navigateur avec votre compte Stalhub",
+		"websiteLoginUnavailable": "La connexion web est disponible dans l’application de bureau",
+		"or": "ou",
 		"loginError": "Échec de la connexion",
 		"back": "Retour",
 		"next": "Suivant"

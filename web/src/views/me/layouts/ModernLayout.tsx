@@ -1,18 +1,9 @@
 'use client'
 
-import { useTranslations } from 'next-intl'
-import { Divider } from '@/components/ui/Divider'
 import type { MeLayoutProps } from '@/types/me.types'
-import { getNavTabs } from '@/types/me.types'
 import CompactHeader from '@/views/me/components/CompactHeader'
-import LinkTabs from '@/views/me/components/LinkTabs'
 
-export default function ModernLayout({
-	children,
-	user,
-	unreadCount,
-}: MeLayoutProps) {
-	const t = useTranslations()
+export default function ModernLayout({ children, user }: MeLayoutProps) {
 	const customization = user.customization
 
 	return (
@@ -26,10 +17,8 @@ export default function ModernLayout({
 						bannerType={customization.banner_type}
 						user={user}
 					/>
-					<LinkTabs tabs={getNavTabs(unreadCount, t, user.roles)} />
-					<Divider />
 				</div>
-				<div className="py-6 lg:px-0 lg:py-0">{children}</div>
+				<div className="py-6 lg:px-0 lg:py-0 z-1">{children}</div>
 			</div>
 		</div>
 	)

@@ -1,5 +1,4 @@
 import type { PublicUser, UpdateUserSettingsDto, User } from '@/types/user.type'
-import type { LinkTab } from '@/views/me/components/LinkTabs'
 
 interface Tab {
 	title: string
@@ -141,43 +140,14 @@ export const filterTabsByRoles = (
 		.filter((group) => group.items.length > 0)
 }
 
-export const getNavTabs = (
-	unreadCount: number | null | undefined,
-	translate: (key: string) => string,
-	roles: { name: string }[]
-): LinkTab[] =>
-	filterTabsByRoles(tabGroups, roles).map((group) => {
-		const items = group.items.map((tab) => ({
-			title: translate(tab.title),
-			href: tab.href,
-			badge:
-				tab.href === '/me/notifications' && unreadCount
-					? unreadCount
-					: undefined,
-		}))
-		return {
-			title: group.label ? translate(group.label) : items[0].title,
-			href: group.items[0].href,
-			...(items.length > 1 ? { children: items } : {}),
-		}
-	})
-
 export interface UserCardProps extends React.ComponentPropsWithoutRef<'div'> {
 	user: User | PublicUser
 	cardBackground: NonNullable<User['customization']['card_background']>
 	cardColor: string
 	onCardChange?: (data: UpdateUserSettingsDto) => void
 }
-export interface NavTabsProps {
-	pathname: string
-	unreadCount: number | null | undefined
-	roles: { name: string }[]
-	onTabClick?: () => void
-}
 export interface MeLayoutProps {
 	children: React.ReactNode
 	user: User
-	unreadCount: number | null | undefined
-	pathname: string
 	onCardChange: (data: UpdateUserSettingsDto) => void
 }

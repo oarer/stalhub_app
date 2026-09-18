@@ -2400,6 +2400,10 @@
 		"password": "비밀번호",
 		"login": "로그인",
 		"loginByPassword": "비밀번호로",
+		"loginThroughWebsite": "웹사이트를 통해 로그인",
+		"loginThroughWebsiteDesc": "브라우저에서 Stalhub 계정으로 계속하세요",
+		"websiteLoginUnavailable": "웹 로그인은 데스크톱 앱에서 사용할 수 있습니다",
+		"or": "또는",
 		"loginError": "로그인 실패",
 		"back": "뒤로",
 		"next": "다음"

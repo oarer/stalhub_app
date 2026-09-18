@@ -11,10 +11,10 @@ import { getMetadataByPath } from '@/constants/meta'
 import LocaleProvider from '@/providers/LocaleProvider'
 import Providers from '@/providers/providers'
 import { GridBackgroundWithBeams } from '@/shared/Background'
-import Footer from '@/shared/layouts/footer/Footer'
+import AppSidebar from '@/shared/layouts/AppSidebar'
 import GiveawayModal from '@/shared/layouts/GiveawayModal'
+import LoadingSplash from '@/shared/layouts/LoadingSplash'
 import ThemeApplier from '@/shared/layouts/nav/components/theme/ThemeApplier'
-import Nav from '@/shared/layouts/nav/Nav'
 /* import PageTransitionEffect from '@/shared/transitionEffects/PageTransitionEffect' */
 
 export const generateMetadata = async () => {
@@ -60,10 +60,10 @@ export default async function RootLayout({ children }: LayoutProps<'/'>) {
 						<ThemeApplier />
 						<LocaleProvider locale={locale} messages={messages}>
 							<Providers>
-								<Nav />
+								<LoadingSplash />
+								<AppSidebar />
 								{/* <PageTransitionEffect> */}
-								<main className="min-h-screen">{children}</main>
-								<Footer />
+								<main className="min-h-screen pl-16 sm:pl-72">{children}</main>
 								{/* </PageTransitionEffect> */}
 								<CookieConsent />
 								<GiveawayModal />

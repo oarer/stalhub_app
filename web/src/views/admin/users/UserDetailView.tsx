@@ -15,6 +15,7 @@ import { Modal } from '@/components/ui/Modal'
 import { Table } from '@/components/ui/Table'
 import { Tabs } from '@/components/ui/Tabs'
 import { toast } from '@/components/ui/Toast'
+import { resolveImageUrl } from '@/lib/imageUrl'
 import { getQueryClient } from '@/providers/QueryProvider'
 import { adminBadgeQueries } from '@/queries/admin/badge.queries'
 import { adminRoleQueries } from '@/queries/admin/role.queries'
@@ -914,7 +915,7 @@ export default function UserDetailView({ userId }: Props) {
 											alt="banner"
 											className="h-full w-full object-cover"
 											height={128}
-											src={`${process.env.NEXT_PUBLIC_CDN_URL}${bannerImage}`}
+											src={resolveImageUrl(bannerImage) ?? ''}
 											unoptimized
 											width={512}
 										/>

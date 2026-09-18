@@ -43,6 +43,13 @@ export const NAV_STRUCTURE: NavGroup[] = [
 		icon: 'lucide:calculator',
 		items: [
 			{
+				key: 'trade',
+				icon: 'lucide:repeat',
+				href: '/calcs/trading',
+				labelKey: 'nav.groups.calculators.items.trading.label',
+				descriptionKey: 'nav.groups.calculators.items.trading.description',
+			},
+			{
 				key: 'art',
 				icon: 'lucide:package',
 				href: '/calcs/builds/lite',

@@ -1,17 +1,22 @@
-import { Icon } from '@iconify/react'
-import Image from 'next/image'
-import { montserrat, unbounded } from '@/app/fonts'
-import { Tooltip } from '@/components/ui/Tooltip'
-import Avatar from '@/components/ui/user/Avatar'
-import type { BannerMode, BannerType, User, UserBadge } from '@/types/user.type'
-import MeBanner from '@/views/me/components/MeBanner'
+import { Icon } from "@iconify/react";
+import Image from "next/image";
+import { montserrat, unbounded } from "@/app/fonts";
+import { Tooltip } from "@/components/ui/Tooltip";
+import Avatar from "@/components/ui/user/Avatar";
+import type {
+	BannerMode,
+	BannerType,
+	User,
+	UserBadge,
+} from "@/types/user.type";
+import MeBanner from "@/views/me/components/MeBanner";
 
 interface CompactHeaderProps {
-	user: User
-	bannerMode: BannerMode
-	bannerType: BannerType
-	bannerColor?: string
-	bannerImage?: string | null
+	user: User;
+	bannerMode: BannerMode;
+	bannerType: BannerType;
+	bannerColor?: string;
+	bannerImage?: string | null;
 }
 
 export default function CompactHeader({
@@ -23,7 +28,7 @@ export default function CompactHeader({
 }: CompactHeaderProps) {
 	return (
 		<>
-			{bannerType === 'BACKGROUND' && (
+			{bannerType === "BACKGROUND" && (
 				<MeBanner
 					bannerColor={bannerColor}
 					bannerImage={bannerImage}
@@ -33,13 +38,13 @@ export default function CompactHeader({
 			)}
 
 			<div className="relative h-44 overflow-hidden rounded-lg bg-secondary">
-				{bannerType === 'HEADER' && (
+				{bannerType === "HEADER" && (
 					<MeBanner
 						bannerColor={bannerColor}
 						bannerImage={bannerImage}
 						bannerMode={bannerMode}
 						bannerType={bannerType}
-						className="absolute inset-0 h-full"
+						className="mt-8 mb-8 lg:hidden"
 					/>
 				)}
 
@@ -47,11 +52,7 @@ export default function CompactHeader({
 					<div className="flex flex-col gap-1.5">
 						<div className="flex items-center gap-4">
 							<div className="relative size-24 shrink-0">
-								<Avatar
-									fill
-									id={user.id}
-									username={user.username}
-								/>
+								<Avatar fill id={user.id} username={user.username} />
 							</div>
 							<div className="flex flex-col gap-2">
 								<h2
@@ -92,9 +93,7 @@ export default function CompactHeader({
 												) : null}
 											</button>
 										</Tooltip.Trigger>
-										<Tooltip.Content>
-											{badge.name}
-										</Tooltip.Content>
+										<Tooltip.Content>{badge.name}</Tooltip.Content>
 									</Tooltip.Root>
 								))}
 							</div>
@@ -108,5 +107,5 @@ export default function CompactHeader({
 				</div>
 			</div>
 		</>
-	)
+	);
 }

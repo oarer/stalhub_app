@@ -1,13 +1,14 @@
-import Image from 'next/image'
-import { cn } from '@/lib/cn'
-import type { BannerMode, BannerType } from '@/types/user.type'
+import Image from "next/image";
+import { cn } from "@/lib/cn";
+import { resolveImageUrl } from "@/lib/imageUrl";
+import type { BannerMode, BannerType } from "@/types/user.type";
 
 interface MeBannerProps {
-	bannerMode: BannerMode
-	bannerType: BannerType
-	bannerColor?: string
-	bannerImage?: string | null
-	className?: string
+	bannerMode: BannerMode;
+	bannerType: BannerType;
+	bannerColor?: string;
+	bannerImage?: string | null;
+	className?: string;
 }
 
 export default function MeBanner({
@@ -17,23 +18,23 @@ export default function MeBanner({
 	bannerImage,
 	className,
 }: MeBannerProps) {
-	if (bannerMode === 'NONE') return null
+	if (bannerMode === "NONE") return null;
 
-	const isBackground = bannerType === 'BACKGROUND'
+	const isBackground = bannerType === "BACKGROUND";
 
 	return (
 		<div
 			className={cn(
 				isBackground
-					? 'fixed inset-0 -z-1'
-					: 'relative h-32 w-full overflow-hidden rounded-xl',
-				className
+					? "fixed inset-0 -z-1"
+					: "relative h-32 w-full overflow-hidden rounded-xl",
+				className,
 			)}
 		>
-			{bannerMode === 'COLOR' ? (
+			{bannerMode === "COLOR" ? (
 				<div
 					className="absolute inset-0"
-					style={{ backgroundColor: bannerColor || '#000000' }}
+					style={{ backgroundColor: bannerColor || "#000000" }}
 				/>
 			) : bannerImage ? (
 				<>
@@ -42,12 +43,12 @@ export default function MeBanner({
 						className="object-cover"
 						fill
 						priority
-						src={`${process.env.NEXT_PUBLIC_CDN_URL}${bannerImage}`}
+						src={resolveImageUrl(bannerImage) ?? ""}
 						unoptimized
 					/>
 					<div className="absolute inset-0 bg-black/40" />
 				</>
 			) : null}
 		</div>
-	)
+	);
 }

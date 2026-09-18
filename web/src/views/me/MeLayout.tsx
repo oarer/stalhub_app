@@ -2,19 +2,17 @@
 
 import { useSuspenseQuery } from '@tanstack/react-query'
 import { usePathname, useRouter } from 'next/navigation'
-import { Suspense, useEffect } from 'react'
+import { useEffect } from 'react'
 import { userQueries } from '@/queries/user/user.queries'
 import { usePatchMe } from '@/views/me/hooks/usePatchMe'
 import ClassicLayout from '@/views/me/layouts/ClassicLayout'
 import CompactLayout from '@/views/me/layouts/CompactLayout'
 import ModernLayout from '@/views/me/layouts/ModernLayout'
-import MobileMeNav from '@/views/me/MobileMeNav'
 
 export default function MeLayout({ children }: { children: React.ReactNode }) {
 	const pathname = usePathname()
 	const router = useRouter()
 	const { data: user } = useSuspenseQuery(userQueries.getMe())
-	const { data: unreadCount } = useSuspenseQuery(userQueries.getUnreadCount())
 	const userCardUpdateMutation = usePatchMe()
 
 	const isOnboarding = pathname === '/me/onboarding'
@@ -38,8 +36,6 @@ export default function MeLayout({ children }: { children: React.ReactNode }) {
 	const layoutProps = {
 		children,
 		user,
-		unreadCount,
-		pathname,
 		onCardChange: userCardUpdateMutation.mutate,
 	}
 
@@ -54,9 +50,6 @@ export default function MeLayout({ children }: { children: React.ReactNode }) {
 			) : (
 				<ClassicLayout {...layoutProps} />
 			)}
-			<Suspense fallback={null}>
-				<MobileMeNav />
-			</Suspense>
 		</>
 	)
 }

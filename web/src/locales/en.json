@@ -2492,6 +2492,10 @@
 		"password": "Password",
 		"login": "Sign in",
 		"loginByPassword": "By password",
+		"loginThroughWebsite": "Sign in through the website",
+		"loginThroughWebsiteDesc": "Continue in your browser using your Stalhub account",
+		"websiteLoginUnavailable": "Website sign-in is available in the desktop app",
+		"or": "or",
 		"loginError": "Failed to sign in",
 		"back": "Back",
 		"next": "Next"

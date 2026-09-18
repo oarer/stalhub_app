@@ -122,6 +122,10 @@
             "label": "ТТК",
             "description": "Эффективность оружия"
           },
+          "trading": {
+            "label": "Трейд-мастер",
+            "description": "Мгновений расчёт для трейдов"
+          },
           "arsenal": {
             "label": "Арсенал",
             "description": "Репутация Арсенала"
@@ -2556,7 +2560,11 @@
     "username": "Имя пользователя",
     "password": "Пароль",
     "login": "Войти",
-    "loginByPassword": "Гостевой аккаунт ",
+    "loginByPassword": "По логину и паролю",
+    "loginThroughWebsite": "Войти через сайт",
+    "loginThroughWebsiteDesc": "Продолжите авторизацию в браузере через аккаунт Stalhub",
+    "websiteLoginUnavailable": "Вход через сайт доступен в приложении для компьютера",
+    "or": "или",
     "loginError": "Не удалось войти",
     "back": "Назад",
     "next": "Гость"

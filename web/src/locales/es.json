@@ -2396,6 +2396,10 @@
 		"password": "Contraseña",
 		"login": "Iniciar sesión",
 		"loginByPassword": "Por contraseña",
+		"loginThroughWebsite": "Iniciar sesión a través del sitio web",
+		"loginThroughWebsiteDesc": "Continúa en el navegador con tu cuenta de Stalhub",
+		"websiteLoginUnavailable": "El inicio de sesión web está disponible en la aplicación de escritorio",
+		"or": "o",
 		"loginError": "Error al iniciar sesión",
 		"back": "Atrás",
 		"next": "Siguiente"

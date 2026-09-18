@@ -85,13 +85,24 @@ function trustedSender(
 		isLocal(event.senderFrame.url)
 	);
 }
-function waitForHttp(url: string, deadline: number): Promise<void> {
+function waitForHttp(
+	url: string,
+	deadline: number,
+	{ serverRequired = true }: { serverRequired?: boolean } = {},
+): Promise<void> {
 	return new Promise((resolve, reject) => {
 		const retry = () => {
-			if (!server || quitting || Date.now() >= deadline)
+			if ((serverRequired && !server) || quitting || Date.now() >= deadline)
 				reject(new Error("Local web server did not become ready"));
 			else
-				setTimeout(() => waitForHttp(url, deadline).then(resolve, reject), 150);
+				setTimeout(
+					() =>
+						waitForHttp(url, deadline, { serverRequired }).then(
+							resolve,
+							reject,
+						),
+					150,
+				);
 		};
 		const request = http.get(
 			url,
@@ -109,6 +120,16 @@ function waitForHttp(url: string, deadline: number): Promise<void> {
 	});
 }
 async function startServer(): Promise<string> {
+	// Dev mode: load the Next.js dev server (HMR) instead of the staged
+	// standalone production runtime. The dev script (npm run dev) starts it.
+	const devUrl = process.env.STALHUB_WEB_DEV_URL;
+	if (devUrl) {
+		await waitForHttp(devUrl, Date.now() + 45000, { serverRequired: false });
+		return devUrl;
+	}
+	return startStandaloneServer();
+}
+async function startStandaloneServer(): Promise<string> {
 	const root = app.isPackaged
 		? path.join(process.resourcesPath, "web")
 		: path.join(app.getAppPath(), "runtime/web");
@@ -121,7 +142,6 @@ async function startServer(): Promise<string> {
 	} catch {
 		/* First launch. */
 	}
-	capabilityToken = randomBytes(32).toString("hex");
 	const childEnv: Record<string, string | undefined> = {
 		...process.env,
 		STALHUB_CAPABILITY: capabilityToken,
@@ -349,6 +369,7 @@ if (started || !app.requestSingleInstanceLock()) {
 					path.resolve(process.argv[1]),
 				]);
 			else app.setAsDefaultProtocolClient("stalhub");
+			capabilityToken = randomBytes(32).toString("hex");
 			origin = await startServer();
 			await createWindow();
 		})
