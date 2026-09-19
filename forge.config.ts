@@ -11,7 +11,7 @@ import type { ForgeConfig } from "@electron-forge/shared-types";
 const config: ForgeConfig = {
 	packagerConfig: {
 		asar: true,
-		executableName: "stalhub",
+		executableName: "stalhub_app",
 		protocols: [{ name: "Stalhub authentication", schemes: ["stalhub"] }],
 		extraResource: ["runtime/web"],
 		ignore: (file: string) =>
@@ -24,8 +24,18 @@ const config: ForgeConfig = {
 	makers: [
 		new MakerSquirrel({}),
 		new MakerZIP({}, ["darwin"]),
-		new MakerRpm({ options: { mimeType: ["x-scheme-handler/stalhub"] } }),
-		new MakerDeb({ options: { mimeType: ["x-scheme-handler/stalhub"] } }),
+		new MakerRpm({
+			options: {
+				bin: "stalhub_app",
+				mimeType: ["x-scheme-handler/stalhub"],
+			},
+		}),
+		new MakerDeb({
+			options: {
+				bin: "stalhub_app",
+				mimeType: ["x-scheme-handler/stalhub"],
+			},
+		}),
 	],
 	publishers: [
 		new PublisherGithub({
