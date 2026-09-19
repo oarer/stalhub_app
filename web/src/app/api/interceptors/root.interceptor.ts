@@ -15,7 +15,10 @@ const isServerRequest = () => typeof window === 'undefined'
 
 export const apiClient = axios.create({
 	baseURL: typeof window === 'undefined'
-		? (process.env.API_ORIGIN || 'http://localhost:3001')
+		? (process.env.STALHUB_API_ORIGIN ||
+				process.env.API_ORIGIN ||
+				process.env.NEXT_PUBLIC_API ||
+				'https://api.stalhub.dev')
 		: process.env.NEXT_PUBLIC_API,
 	timeout: 10_000,
 	headers: {

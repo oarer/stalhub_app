@@ -31,6 +31,8 @@ jobs:
       - run: bun run typecheck
       - run: bun run test:trading
       - run: bun run build
+        env:
+          STALHUB_API_ORIGIN: https://api.stalhub.dev
 
   electron:
     needs: web
@@ -49,13 +51,15 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: oven-sh/setup-bun@v2
         with:
-          node-version: 22
-          cache: npm
-      - run: npm ci
-      - run: npm run typecheck
-      - run: npm run build:web
+          bun-version: latest
+          cache: true
+      - run: bun install --frozen-lockfile
+      - run: bun run typecheck
+      - run: bun run build:web
+        env:
+          STALHUB_API_ORIGIN: https://api.stalhub.dev
       - name: Install Linux packaging tools
         if: runner.os == 'Linux'
         run: sudo apt-get update && sudo apt-get install -y rpm
