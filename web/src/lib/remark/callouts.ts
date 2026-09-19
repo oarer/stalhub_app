@@ -56,6 +56,7 @@ export function remarkCalloutContainers() {
 					: ''
 				: body
 
+			// biome-ignore lint/suspicious/noExplicitAny: mdast custom directive nodes are not in the base Root union.
 			const children: any[] = contentText.trim()
 				? [
 						{
@@ -72,6 +73,7 @@ export function remarkCalloutContainers() {
 				name: calloutType,
 				attributes: title ? { title } : {},
 				children,
+			// biome-ignore lint/suspicious/noExplicitAny: mdast custom directive node is outside the base Root union.
 			} as any
 		}
 	}
@@ -80,7 +82,7 @@ export function remarkCalloutContainers() {
 export function remarkCallouts() {
 	return (tree: Root) => {
 		for (let i = tree.children.length - 1; i >= 0; i--) {
-			const node = tree.children[i] as any
+			const node = tree.children[i]
 			if (node.type !== 'containerDirective') continue
 			if (!CALLOUT_TYPES.has(node.name)) continue
 
@@ -118,6 +120,7 @@ export function remarkCallouts() {
 								children: [],
 							},
 						],
+			// biome-ignore lint/suspicious/noExplicitAny: mdast JSX extension nodes are outside the base Root union.
 			} as any
 		}
 	}

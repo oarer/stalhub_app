@@ -364,7 +364,7 @@ export default function BuildsLiteView({
 			className={
 				variant === 'widget'
 					? 'flex max-w-280 flex-col gap-4'
-					: 'mx-auto max-w-380 space-y-6 px-4 pt-32 pb-12 sm:px-6'
+					: 'mx-auto space-y-6 px-4 pt-22 pb-12 sm:px-6'
 			}
 		>
 			<div className="grid grid-cols-1 gap-8 lg:grid-cols-[70%_30%]">

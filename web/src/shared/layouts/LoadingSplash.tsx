@@ -10,7 +10,7 @@ export default function LoadingSplash() {
 	const svgPath = useSvg()
 
 	useEffect(() => {
-		const timer = window.setTimeout(() => setVisible(false), 3)
+		window.setTimeout(() => setVisible(false), 3)
 		return
 	}, [])
 

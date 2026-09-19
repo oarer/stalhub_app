@@ -40,7 +40,7 @@ export default function ItemPickerModal({
 
 	const debouncedQuery = useDebounce(query, 150)
 
-	const { items, loading } = useSearchItem()
+	const { items, loading, error } = useSearchItem()
 
 	const { filteredEntries: filteredItems } = useFuseSearch<ItemListing>(
 		items ?? [],
@@ -102,11 +102,15 @@ export default function ItemPickerModal({
 						value={query}
 					/>
 
-					{loading ? (
+					{loading && !items?.length ? (
 						<div className="flex h-24 items-center justify-center gap-2 font-semibold text-text-accent">
 							<Skeleton className="size-5" />
 							<p>{t('buy.loading')}</p>
 						</div>
+					) : error && !items?.length ? (
+						<p className="py-6 text-center font-semibold text-red-500" role="alert">
+							{t('buy.loadingError')}
+						</p>
 					) : displayed.length === 0 && debouncedQuery.trim() ? (
 						<AnimatePresence>
 							<motion.p

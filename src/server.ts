@@ -92,7 +92,10 @@ parent.on("message", ({ data }) => {
 	if (data !== "shutdown") return;
 	if (nextServer) {
 		nextServer.close(() => process.exit(0));
-		nextServer.closeIdleConnections?.();
+		const idleConnections = (nextServer as typeof nextServer & {
+			closeIdleConnections?: () => void;
+		}).closeIdleConnections;
+		idleConnections?.();
 		setTimeout(() => process.exit(0), 3000).unref();
 	} else process.exit(0);
 });

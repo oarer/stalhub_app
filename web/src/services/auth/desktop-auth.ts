@@ -75,7 +75,9 @@ export async function desktopLogin(): Promise<boolean> {
 		);
 		await new Promise<void>((resolve, reject) => {
 			let settled = false;
-			let unsubscribe = () => {};
+			let unsubscribe = () => {
+				/* Assigned after the callback subscription is created. */
+			};
 			const timer = setTimeout(() => {
 				unsubscribe();
 				reject(new Error("Authentication timed out"));

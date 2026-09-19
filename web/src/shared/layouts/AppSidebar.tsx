@@ -29,10 +29,10 @@ function isHrefActive(pathname: string, href?: string) {
 
 function linkClass(active: boolean) {
 	return cn(
-		'group flex min-h-11 items-center gap-3 rounded-xl px-3 transition-colors',
+		'group flex py-2 items-center gap-3 rounded-2xl px-4 transition-colors',
 		active
 			? 'bg-primary text-primary-foreground'
-			: 'text-card-foreground hover:bg-muted/70 hover:text-muted-foreground'
+			: 'text-card-foreground hover:bg-muted hover:text-muted-foreground'
 	)
 }
 
@@ -255,7 +255,10 @@ export default function AppSidebar() {
 			<nav className="min-h-0 flex-1 space-y-4 overflow-y-auto overscroll-contain pr-0 sm:pr-1">
 				{view === 'tools'
 					? NAV_STRUCTURE.map((group) => (
-							<section key={group.key}>
+							<section
+								className="flex flex-col gap-2"
+								key={group.key}
+							>
 								<p
 									className={`${unbounded.className} hidden font-semibold text-[10px] text-muted-foreground uppercase tracking-[0.2em] sm:block`}
 								>

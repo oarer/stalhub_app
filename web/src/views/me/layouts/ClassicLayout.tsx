@@ -23,7 +23,7 @@ export default function ClassicLayout({
 					className="mt-8 mb-8 lg:hidden"
 				/>
 			</div>
-			<div className="pb-4 lg:px-0 lg:py-4 z-1">{children}</div>
+			<div className="z-1 pb-4 lg:px-0 lg:py-4">{children}</div>
 		</section>
 	);
 }

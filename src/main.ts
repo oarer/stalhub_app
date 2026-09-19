@@ -5,13 +5,16 @@ import path from "node:path";
 import {
 	app,
 	BrowserWindow,
+	desktopCapturer,
 	dialog,
 	ipcMain,
 	shell,
 	type UtilityProcess,
 	utilityProcess,
 } from "electron";
+import { autoUpdater } from "electron-updater";
 import started from "electron-squirrel-startup";
+import { findGameWindow } from "./game-window";
 
 let window: BrowserWindow | null = null;
 let server: UtilityProcess | undefined;
@@ -20,6 +23,26 @@ let capabilityToken = "";
 let rendererReady = false;
 let quitting = false;
 const pending: string[] = [];
+
+function configureAutoUpdates() {
+	if (!app.isPackaged || process.env.STALHUB_SKIP_UPDATES === "true") return;
+	autoUpdater.autoDownload = true;
+	autoUpdater.autoInstallOnAppQuit = true;
+	autoUpdater.on("update-downloaded", async () => {
+		const result = await dialog.showMessageBox({
+			type: "info",
+			buttons: ["Restart now", "Later"],
+			defaultId: 0,
+			cancelId: 1,
+			title: "Stalhub update",
+			message: "A new version is ready to install.",
+		});
+		if (result.response === 0) autoUpdater.quitAndInstall();
+	});
+	autoUpdater.checkForUpdatesAndNotify().catch(() => {
+		// Updates are optional; a failed check must not prevent app startup.
+	});
+}
 
 function callbackUrl(value: unknown): string | null {
 	if (typeof value !== "string" || value.length > 8192) return null;
@@ -272,19 +295,126 @@ async function createWindow() {
 			callback({ responseHeaders: headers });
 		},
 	);
+	const isTradingPage = (url: string): boolean => {
+		if (!isLocal(url)) return false;
+		return new URL(url).pathname === "/calcs/trading";
+	};
+	const trustedTradingContents = (contents: Electron.WebContents | null) =>
+		!current.isDestroyed() &&
+		!current.webContents.isDestroyed() &&
+		contents === current.webContents &&
+		isTradingPage(contents.getURL());
 	current.webContents.session.setPermissionRequestHandler(
-		(contents, permission, callback) =>
+		(contents, permission, callback, details) =>
 			callback(
 				contents === current.webContents &&
 					isLocal(contents.getURL()) &&
-					permission === "clipboard-sanitized-write",
+					(permission === "clipboard-sanitized-write" ||
+						// Electron routes getDisplayMedia through "media" with no device types.
+						// Device requests contain audio/video and must remain denied.
+						((permission === "display-capture" ||
+							(permission === "media" &&
+								"mediaTypes" in details &&
+								Array.isArray(details.mediaTypes) &&
+								details.mediaTypes.length === 0)) &&
+							trustedTradingContents(contents) &&
+							details.isMainFrame &&
+							isTradingPage(details.requestingUrl))),
 			),
 	);
 	current.webContents.session.setPermissionCheckHandler(
-		(contents, permission, requestingOrigin) =>
+		(contents, permission, requestingOrigin, details) =>
 			contents === current.webContents &&
 			isLocal(requestingOrigin) &&
-			permission === "clipboard-sanitized-write",
+			(permission === "clipboard-sanitized-write" ||
+				(permission === "display-capture" &&
+					trustedTradingContents(contents) &&
+					details.isMainFrame &&
+					isTradingPage(details.requestingUrl ?? ""))),
+	);
+	let capturePromptOpen = false;
+	let captureNavigation = 0;
+	current.webContents.on("did-start-navigation", () => {
+		// Invalidate pending consent even if navigation later returns to trading.
+		captureNavigation++;
+	});
+	current.webContents.session.setDisplayMediaRequestHandler(
+		(request, callback) => {
+			const navigation = captureNavigation;
+			const frame = request.frame;
+			const trustedRequest = () =>
+				trustedTradingContents(current.webContents) &&
+				captureNavigation === navigation &&
+				frame !== null &&
+				request.frame === frame &&
+				frame === current.webContents.mainFrame &&
+				isTradingPage(frame.url) &&
+				isLocal(request.securityOrigin) &&
+				request.userGesture &&
+				request.videoRequested &&
+				!request.audioRequested;
+			const respond = (streams: Electron.Streams) => {
+				try {
+					callback(streams);
+				} catch {
+					// Electron throws if the requesting frame was destroyed.
+				}
+			};
+			if (capturePromptOpen || !trustedRequest()) {
+				respond({});
+				return;
+			}
+			capturePromptOpen = true;
+			void (async () => {
+				let streams: Electron.Streams = {};
+				try {
+					const sources = await desktopCapturer.getSources({
+						types: ["screen", "window"],
+						thumbnailSize: { width: 0, height: 0 },
+						fetchWindowIcons: false,
+					});
+					if (!trustedRequest() || sources.length === 0) return;
+					const gameWindow = await findGameWindow(sources);
+					if (!trustedRequest()) return;
+					if (gameWindow) {
+						streams = { video: gameWindow };
+						return;
+					}
+					// PipeWire returns the source already chosen in the compositor's
+					// portal, not a list of windows. Do not open a second modal and
+					// steal focus from the chosen window in a tiling compositor.
+					const wayland = process.platform === "linux" &&
+						(process.env.XDG_SESSION_TYPE === "wayland" || !!process.env.WAYLAND_DISPLAY);
+					if (wayland && sources.length === 1) {
+						streams = { video: sources[0] };
+						return;
+					}
+					const { response } = await dialog.showMessageBox(current, {
+						type: "question",
+						title: "Trading OCR screen capture",
+						message: "Choose a screen or window to share with Trading OCR",
+						detail:
+							"Only the selected source will be captured. Screens may include other apps and private information. No audio is shared.",
+						buttons: [
+							"Cancel",
+							...sources.map((source, index) =>
+								`${index + 1}. ${source.id.startsWith("screen:") ? "Screen" : "Window"}: ${source.name.replace(/[\r\n	]/g, " ")}`,
+							),
+						],
+						defaultId: 0,
+						cancelId: 0,
+						noLink: true,
+					});
+					const selected = sources[response - 1];
+					if (selected && trustedRequest()) streams = { video: selected };
+				} catch (error) {
+					console.error("Trading screen capture failed", error);
+				} finally {
+					capturePromptOpen = false;
+					respond(streams);
+				}
+			})();
+		},
 	);
 	current.webContents.on("will-attach-webview", (event) =>
 		event.preventDefault(),
@@ -371,6 +501,7 @@ if (started || !app.requestSingleInstanceLock()) {
 			else app.setAsDefaultProtocolClient("stalhub");
 			capabilityToken = randomBytes(32).toString("hex");
 			origin = await startServer();
+			configureAutoUpdates();
 			await createWindow();
 		})
 		.catch((error: Error) => {

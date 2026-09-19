@@ -3,6 +3,7 @@ import { MakerDeb } from "@electron-forge/maker-deb";
 import { MakerRpm } from "@electron-forge/maker-rpm";
 import { MakerSquirrel } from "@electron-forge/maker-squirrel";
 import { MakerZIP } from "@electron-forge/maker-zip";
+import { PublisherGithub } from "@electron-forge/publisher-github";
 import { FusesPlugin } from "@electron-forge/plugin-fuses";
 import { VitePlugin } from "@electron-forge/plugin-vite";
 import type { ForgeConfig } from "@electron-forge/shared-types";
@@ -25,6 +26,11 @@ const config: ForgeConfig = {
 		new MakerZIP({}, ["darwin"]),
 		new MakerRpm({ options: { mimeType: ["x-scheme-handler/stalhub"] } }),
 		new MakerDeb({ options: { mimeType: ["x-scheme-handler/stalhub"] } }),
+	],
+	publishers: [
+		new PublisherGithub({
+			repository: { owner: "oarer", name: "stalhub_app" },
+		}),
 	],
 	plugins: [
 		new VitePlugin({
