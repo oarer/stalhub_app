@@ -56,6 +56,8 @@ jobs:
           bun-version: latest
           cache: true
       - run: bun install --frozen-lockfile
+      - run: bun install --frozen-lockfile
+        working-directory: web
       - run: bun run typecheck
       - run: bun run build:web
         env:
