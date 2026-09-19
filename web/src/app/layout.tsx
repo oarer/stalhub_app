@@ -1,4 +1,4 @@
-import { Suspense } from 'react'
+import { Suspense, type ReactNode } from 'react'
 
 import '@/shared/styles/index.css'
 import { headers } from 'next/headers'
@@ -24,7 +24,11 @@ export const generateMetadata = async () => {
 	return getMetadataByPath(path)
 }
 
-export default async function RootLayout({ children }: LayoutProps<'/'>) {
+type LayoutProps = {
+	children: ReactNode
+}
+
+export default async function RootLayout({ children }: LayoutProps) {
 	const locale = await getLocale()
 	const messages = await getMessages()
 
