@@ -13,7 +13,7 @@ const config: ForgeConfig = {
 		asar: true,
 		executableName: "stalhub_app",
 		protocols: [{ name: "Stalhub authentication", schemes: ["stalhub"] }],
-		extraResource: ["runtime/web"],
+		extraResource: ["runtime"],
 		ignore: (file: string) =>
 			!!file &&
 			file !== "/package.json" &&

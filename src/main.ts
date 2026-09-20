@@ -152,10 +152,26 @@ async function startServer(): Promise<string> {
 	}
 	return startStandaloneServer();
 }
+function runtimeRoot() {
+	const candidates = app.isPackaged
+		? [
+				path.join(process.resourcesPath, "runtime", "web"),
+				path.join(process.resourcesPath, "web"),
+			]
+		: [path.join(app.getAppPath(), "runtime", "web")];
+		const root = candidates.find((candidate) =>
+			fs.existsSync(path.join(candidate, "server.js")),
+		);
+		if (!root) {
+			throw new Error(
+				`Missing bundled web runtime. Checked: ${candidates.join(", ")}`,
+			);
+		}
+		return root;
+}
+
 async function startStandaloneServer(): Promise<string> {
-	const root = app.isPackaged
-		? path.join(process.resourcesPath, "web")
-		: path.join(app.getAppPath(), "runtime/web");
+	const root = runtimeRoot();
 	const portFile = path.join(app.getPath("userData"), "local-server-port.json");
 	let savedPort = 0;
 	try {
@@ -187,13 +203,19 @@ async function startStandaloneServer(): Promise<string> {
 			serviceName: "Stalhub local web server",
 		},
 	);
+	let childOutput = "";
+	const appendOutput = (chunk: unknown) => {
+		childOutput = `${childOutput}${String(chunk)}`.slice(-12000);
+	};
 	server = child;
-	child.stdout?.on("data", (chunk) =>
-		console.log("[web]", String(chunk).trimEnd()),
-	);
-	child.stderr?.on("data", (chunk) =>
-		console.error("[web]", String(chunk).trimEnd()),
-	);
+	child.stdout?.on("data", (chunk) => {
+		appendOutput(chunk);
+		console.log("[web]", String(chunk).trimEnd());
+	});
+	child.stderr?.on("data", (chunk) => {
+		appendOutput(chunk);
+		console.error("[web]", String(chunk).trimEnd());
+	});
 	child.on("exit", (code) => {
 		if (server === child) server = undefined;
 		if (origin && !quitting) {
@@ -211,7 +233,11 @@ async function startStandaloneServer(): Promise<string> {
 		}, 45000);
 		child.once("exit", (code) => {
 			clearTimeout(timeout);
-			reject(new Error(`Local server exited (${code})`));
+			reject(
+				new Error(
+					`Local server exited (${code})${childOutput ? `: ${childOutput.trim()}` : ""}`,
+				),
+			);
 		});
 		child.on(
 			"message",
