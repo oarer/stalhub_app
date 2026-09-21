@@ -98,11 +98,6 @@ export default function LoadingSplash() {
 												duration: 0.6,
 												ease: 'easeOut',
 											},
-											scale: {
-												duration: 2,
-												repeat: Number.POSITIVE_INFINITY,
-												ease: 'easeInOut',
-											},
 										}
 							}
 						>

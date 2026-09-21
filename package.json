@@ -1,22 +1,22 @@
 {
   "name": "stalhub_app",
   "productName": "Stalhub",
+  "desktopName": "stalhub.desktop",
   "version": "1.0.0",
   "description": "Stalhub desktop application",
   "main": ".vite/build/main.js",
   "private": true,
   "scripts": {
-    "start": "electron-forge start",
+    "start": "node scripts/dev.mjs",
     "dev": "node scripts/dev.mjs",
-    "package": "electron-forge package",
-    "make": "electron-forge make",
-    "make:appimage": "node scripts/build-appimage.mjs",
-    "publish": "electron-forge publish",
-    "lint": "eslint --ext .ts,.tsx .",
     "build:web": "node scripts/build-web.mjs",
-    "prestart": "npm run build:web",
-    "prepackage": "npm run build:web",
-    "premake": "npm run build:web",
+    "build:electron": "node scripts/build-electron.mjs",
+    "package": "bun run build:web && bun run build:electron && electron-builder --dir",
+    "make": "bun run build:web && bun run build:electron && electron-builder",
+    "make:win": "bun run build:web && bun run build:electron && electron-builder --win",
+    "make:linux": "bun run build:web && bun run build:electron && electron-builder --linux",
+    "make:mac": "bun run build:web && bun run build:electron && electron-builder --mac",
+    "lint": "eslint --ext .ts,.tsx .",
     "typecheck": "tsc --noEmit"
   },
   "keywords": [],
@@ -26,25 +26,17 @@
   },
   "license": "MIT",
   "devDependencies": {
-    "@electron-forge/cli": "^7.11.2",
-    "@electron-forge/maker-deb": "^7.11.2",
-    "@electron-forge/maker-rpm": "^7.11.2",
-    "@electron-forge/maker-squirrel": "^7.11.2",
-    "@electron-forge/maker-zip": "^7.11.2",
-    "@electron-forge/plugin-fuses": "^7.11.2",
-    "@electron-forge/plugin-vite": "^7.11.2",
-    "@electron/fuses": "^1.8.0",
     "@playwright/test": "^1.63.0",
-    "@types/electron-squirrel-startup": "^1.0.2",
     "@typescript-eslint/eslint-plugin": "^5.62.0",
     "@typescript-eslint/parser": "^5.62.0",
     "electron": "44.4.1",
+    "electron-builder": "^26.15.3",
     "eslint": "^8.57.1",
     "eslint-plugin-import": "^2.32.0",
     "typescript": "^6.0.3",
     "vite": "^5.4.21"
   },
   "dependencies": {
-    "electron-squirrel-startup": "^1.0.1"
+    "electron-updater": "^6.8.9"
   }
 }

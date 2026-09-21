@@ -1,7 +1,10 @@
 import { execFileSync, spawn } from "node:child_process";
 import http from "node:http";
+import { createRequire } from "node:module";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+
+const require = createRequire(import.meta.url);
 
 const scriptDir = path.dirname(fileURLToPath(import.meta.url));
 const root = path.join(scriptDir, "..");
@@ -72,15 +75,14 @@ try {
 
 console.log(`[dev] web dev server ready at ${devUrl}`);
 
-const forgeCli = path.join(
-	root,
-	"node_modules",
-	"@electron-forge",
-	"cli",
-	"dist",
-	"electron-forge.js",
+console.log("[dev] building Electron bundles");
+execFileSync(
+	process.execPath,
+	[path.join(root, "scripts", "build-electron.mjs")],
+	{ cwd: root, stdio: "inherit" },
 );
-electron = spawn(process.execPath, [forgeCli, "start"], {
+
+electron = spawn(require("electron"), ["."], {
 	cwd: root,
 	stdio: "inherit",
 	env: { ...process.env, STALHUB_WEB_DEV_URL: devUrl },

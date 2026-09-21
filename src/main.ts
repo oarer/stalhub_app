@@ -12,7 +12,6 @@ import {
 	type UtilityProcess,
 	utilityProcess,
 } from 'electron'
-import started from 'electron-squirrel-startup'
 import { autoUpdater } from 'electron-updater'
 import { findGameWindow } from './game-window'
 
@@ -755,7 +754,7 @@ async function createWindow() {
 	await current.loadURL(origin)
 }
 
-if (started || !app.requestSingleInstanceLock()) {
+if (!app.requestSingleInstanceLock()) {
 	app.quit()
 } else {
 	app.on('open-url', (event, url) => {

@@ -1,0 +1,52 @@
+# electron-builder configuration. Replaces forge.config.ts. The Electron
+# main/server/preload bundles are produced by scripts/build-electron.mjs into
+# .vite/build, and the embedded Next.js runtime by scripts/build-web.mjs into
+# runtime/web (shipped as an extra resource).
+appId: dev.stalhub.app
+productName: Stalhub
+executableName: stalhub
+asar: true
+directories:
+  output: out
+files:
+  - package.json
+  - .vite/build/**/*
+extraResources:
+  - from: runtime/web
+    to: runtime/web
+protocols:
+  - name: Stalhub authentication
+    schemes:
+      - stalhub
+electronFuses:
+  runAsNode: false
+  enableCookieEncryption: true
+  enableNodeOptionsEnvironmentVariable: false
+  enableNodeCliInspectArguments: false
+  enableEmbeddedAsarIntegrityValidation: true
+  onlyLoadAppFromAsar: true
+publish:
+  - provider: github
+    owner: oarer
+    repo: stalhub_app
+win:
+  target:
+    - nsis
+nsis:
+  oneClick: true
+  perMachine: false
+  artifactName: ${productName}-${version}-setup.${ext}
+mac:
+  target:
+    - dmg
+    - zip
+  category: public.app-category.utilities
+linux:
+  target:
+    - AppImage
+    - deb
+    - rpm
+  category: Utility
+  syncDesktopName: true
+  mimeTypes:
+    - x-scheme-handler/stalhub

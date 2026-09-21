@@ -91,5 +91,5 @@ web/public/ocr/
 # Vite
 .vite/
 
-# Electron-Forge
+# electron-builder output
 out/

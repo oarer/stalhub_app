@@ -15,82 +15,18 @@ on:
 permissions:
   contents: read
 
+# Serialize runs per ref so the version computed below cannot race with an
+# in-flight release (electron-builder bakes the version into the artifacts).
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
 jobs:
-  web:
+  version:
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: web
-    steps:
-      - uses: actions/checkout@v4
-      - uses: oven-sh/setup-bun@v2
-        with:
-          bun-version: latest
-      - run: bun install --frozen-lockfile
-      - run: bun run lint
-      - run: bun run typecheck
-      - run: bun run test:trading
-      - run: bun run build
-        env:
-          STALHUB_API_ORIGIN: https://api.stalhub.dev
-
-  electron:
-    needs: web
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - name: linux-x64
-            os: ubuntu-latest
-            platform: linux
-            arch: x64
-          - name: windows-x64
-            os: windows-latest
-            platform: win32
-            arch: x64
-    runs-on: ${{ matrix.os }}
-    steps:
-      - uses: actions/checkout@v4
-      - uses: oven-sh/setup-bun@v2
-        with:
-          bun-version: latest
-          cache: true
-      - run: bun install --frozen-lockfile
-      - run: bun install --frozen-lockfile
-        working-directory: web
-      - run: bun run typecheck
-      - run: bun run build:web
-        env:
-          STALHUB_API_ORIGIN: https://api.stalhub.dev
-      - name: Install Linux packaging tools
-        if: runner.os == 'Linux'
-        run: sudo apt-get update && sudo apt-get install -y rpm
-      - name: Build Electron package
-        run: bun run make -- --platform=${{ matrix.platform }} --arch=${{ matrix.arch }}
-      - name: Build AppImage
-        if: matrix.platform == 'linux'
-        shell: bash
-        run: bun run make:appimage
-      - uses: actions/upload-artifact@v4
-        with:
-          name: stalhub-${{ matrix.name }}
-          path: |
-            out/make/**/*
-            out/*.AppImage
-          if-no-files-found: error
-
-  release:
-    if: >-
-      (github.event_name == 'push' && github.ref == 'refs/heads/main' &&
-      !contains(github.event.head_commit.message, '[skip release]')) ||
-      (github.event_name == 'workflow_dispatch' && inputs.skip_version == false)
-    needs: [web, electron]
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
-    concurrency:
-      group: stalhub-release
-      cancel-in-progress: false
+    outputs:
+      tag: ${{ steps.version.outputs.tag }}
+      version: ${{ steps.version.outputs.version }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -115,7 +51,7 @@ jobs:
               .filter(r => /^v\d+\.\d+\.\d+$/.test(r.tag_name))
               .sort((a, b) => new Date(b.published_at || b.created_at) - new Date(a.published_at || a.created_at))[0];
             if (latest) {
-              const comparison = await github.rest.repos.compareCommits({
+              const comparison = await github.rest.compareCommits({
                 owner: context.repo.owner,
                 repo: context.repo.repo,
                 base: latest.tag_name,
@@ -130,7 +66,94 @@ jobs:
             else if (bump === 'minor') next = [major, minor + 1, 0];
             else next = [major, minor, patch + 1];
             core.setOutput('tag', `v${next.join('.')}`);
+            core.setOutput('version', next.join('.'));
             core.setOutput('bump', bump);
+
+  web:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: web
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+      - run: bun install --frozen-lockfile
+      - run: bun run lint
+      - run: bun run typecheck
+      - run: bun run test:trading
+      - run: bun run build
+        env:
+          STALHUB_API_ORIGIN: https://api.stalhub.dev
+
+  electron:
+    needs: [web, version]
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: linux-x64
+            os: ubuntu-latest
+            platform: linux
+            arch: x64
+          - name: windows-x64
+            os: windows-latest
+            platform: win
+            arch: x64
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+          cache: true
+      - run: bun install --frozen-lockfile
+      - run: bun install --frozen-lockfile
+        working-directory: web
+      - run: bun run typecheck
+      - name: Set app version
+        shell: bash
+        env:
+          APP_VERSION: ${{ needs.version.outputs.version }}
+        run: |
+          node -e "const fs=require('fs');const p=JSON.parse(fs.readFileSync('package.json','utf8'));p.version=process.env.APP_VERSION;fs.writeFileSync('package.json',JSON.stringify(p,null,2)+'\n')"
+      - run: bun run build:web
+        env:
+          STALHUB_API_ORIGIN: https://api.stalhub.dev
+      - run: bun run build:electron
+      - name: Install Linux packaging tools
+        if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y rpm
+      - name: Package
+        run: bunx electron-builder --${{ matrix.platform }} --${{ matrix.arch }} --publish never
+      - uses: actions/upload-artifact@v4
+        with:
+          name: stalhub-${{ matrix.name }}
+          path: |
+            out/*.exe
+            out/*.AppImage
+            out/*.deb
+            out/*.rpm
+            out/*.dmg
+            out/*.zip
+            out/latest*.yml
+            out/*.blockmap
+          if-no-files-found: error
+
+  release:
+    if: >-
+      (github.event_name == 'push' && github.ref == 'refs/heads/main' &&
+      !contains(github.event.head_commit.message, '[skip release]')) ||
+      (github.event_name == 'workflow_dispatch' && inputs.skip_version == false)
+    needs: [web, electron, version]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - uses: actions/download-artifact@v4
         with:
           pattern: stalhub-*
@@ -138,7 +161,7 @@ jobs:
           merge-multiple: true
       - uses: softprops/action-gh-release@v2
         with:
-          tag_name: ${{ steps.version.outputs.tag }}
-          name: Stalhub ${{ steps.version.outputs.tag }}
+          tag_name: ${{ needs.version.outputs.tag }}
+          name: Stalhub ${{ needs.version.outputs.tag }}
           generate_release_notes: true
           files: release-assets/**/*
