@@ -24,7 +24,7 @@ export function DebugCard({
 	raw: string
 	items: ItemListing[] | null
 	loading: boolean
-	catalogError: boolean
+	catalogError: string | null
 	copyState: CopyState
 	onCopy: () => void
 	rows: MatchedRow[]

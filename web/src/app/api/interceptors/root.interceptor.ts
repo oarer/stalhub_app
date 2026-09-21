@@ -14,11 +14,6 @@ const isAuthRoute = () =>
 const isServerRequest = () => typeof window === 'undefined'
 
 export const apiClient = axios.create({
-<<<<<<< Updated upstream
-	baseURL: typeof window === 'undefined'
-		? (process.env.API_ORIGIN || 'http://localhost:3001')
-		: process.env.NEXT_PUBLIC_API,
-=======
 	baseURL:
 		typeof window === 'undefined'
 			? process.env.STALHUB_API_ORIGIN ||
@@ -26,7 +21,6 @@ export const apiClient = axios.create({
 				process.env.NEXT_PUBLIC_API ||
 				'https://api.stalhub.dev'
 			: '',
->>>>>>> Stashed changes
 	timeout: 10_000,
 	headers: {
 		'Content-Type': 'application/json',

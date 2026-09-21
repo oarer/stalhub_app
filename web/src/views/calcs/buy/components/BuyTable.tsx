@@ -11,20 +11,23 @@ import Input from '@/components/ui/Input'
 import { GITHUB_RAW_BASE } from '@/constants/github.const'
 import { getLocale } from '@/lib/getLocale'
 import { useBuyStore } from '@/stores/useBuy.store'
+import { useTradingPricesStore } from '@/stores/useTradingPrices.store'
 import { infoColorMap } from '@/types/item.type'
+import { itemCatalogId } from '@/views/calcs/trading/trading'
 
 export function BuyTable() {
 	const t = useTranslations()
 	const locale = getLocale()
 	const items = useBuyStore((s) => s.items)
-	const setPrice = useBuyStore((s) => s.setPrice)
 	const removeItem = useBuyStore((s) => s.removeItem)
+	const prices = useTradingPricesStore((s) => s.prices)
+	const setPrice = useTradingPricesStore((s) => s.setPrice)
 
 	const handlePriceChange = useCallback(
-		(key: string, value: string) => {
+		(id: string, value: string) => {
 			const num = Number(value)
 			if (Number.isNaN(num) || num < 0) return
-			setPrice(key, num)
+			setPrice(id, num)
 		},
 		[setPrice]
 	)
@@ -69,6 +72,8 @@ export function BuyTable() {
 						</motion.div>
 					) : (
 						items.map((entry, index) => {
+							const id =
+								itemCatalogId(entry.item.data) ?? entry.key
 							const name =
 								entry.item.name?.[locale] ??
 								entry.item.data ??
@@ -121,18 +126,18 @@ export function BuyTable() {
 										min={0}
 										onBlur={(e) =>
 											handlePriceChange(
-												entry.key,
+												id,
 												e.target.value
 											)
 										}
 										onChange={(e) =>
 											handlePriceChange(
-												entry.key,
+												id,
 												e.target.value
 											)
 										}
 										type="number"
-										value={String(entry.price || '')}
+										value={String(prices[id] || '')}
 									/>
 								</motion.div>
 							)

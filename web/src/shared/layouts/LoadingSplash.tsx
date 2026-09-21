@@ -19,18 +19,13 @@ export default function LoadingSplash() {
 	const svgPath = useSvg()
 
 	useEffect(() => {
-<<<<<<< Updated upstream
-		const timer = window.setTimeout(() => setVisible(false), 3)
-		return
-=======
 		let active = true
 		let settled = false
 
 		const finish = () => {
 			if (!active || settled) return
 			settled = true
-			// Даём заполниться прогресс-бару и прочитать статус «готово»,
-			// иначе при быстром срабатывании полоса остаётся пустой.
+
 			window.setTimeout(() => {
 				if (active) setVisible(false)
 			}, MIN_SETTLED)
@@ -56,7 +51,6 @@ export default function LoadingSplash() {
 			active = false
 			window.clearTimeout(fallback)
 		}
->>>>>>> Stashed changes
 	}, [])
 
 	const settledPhase = phase === 'done' || phase === 'offline'

@@ -12,23 +12,25 @@ export default function SettingsView() {
 	const t = useTranslations()
 
 	return (
-		<div className="flex flex-col gap-6">
+		<div className="flex flex-col gap-6 px-4 py-4">
 			<Section
 				icon="lucide:palette"
 				title={t('settings.appearance.title')}
 			>
-				<SettingRow
-					description={t('settings.appearance.language_desc')}
-					title={t('settings.appearance.language')}
-				>
-					<ChangeLang />
-				</SettingRow>
-				<SettingRow
-					description={t('settings.appearance.theme_desc')}
-					title={t('settings.appearance.theme')}
-				>
-					<ChangeTheme />
-				</SettingRow>
+				<div className="flex flex-col gap-2">
+					<SettingRow
+						description={t('settings.appearance.language_desc')}
+						title={t('settings.appearance.language')}
+					>
+						<ChangeLang />
+					</SettingRow>
+					<SettingRow
+						description={t('settings.appearance.theme_desc')}
+						title={t('settings.appearance.theme')}
+					>
+						<ChangeTheme />
+					</SettingRow>
+				</div>
 			</Section>
 			<UpdatesSection />
 			<DataSettings />

@@ -1,4 +1,4 @@
-import { Suspense } from 'react'
+import { Suspense, type ReactNode } from 'react'
 
 import '@/shared/styles/index.css'
 import { headers } from 'next/headers'
@@ -24,9 +24,6 @@ export const generateMetadata = async () => {
 	return getMetadataByPath(path)
 }
 
-<<<<<<< Updated upstream
-export default async function RootLayout({ children }: LayoutProps<'/'>) {
-=======
 const TRADING_OVERLAY_PATH = '/calcs/trading/overlay'
 
 type LayoutProps = {
@@ -34,7 +31,6 @@ type LayoutProps = {
 }
 
 export default async function RootLayout({ children }: LayoutProps) {
->>>>>>> Stashed changes
 	const locale = await getLocale()
 	const messages = await getMessages()
 	const headersList = await headers()

@@ -81,13 +81,6 @@ http.Server.prototype.listen = function (
 parent.on('message', ({ data }) => {
 	if (data !== 'shutdown') return
 	if (nextServer) {
-<<<<<<< Updated upstream
-		nextServer.close(() => process.exit(0));
-		nextServer.closeIdleConnections?.();
-		setTimeout(() => process.exit(0), 3000).unref();
-	} else process.exit(0);
-});
-=======
 		nextServer.close(() => process.exit(0))
 		const idleConnections = (
 			nextServer as typeof nextServer & {
@@ -98,7 +91,6 @@ parent.on('message', ({ data }) => {
 		setTimeout(() => process.exit(0), 3000).unref()
 	} else process.exit(0)
 })
->>>>>>> Stashed changes
 
 // Avoid bundling Next into main; resolve the staged standalone's own modules.
 createRequire(path.join(root, 'server.js'))(path.join(root, 'server.js'))

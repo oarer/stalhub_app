@@ -3,6 +3,7 @@
 import { Icon } from '@iconify/react'
 import { useTranslations } from 'next-intl'
 import { useCallback, useEffect, useState } from 'react'
+import { montserrat } from '@/app/fonts'
 import { Button } from '@/components/ui/Button'
 import { Switch } from '@/components/ui/Switch'
 import { toast } from '@/components/ui/Toast'
@@ -114,6 +115,7 @@ export default function DataSettings() {
 				</SettingRow>
 				<div className="flex flex-wrap gap-2">
 					<Button
+						className="gap-2"
 						loading={checking}
 						onClick={() => void checkUpdates()}
 						variant="secondary"
@@ -121,13 +123,15 @@ export default function DataSettings() {
 						<Icon icon="lucide:refresh-cw" />{' '}
 						{t('settings.data.check_updates')}
 					</Button>
-					<Button onClick={reset} variant="danger">
+					<Button className="gap-2" onClick={reset} variant="danger">
 						<Icon icon="lucide:trash-2" />{' '}
 						{t('settings.data.reset')}
 					</Button>
 				</div>
 				{lastUpdate && (
-					<p className="text-muted-foreground text-sm">
+					<p
+						className={`${montserrat.className} font-semibold text-muted-foreground text-sm`}
+					>
 						{t('settings.data.checked_at', { time: lastUpdate })}
 					</p>
 				)}

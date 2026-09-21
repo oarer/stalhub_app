@@ -5,20 +5,17 @@ import path from 'node:path'
 import {
 	app,
 	BrowserWindow,
+	desktopCapturer,
 	dialog,
 	ipcMain,
 	shell,
 	type UtilityProcess,
 	utilityProcess,
-<<<<<<< Updated upstream
-} from "electron";
-import started from "electron-squirrel-startup";
-=======
 } from 'electron'
 import started from 'electron-squirrel-startup'
 import { autoUpdater } from 'electron-updater'
 import { findGameWindow } from './game-window'
->>>>>>> Stashed changes
+
 
 let window: BrowserWindow | null = null
 let server: UtilityProcess | undefined
@@ -120,8 +117,6 @@ async function promptRestart(version: string) {
 	if (result.response === 0) autoUpdater.quitAndInstall()
 }
 
-<<<<<<< Updated upstream
-=======
 function configureAutoUpdates() {
 	updateState = {
 		supported: updatesSupported(),
@@ -179,7 +174,6 @@ function configureAutoUpdates() {
 	}
 }
 
->>>>>>> Stashed changes
 function callbackUrl(value: unknown): string | null {
 	if (typeof value !== 'string' || value.length > 8192) return null
 	try {
@@ -279,108 +273,6 @@ function createTradingOverlay(): boolean {
 		overlayWindow.focus()
 		return true
 	}
-<<<<<<< Updated upstream
-	return startStandaloneServer();
-}
-async function startStandaloneServer(): Promise<string> {
-	const root = app.isPackaged
-		? path.join(process.resourcesPath, "web")
-		: path.join(app.getAppPath(), "runtime/web");
-	const portFile = path.join(app.getPath("userData"), "local-server-port.json");
-	let savedPort = 0;
-	try {
-		const value = JSON.parse(fs.readFileSync(portFile, "utf8"));
-		if (Number.isInteger(value) && value >= 1024 && value <= 65535)
-			savedPort = value;
-	} catch {
-		/* First launch. */
-	}
-	const childEnv: Record<string, string | undefined> = {
-		...process.env,
-		STALHUB_CAPABILITY: capabilityToken,
-		NODE_ENV: "production",
-		HOSTNAME: "127.0.0.1",
-		PORT: "0",
-	};
-	// The renderer API client proxies /api/v1/* to STALHUB_API_ORIGIN. In dev the
-	// sane default is the locally running backend; packaged builds hit the prod API.
-	childEnv.STALHUB_API_ORIGIN =
-		childEnv.STALHUB_API_ORIGIN ||
-		(app.isPackaged ? "https://api.stalhub.dev" : "http://localhost:3001");
-	const child = utilityProcess.fork(
-		path.join(__dirname, "server.js"),
-		[root, String(savedPort)],
-		{
-			cwd: root,
-			env: childEnv,
-			stdio: "pipe",
-			serviceName: "Stalhub local web server",
-		},
-	);
-	server = child;
-	child.stdout?.on("data", (chunk) =>
-		console.log("[web]", String(chunk).trimEnd()),
-	);
-	child.stderr?.on("data", (chunk) =>
-		console.error("[web]", String(chunk).trimEnd()),
-	);
-	child.on("exit", (code) => {
-		if (server === child) server = undefined;
-		if (origin && !quitting) {
-			dialog.showErrorBox(
-				"Stalhub server stopped",
-				`The local web server exited (${code}). Please restart Stalhub.`,
-			);
-			app.quit();
-		}
-	});
-	const port = await new Promise<number>((resolve, reject) => {
-		const timeout = setTimeout(() => {
-			child.kill();
-			reject(new Error("Local server startup timed out"));
-		}, 45000);
-		child.once("exit", (code) => {
-			clearTimeout(timeout);
-			reject(new Error(`Local server exited (${code})`));
-		});
-		child.on(
-			"message",
-			(message: { type?: string; port?: number; message?: string }) => {
-				if (message?.type === "error") {
-					clearTimeout(timeout);
-					reject(new Error(message.message || "Local server error"));
-				}
-				if (
-					message?.type === "listening" &&
-					typeof message.port === "number" &&
-					Number.isInteger(message.port) &&
-					message.port > 0 &&
-					message.port <= 65535
-				) {
-					clearTimeout(timeout);
-					resolve(message.port);
-				}
-			},
-		);
-	});
-	fs.mkdirSync(path.dirname(portFile), { recursive: true });
-	fs.writeFileSync(portFile, JSON.stringify(port), { mode: 0o600 });
-	const url = `http://127.0.0.1:${port}`;
-	await waitForHttp(url, Date.now() + 45000);
-	return url;
-}
-async function createWindow() {
-	if (window) {
-		focusWindow();
-		return;
-	}
-	window = new BrowserWindow({
-		title: "Stalhub",
-		width: 1440,
-		height: 960,
-		minWidth: 900,
-		minHeight: 640,
-=======
 	const win = new BrowserWindow({
 		title: 'Stalhub Trading',
 		width: 420,
@@ -389,7 +281,6 @@ async function createWindow() {
 		minHeight: 480,
 		maxWidth: 520,
 		maxHeight: 900,
->>>>>>> Stashed changes
 		show: false,
 		frame: false,
 		alwaysOnTop: true,
@@ -676,11 +567,6 @@ async function createWindow() {
 				]
 				headers['X-Content-Type-Options'] = ['nosniff']
 			}
-<<<<<<< Updated upstream
-			callback({ responseHeaders: headers });
-		},
-	);
-=======
 			callback({ responseHeaders: headers })
 		}
 	)
@@ -693,17 +579,11 @@ async function createWindow() {
 		!current.webContents.isDestroyed() &&
 		contents === current.webContents &&
 		isTradingPage(contents.getURL())
->>>>>>> Stashed changes
 	current.webContents.session.setPermissionRequestHandler(
-		(contents, permission, callback) =>
+		(contents, permission, callback, details) =>
 			callback(
 				contents === current.webContents &&
 					isLocal(contents.getURL()) &&
-<<<<<<< Updated upstream
-					permission === "clipboard-sanitized-write",
-			),
-	);
-=======
 					(permission === 'clipboard-sanitized-write' ||
 						permission === 'notifications' ||
 						// Electron routes getDisplayMedia through "media" with no device types.
@@ -718,21 +598,10 @@ async function createWindow() {
 							isTradingPage(details.requestingUrl)))
 			)
 	)
->>>>>>> Stashed changes
 	current.webContents.session.setPermissionCheckHandler(
-		(contents, permission, requestingOrigin) =>
+		(contents, permission, requestingOrigin, details) =>
 			contents === current.webContents &&
 			isLocal(requestingOrigin) &&
-<<<<<<< Updated upstream
-			permission === "clipboard-sanitized-write",
-	);
-	current.webContents.on("will-attach-webview", (event) =>
-		event.preventDefault(),
-	);
-	current.webContents.on("will-navigate", (event, url) => {
-		if (isLocal(url)) return;
-		event.preventDefault();
-=======
 			(permission === 'clipboard-sanitized-write' ||
 				permission === 'notifications' ||
 				(permission === 'display-capture' &&
@@ -834,7 +703,6 @@ async function createWindow() {
 	current.webContents.on('will-navigate', (event, url) => {
 		if (isLocal(url)) return
 		event.preventDefault()
->>>>>>> Stashed changes
 		try {
 			void shell.openExternal(externalUrl(url)).catch(console.error)
 		} catch {
@@ -989,20 +857,12 @@ if (started || !app.requestSingleInstanceLock()) {
 			if (process.defaultApp && process.argv[1])
 				app.setAsDefaultProtocolClient('stalhub', process.execPath, [
 					path.resolve(process.argv[1]),
-<<<<<<< Updated upstream
-				]);
-			else app.setAsDefaultProtocolClient("stalhub");
-			capabilityToken = randomBytes(32).toString("hex");
-			origin = await startServer();
-			await createWindow();
-=======
 				])
 			else app.setAsDefaultProtocolClient('stalhub')
 			capabilityToken = randomBytes(32).toString('hex')
 			origin = await startServer()
 			configureAutoUpdates()
 			await createWindow()
->>>>>>> Stashed changes
 		})
 		.catch((error: Error) => {
 			dialog.showErrorBox('Unable to start Stalhub', error.message)

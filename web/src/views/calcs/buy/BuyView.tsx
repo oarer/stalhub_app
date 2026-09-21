@@ -13,7 +13,9 @@ import { Modal } from '@/components/ui/Modal'
 import { toast } from '@/components/ui/Toast'
 import { getLocale } from '@/lib/getLocale'
 import { useBuyStore } from '@/stores/useBuy.store'
+import { useTradingPricesStore } from '@/stores/useTradingPrices.store'
 import type { ItemListing } from '@/types/api.type'
+import { itemCatalogId } from '@/views/calcs/trading/trading'
 import { BuyHeader } from './components/BuyHeader'
 import {
 	BuyPngTemplate,
@@ -85,6 +87,7 @@ export default function BuyView() {
 	const setDiscord = useBuyStore((s) => s.setDiscord)
 	const addItem = useBuyStore((s) => s.addItem)
 	const clearItems = useBuyStore((s) => s.clearItems)
+	const prices = useTradingPricesStore((s) => s.prices)
 
 	const [showPicker, setShowPicker] = useState(false)
 	const [isSavingPng, setIsSavingPng] = useState(false)
@@ -110,8 +113,9 @@ export default function BuyView() {
 
 	const handleCopyText = useCallback(async () => {
 		const lines = items.map((entry, index) => {
+			const id = itemCatalogId(entry.item.data) ?? entry.key
 			const name = entry.item.name?.[locale] ?? entry.item.data ?? '—'
-			return `${index + 1}. ${name} — ${formatBuyPrice(entry.price)}`
+			return `${index + 1}. ${name} — ${formatBuyPrice(prices[id] ?? 0)}`
 		})
 
 		const blocks = [title || t('buy.title'), lines.join('\n')]
@@ -128,7 +132,7 @@ export default function BuyView() {
 		} catch {
 			toast.error(t('buy.copyError'))
 		}
-	}, [discord, items, locale, t, title])
+	}, [discord, items, locale, prices, t, title])
 
 	const handleSavePng = useCallback(async () => {
 		if (!pngTemplateRef.current || isSavingPng) return
@@ -251,6 +255,7 @@ export default function BuyView() {
 					imageSources={pngImageSources}
 					items={items}
 					locale={locale}
+					prices={prices}
 					ref={pngTemplateRef}
 					t={t}
 					title={title}

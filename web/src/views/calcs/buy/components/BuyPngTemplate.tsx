@@ -7,12 +7,14 @@ import { GITHUB_RAW_BASE } from '@/constants/github.const'
 import type { BuyListItem } from '@/stores/useBuy.store'
 import type { ItemListing } from '@/types/api.type'
 import { infoColorMap, type Locale } from '@/types/item.type'
+import { itemCatalogId } from '@/views/calcs/trading/trading'
 
 type BuyPngTemplateProps = {
 	discord: string
 	imageSources: Record<string, string>
 	items: BuyListItem[]
 	locale: Locale
+	prices: Record<string, number>
 	t: ReturnType<typeof useTranslations>
 	title: string
 }
@@ -25,7 +27,7 @@ export const formatBuyPrice = (price: number | null): string =>
 
 export const BuyPngTemplate = forwardRef<HTMLDivElement, BuyPngTemplateProps>(
 	function BuyPngTemplate(
-		{ discord, imageSources, items, locale, t, title },
+		{ discord, imageSources, items, locale, prices, t, title },
 		ref
 	) {
 		return (
@@ -79,6 +81,8 @@ export const BuyPngTemplate = forwardRef<HTMLDivElement, BuyPngTemplateProps>(
 						</div>
 
 						{items.map((entry, index) => {
+							const id =
+								itemCatalogId(entry.item.data) ?? entry.key
 							const name =
 								entry.item.name?.[locale] ??
 								entry.item.data ??
@@ -113,7 +117,7 @@ export const BuyPngTemplate = forwardRef<HTMLDivElement, BuyPngTemplateProps>(
 									<p
 										className={`${montserrat.className} text-right font-bold text-lg text-primary`}
 									>
-										{formatBuyPrice(entry.price)}₽
+										{formatBuyPrice(prices[id] ?? 0)}₽
 									</p>
 								</div>
 							)

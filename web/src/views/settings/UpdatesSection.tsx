@@ -119,6 +119,7 @@ export default function UpdatesSection() {
 				</SettingRow>
 				<div className="flex flex-wrap items-center gap-2">
 					<Button
+						className="gap-2"
 						disabled={!supported || busy}
 						loading={busy}
 						onClick={handleCheck}
@@ -127,7 +128,11 @@ export default function UpdatesSection() {
 						<Icon icon="lucide:refresh-cw" /> {t('check')}
 					</Button>
 					{state?.status === 'downloaded' && state.newVersion && (
-						<Button onClick={handleRestart} variant="primary">
+						<Button
+							className="gap-2"
+							onClick={handleRestart}
+							variant="primary"
+						>
 							<Icon icon="lucide:rotate-cw" /> {t('restart')}
 						</Button>
 					)}
@@ -144,7 +149,7 @@ export default function UpdatesSection() {
 				)}
 				{statusText && (
 					<p
-						className={`text-sm ${
+						className={`font-semibold text-sm ${
 							state?.status === 'error'
 								? 'text-destructive'
 								: 'text-muted-foreground'
