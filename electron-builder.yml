@@ -14,6 +14,11 @@ files:
 extraResources:
   - from: runtime/web
     to: runtime/web
+  # electron-builder unconditionally drops a root "node_modules" directory when
+  # copying extraResources (app-builder-lib/out/util/filter.js), which would break
+  # the embedded Next.js standalone server (require("next")). Copy it explicitly.
+  - from: runtime/web/node_modules
+    to: runtime/web/node_modules
 protocols:
   - name: Stalhub authentication
     schemes:
