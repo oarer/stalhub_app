@@ -51,7 +51,7 @@ jobs:
               .filter(r => /^v\d+\.\d+\.\d+$/.test(r.tag_name))
               .sort((a, b) => new Date(b.published_at || b.created_at) - new Date(a.published_at || a.created_at))[0];
             if (latest) {
-              const comparison = await github.rest.compareCommits({
+              const comparison = await github.rest.repos.compareCommits({
                 owner: context.repo.owner,
                 repo: context.repo.repo,
                 base: latest.tag_name,
