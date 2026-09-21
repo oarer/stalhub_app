@@ -39,6 +39,7 @@ function copy(source, target) {
 }
 
 console.log("[build-web] building Next standalone app");
+execFileSync(process.execPath, [path.join(web, "scripts/prepare-ocr.mjs")], { cwd: web, stdio: "inherit" });
 execFileSync(process.execPath, [next, "build"], {
 	cwd: web,
 	stdio: "inherit",

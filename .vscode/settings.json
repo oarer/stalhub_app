@@ -1,0 +1,7 @@
+{
+	"i18n-ally.localesPaths": [
+		"web/src/locales",
+		"out/Stalhub-linux-x64/locales",
+		"web/src/i18n"
+	]
+}

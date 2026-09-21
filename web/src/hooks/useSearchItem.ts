@@ -1,25 +1,12 @@
 'use client'
 
 import { useEffect } from 'react'
-
-import { GITHUB_RAW_BASE } from '@/constants/github.const'
+import { loadCatalog } from '@/lib/catalogPreload'
 import { useItemStore } from '@/stores/items.store'
-import type { ItemListing } from '@/types/api.type'
-
-const LISTING_URL = `${GITHUB_RAW_BASE}listing.json`
-const COMMITS_API =
-	'https://api.github.com/repos/oarer/sc-db/commits?path=merged/listing.json&page=1&per_page=1'
-
-const LS_DATA = 'items_cache'
-const LS_COMMIT = 'items_commit'
-const LS_TIME = 'items_time'
-const TTL = 1000 * 60 * 10
 
 export function useSearchItem() {
-	const { items, commit, setItems, setCommit, setError, setLoading } =
-		useItemStore()
-
 	useEffect(() => {
+<<<<<<< Updated upstream
 		let cancelled = false
 
 		async function load() {
@@ -96,6 +83,12 @@ export function useSearchItem() {
 			cancelled = true
 		}
 	}, [setItems, setCommit, setError, setLoading, items, commit])
+=======
+		// Shared singleton: if the splash is already loading the catalog,
+		// this reuses that in-flight request instead of duplicating it.
+		void loadCatalog()
+	}, [])
+>>>>>>> Stashed changes
 
 	return useItemStore()
 }

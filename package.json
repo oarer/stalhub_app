@@ -10,6 +10,7 @@
     "dev": "node scripts/dev.mjs",
     "package": "electron-forge package",
     "make": "electron-forge make",
+    "make:appimage": "node scripts/build-appimage.mjs",
     "publish": "electron-forge publish",
     "lint": "eslint --ext .ts,.tsx .",
     "build:web": "node scripts/build-web.mjs",

@@ -24,9 +24,22 @@ export const generateMetadata = async () => {
 	return getMetadataByPath(path)
 }
 
+<<<<<<< Updated upstream
 export default async function RootLayout({ children }: LayoutProps<'/'>) {
+=======
+const TRADING_OVERLAY_PATH = '/calcs/trading/overlay'
+
+type LayoutProps = {
+	children: ReactNode
+}
+
+export default async function RootLayout({ children }: LayoutProps) {
+>>>>>>> Stashed changes
 	const locale = await getLocale()
 	const messages = await getMessages()
+	const headersList = await headers()
+	const path = headersList.get('X-Path')?.split('?')[0]
+	const isTradingOverlay = path === TRADING_OVERLAY_PATH
 
 	return (
 		<html
@@ -38,37 +51,51 @@ export default async function RootLayout({ children }: LayoutProps<'/'>) {
 			<body
 				className={`${raleway.className} bg-background text-foreground transition-colors duration-500 ease-in-out`}
 			>
-				<GridBackgroundWithBeams
-					cellSize={20}
-					cols={100}
-					glowIntensity={1.5}
-					lineWidth={2}
-					maxBeams={4}
-					rows={100}
-				/>
-				<Script
-					data-website-id="47f7941c-8d8d-4976-8cf0-690dfe79f522"
-					defer
-					src="https://umami.stalhub.dev/script.js"
-				/>
+				{!isTradingOverlay && (
+					<GridBackgroundWithBeams
+						cellSize={20}
+						cols={100}
+						glowIntensity={1.5}
+						lineWidth={2}
+						maxBeams={4}
+						rows={100}
+					/>
+				)}
+				{!isTradingOverlay && (
+					<Script
+						data-website-id="47f7941c-8d8d-4976-8cf0-690dfe79f522"
+						defer
+						src="https://umami.stalhub.dev/script.js"
+					/>
+				)}
 				<Suspense fallback={<div />}>
 					<ThemeProvider
 						attribute="class"
 						disableTransitionOnChange
 						enableSystem
 					>
-						<ThemeApplier />
-						<LocaleProvider locale={locale} messages={messages}>
-							<Providers>
-								<LoadingSplash />
-								<AppSidebar />
-								{/* <PageTransitionEffect> */}
-								<main className="min-h-screen pl-16 sm:pl-72">{children}</main>
-								{/* </PageTransitionEffect> */}
-								<CookieConsent />
-								<GiveawayModal />
-							</Providers>
-						</LocaleProvider>
+						{isTradingOverlay ? (
+							<LocaleProvider locale={locale} messages={messages}>
+								<main className="min-h-screen">{children}</main>
+							</LocaleProvider>
+						) : (
+							<>
+								<ThemeApplier />
+								<LocaleProvider locale={locale} messages={messages}>
+									<Providers>
+										<LoadingSplash />
+										<AppSidebar />
+										{/* <PageTransitionEffect> */}
+										<main className="min-h-screen pl-16 sm:pl-72">
+											{children}
+										</main>
+										{/* </PageTransitionEffect> */}
+										<CookieConsent />
+										<GiveawayModal />
+									</Providers>
+								</LocaleProvider>
+							</>
+						)}
 					</ThemeProvider>
 				</Suspense>
 			</body>

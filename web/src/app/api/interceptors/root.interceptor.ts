@@ -14,9 +14,19 @@ const isAuthRoute = () =>
 const isServerRequest = () => typeof window === 'undefined'
 
 export const apiClient = axios.create({
+<<<<<<< Updated upstream
 	baseURL: typeof window === 'undefined'
 		? (process.env.API_ORIGIN || 'http://localhost:3001')
 		: process.env.NEXT_PUBLIC_API,
+=======
+	baseURL:
+		typeof window === 'undefined'
+			? process.env.STALHUB_API_ORIGIN ||
+				process.env.API_ORIGIN ||
+				process.env.NEXT_PUBLIC_API ||
+				'https://api.stalhub.dev'
+			: '',
+>>>>>>> Stashed changes
 	timeout: 10_000,
 	headers: {
 		'Content-Type': 'application/json',
@@ -78,7 +88,11 @@ apiClient.interceptors.response.use(
 
 		// Some /me probes are intentionally unauthenticated. They must not start
 		// refresh: the refresh token is HttpOnly and cannot be checked in JS.
-		if (originalRequest.skipAuthRefresh || isAuthRoute() || isServerRequest()) {
+		if (
+			originalRequest.skipAuthRefresh ||
+			isAuthRoute() ||
+			isServerRequest()
+		) {
 			return Promise.reject(error)
 		}
 
@@ -104,11 +118,12 @@ apiClient.interceptors.response.use(
 		} catch (refreshError) {
 			// Older backends validate the required HttpOnly cookie before entering
 			// refresh. Preserve the original 401 only for that exact missing-cookie case.
-			const missingRefreshCookie = axios.isAxiosError(refreshError)
-				&& refreshError.response?.status === 422
-				&& refreshError.response.data?.type === 'validation'
-				&& refreshError.response.data?.on === 'cookie'
-				&& !refreshError.response.data?.found?.refresh_token
+			const missingRefreshCookie =
+				axios.isAxiosError(refreshError) &&
+				refreshError.response?.status === 422 &&
+				refreshError.response.data?.type === 'validation' &&
+				refreshError.response.data?.on === 'cookie' &&
+				!refreshError.response.data?.found?.refresh_token
 			const sessionError = missingRefreshCookie ? error : refreshError
 			processQueue(sessionError)
 

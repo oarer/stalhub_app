@@ -1,5 +1,6 @@
 import { create } from 'zustand'
-import { persist } from 'zustand/middleware'
+import { createJSONStorage, persist } from 'zustand/middleware'
+import { isLocalPersistenceEnabled } from '@/lib/localPersistence'
 import type {
 	Art,
 	BoostCategory,
@@ -797,6 +798,14 @@ export const useBuildStore = create<BuildState>()(
 		}),
 		{
 			name: 'build-storage',
+			storage: createJSONStorage(() => ({
+				getItem: (name) =>
+					isLocalPersistenceEnabled() ? localStorage.getItem(name) : null,
+				setItem: (name, value) => {
+					if (isLocalPersistenceEnabled()) localStorage.setItem(name, value)
+				},
+				removeItem: (name) => localStorage.removeItem(name),
+			})),
 			version: 4,
 			migrate: (persistedState) => {
 				const state = persistedState as Partial<BuildState>

@@ -46,9 +46,10 @@ export async function issueDesktopLoginUrl(): Promise<string> {
 	const intent = getDesktopIntent();
 	if (!intent) throw new Error("No desktop intent");
 	const { data } = await apiClient.post<{ url: string }>(
-		"/api/v1/auth/desktop/issue",
+		'/api/v1/auth/desktop/issue',
 		intent,
-	);
+		{ skipAuthRefresh: true }
+	)
 	return data.url;
 }
 

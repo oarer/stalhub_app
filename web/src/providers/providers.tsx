@@ -23,10 +23,7 @@ export default function Providers({ children }: Props) {
 	useEffect(() => {
 		setMounted(true)
 
-		if (pathname.startsWith('/auth')) {
-			setUser(null)
-			return
-		}
+		if (pathname.startsWith('/auth')) return
 
 		const controller = new AbortController()
 		let active = true

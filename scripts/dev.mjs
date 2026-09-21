@@ -1,4 +1,4 @@
-import { spawn } from "node:child_process";
+import { execFileSync, spawn } from "node:child_process";
 import http from "node:http";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -6,9 +6,10 @@ import { fileURLToPath } from "node:url";
 const scriptDir = path.dirname(fileURLToPath(import.meta.url));
 const root = path.join(scriptDir, "..");
 const web = path.join(root, "web");
+execFileSync(process.execPath, [path.join(web, "scripts/prepare-ocr.mjs")], { cwd: web, stdio: "inherit" });
 
 const host = process.env.STALHUB_WEB_DEV_HOST ?? "127.0.0.1";
-const port = process.env.STALHUB_WEB_DEV_PORT ?? "3000";
+const port = process.env.STALHUB_WEB_DEV_PORT ?? "3002";
 const devUrl = `http://${host}:${port}`;
 
 function waitForHttp(url, deadline) {

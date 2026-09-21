@@ -18,7 +18,7 @@ export const buttonVariants = cva(
 				none: 'hover:text-foreground',
 			},
 			disabled: {
-				true: 'cursor-not-allowed text-muted-foreground bg-muted hover:bg-muted hover:bg-muted brightness-80 hover:brightness-80',
+				true: 'cursor-not-allowed text-muted-foreground bg-muted hover:bg-muted hover:bg-muted brightness-80 hover:brightness-80 border-foreground/50',
 			},
 			size: {
 				sm: 'px-3 py-1.5 text-sm',

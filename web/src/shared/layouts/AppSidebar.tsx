@@ -14,8 +14,6 @@ import { NAV_STRUCTURE, type NavItem } from '@/constants/nav.const'
 import useSvg from '@/hooks/useSvg'
 import { cn } from '@/lib/cn'
 import { userQueries } from '@/queries/user/user.queries'
-import ChangeLang from '@/shared/layouts/nav/components/ChangeLang'
-import ChangeTheme from '@/shared/layouts/nav/components/ChangeTheme'
 import { filterTabsByRoles, tabGroups } from '@/types/me.types'
 
 type SidebarView = 'tools' | 'me'
@@ -64,6 +62,7 @@ export default function AppSidebar() {
 		...userQueries.getUnreadCount(),
 		enabled: !!user,
 	})
+
 	const t = useTranslations()
 	const svgPath = useSvg()
 
@@ -169,7 +168,6 @@ export default function AppSidebar() {
 						className="size-10 shrink-0 rounded-lg border border-primary/50 object-cover"
 						height={40}
 						src={`${process.env.NEXT_PUBLIC_API}/api/v1/users/avatar/${user.id}`}
-						unoptimized
 						width={40}
 					/>
 					<div className="hidden min-w-0 sm:block">
@@ -317,8 +315,17 @@ export default function AppSidebar() {
 			</nav>
 			<Divider className="bg-accent/80" />
 			<div className="flex items-center justify-center gap-1 py-2 sm:justify-start">
-				<ChangeLang />
-				<ChangeTheme />
+				<Link
+					aria-current={isHrefActive(pathname, '/settings') ? 'page' : undefined}
+					className={linkClass(isHrefActive(pathname, '/settings'))}
+					href="/settings"
+					title={t('nav.settings')}
+				>
+					<Icon className="size-5 shrink-0" icon="lucide:settings" />
+					<span className="hidden truncate font-semibold text-sm sm:block">
+						{t('nav.settings')}
+					</span>
+				</Link>
 			</div>
 		</aside>
 	)

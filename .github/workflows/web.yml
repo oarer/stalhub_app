@@ -1,0 +1,144 @@
+name: CI and release
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      skip_version:
+        description: Skip creating a release
+        required: false
+        default: false
+        type: boolean
+
+permissions:
+  contents: read
+
+jobs:
+  web:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: web
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+      - run: bun install --frozen-lockfile
+      - run: bun run lint
+      - run: bun run typecheck
+      - run: bun run test:trading
+      - run: bun run build
+        env:
+          STALHUB_API_ORIGIN: https://api.stalhub.dev
+
+  electron:
+    needs: web
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: linux-x64
+            os: ubuntu-latest
+            platform: linux
+            arch: x64
+          - name: windows-x64
+            os: windows-latest
+            platform: win32
+            arch: x64
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+          cache: true
+      - run: bun install --frozen-lockfile
+      - run: bun install --frozen-lockfile
+        working-directory: web
+      - run: bun run typecheck
+      - run: bun run build:web
+        env:
+          STALHUB_API_ORIGIN: https://api.stalhub.dev
+      - name: Install Linux packaging tools
+        if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y rpm
+      - name: Build Electron package
+        run: bun run make -- --platform=${{ matrix.platform }} --arch=${{ matrix.arch }}
+      - name: Build AppImage
+        if: matrix.platform == 'linux'
+        shell: bash
+        run: bun run make:appimage
+      - uses: actions/upload-artifact@v4
+        with:
+          name: stalhub-${{ matrix.name }}
+          path: |
+            out/make/**/*
+            out/*.AppImage
+          if-no-files-found: error
+
+  release:
+    if: >-
+      (github.event_name == 'push' && github.ref == 'refs/heads/main' &&
+      !contains(github.event.head_commit.message, '[skip release]')) ||
+      (github.event_name == 'workflow_dispatch' && inputs.skip_version == false)
+    needs: [web, electron]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    concurrency:
+      group: stalhub-release
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/github-script@v7
+        id: version
+        with:
+          script: |
+            const { data: releases } = await github.paginate(
+              github.rest.repos.listReleases,
+              { owner: context.repo.owner, repo: context.repo.repo, per_page: 100 }
+            );
+            const versions = releases
+              .map(r => r.tag_name)
+              .filter(t => /^v\d+\.\d+\.\d+$/.test(t))
+              .map(t => t.slice(1).split('.').map(Number));
+            versions.sort((a, b) =>
+              b[0] - a[0] || b[1] - a[1] || b[2] - a[2]);
+            const [major, minor, patch] = versions[0] || [0, 0, 0];
+            let bump = 'patch';
+            const latest = releases
+              .filter(r => /^v\d+\.\d+\.\d+$/.test(r.tag_name))
+              .sort((a, b) => new Date(b.published_at || b.created_at) - new Date(a.published_at || a.created_at))[0];
+            if (latest) {
+              const comparison = await github.rest.repos.compareCommits({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                base: latest.tag_name,
+                head: context.sha,
+              });
+              const messages = comparison.data.commits.map(c => c.commit.message);
+              if (messages.some(m => /BREAKING CHANGE:|^[a-z]+!:/m.test(m))) bump = 'major';
+              else if (messages.some(m => /^feat(?:\([^)]*\))?:/m.test(m))) bump = 'minor';
+            }
+            let next;
+            if (bump === 'major') next = [major + 1, 0, 0];
+            else if (bump === 'minor') next = [major, minor + 1, 0];
+            else next = [major, minor, patch + 1];
+            core.setOutput('tag', `v${next.join('.')}`);
+            core.setOutput('bump', bump);
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: stalhub-*
+          path: release-assets
+          merge-multiple: true
+      - uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.version.outputs.tag }}
+          name: Stalhub ${{ steps.version.outputs.tag }}
+          generate_release_notes: true
+          files: release-assets/**/*
