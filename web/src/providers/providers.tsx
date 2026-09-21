@@ -3,6 +3,7 @@
 import { usePathname } from 'next/navigation'
 import { type ReactNode, useEffect, useState } from 'react'
 import { Toaster } from 'sonner'
+import ImportDeeplinkHandler from '@/components/import/ImportDeeplinkHandler'
 import { UwuProvider } from '@/providers/uwuProvider'
 import { userService } from '@/services/user/user.service'
 import { useAuthStore } from '@/stores/useAuth.store'
@@ -66,6 +67,7 @@ export default function Providers({ children }: Props) {
 		<QueryProvider>
 			<UwuProvider>
 				<Toaster position="bottom-right" />
+				<ImportDeeplinkHandler />
 				{children}
 			</UwuProvider>
 		</QueryProvider>

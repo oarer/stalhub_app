@@ -2166,7 +2166,9 @@
 				"title": "기타"
 			}
 		},
-		"settings": "설정"
+		"settings": "설정",
+		"collapse": "접기",
+		"expand": "펼치기"
 	},
 	"onboarding": {
 		"back": "이전",
@@ -2803,19 +2805,12 @@
 	},
 	"settings": {
 		"appearance": {
-
 			"title": "외관",
-
 			"language": "언어",
-
 			"language_desc": "인터페이스 언어",
-
 			"theme": "테마",
-
 			"theme_desc": "라이트, 다크 또는 시스템 테마"
-
 		},
-
 		"data": {
 			"local_storage": "데이터를 로컬에 저장",
 			"local_storage_desc": "이 기기에 아이템 카탈로그와 빌드를 로컬에 저장합니다",
@@ -2854,5 +2849,16 @@
 		"loading": "데이터를 불러오는 중입니다…",
 		"offline": "데이터를 불러올 수 없습니다",
 		"ready": "준비 완료"
+	},
+	"import": {
+		"title": "데이터 가져오기",
+		"description": "링크의 데이터가 이 앱으로 가져와집니다. 기존 항목은 교체되며 나머지 로컬 데이터는 변경되지 않습니다.",
+		"records": "가져올 항목: {count}개",
+		"cancel": "취소",
+		"confirm": "가져오기",
+		"invalid": "링크에서 데이터를 읽을 수 없습니다",
+		"unsupported": "이 링크 형식은 이 앱 버전에서 지원되지 않습니다",
+		"error": "데이터를 적용할 수 없습니다",
+		"success": "가져온 항목: {count}개"
 	}
 }

@@ -15,6 +15,21 @@ ipcRenderer.on('stalhub:auth-callback', (_event, url: unknown) => {
 	)
 })
 
+const importListeners = new Set<(url: string) => void>()
+ipcRenderer.on('stalhub:import', (_event, url: unknown) => {
+	if (typeof url !== 'string') return
+	for (const listener of importListeners) {
+		try {
+			listener(url)
+		} catch {
+			/* One subscriber must not block the others. */
+		}
+	}
+	window.dispatchEvent(
+		new CustomEvent('stalhub:import', { detail: url })
+	)
+})
+
 const overlayStateListeners = new Set<(state: unknown) => void>()
 const overlayCompleteListeners = new Set<() => void>()
 ipcRenderer.on('stalhub:trading-overlay:state', (_event, state: unknown) => {
@@ -81,6 +96,17 @@ contextBridge.exposeInMainWorld(
 				listeners.delete(callback)
 				if (listeners.size === 0)
 					ipcRenderer.send('stalhub:renderer-not-ready')
+			}
+		},
+		onImport: (callback: (url: string) => void) => {
+			if (typeof callback !== 'function')
+				throw new TypeError('Expected callback')
+			importListeners.add(callback)
+			ipcRenderer.send('stalhub:import-ready')
+			return () => {
+				importListeners.delete(callback)
+				if (importListeners.size === 0)
+					ipcRenderer.send('stalhub:import-not-ready')
 			}
 		},
 		tradingOverlay: Object.freeze({

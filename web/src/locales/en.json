@@ -2309,7 +2309,9 @@
 				"title": "Other"
 			}
 		},
-		"settings": "Settings"
+		"settings": "Settings",
+		"collapse": "Collapse",
+		"expand": "Expand"
 	},
 	"onboarding": {
 		"back": "Back",
@@ -2961,19 +2963,12 @@
 	},
 	"settings": {
 		"appearance": {
-
 			"title": "Appearance",
-
 			"language": "Language",
-
 			"language_desc": "Language of the interface",
-
 			"theme": "Theme",
-
 			"theme_desc": "Light, dark or system theme"
-
 		},
-
 		"data": {
 			"local_storage": "Save data locally",
 			"local_storage_desc": "Store the item catalog and your builds locally on this device",
@@ -3012,5 +3007,16 @@
 		"loading": "Loading data…",
 		"offline": "Could not load data",
 		"ready": "Ready"
+	},
+	"import": {
+		"title": "Import data",
+		"description": "The data from the link will be imported into this app. Existing entries will be replaced, other local data will stay untouched.",
+		"records": "Entries to import: {count}",
+		"cancel": "Cancel",
+		"confirm": "Import",
+		"invalid": "Could not read data from the link",
+		"unsupported": "This link format is not supported by this version of the app",
+		"error": "Could not apply the data",
+		"success": "Imported entries: {count}"
 	}
 }

@@ -37,6 +37,7 @@ declare global {
 			openExternal(url: string): Promise<void>
 			updates?: DesktopUpdatesApi
 			onAuthCallback(callback: (url: string) => void): () => void
+			onImport(callback: (url: string) => void): () => void
 			tradingOverlay?: {
 				open(): Promise<boolean>
 				update(state: TradingOverlayState): void

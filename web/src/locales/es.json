@@ -2162,7 +2162,9 @@
 				"title": "Otros"
 			}
 		},
-		"settings": "Ajustes"
+		"settings": "Ajustes",
+		"collapse": "Contraer",
+		"expand": "Expandir"
 	},
 	"onboarding": {
 		"back": "Atrás",
@@ -2799,19 +2801,12 @@
 	},
 	"settings": {
 		"appearance": {
-
 			"title": "Apariencia",
-
 			"language": "Idioma",
-
 			"language_desc": "Idioma de la interfaz",
-
 			"theme": "Tema",
-
 			"theme_desc": "Tema claro, oscuro o del sistema"
-
 		},
-
 		"data": {
 			"local_storage": "Guardar datos localmente",
 			"local_storage_desc": "Guardar el catálogo de objetos y tus builds localmente en este dispositivo",
@@ -2850,5 +2845,16 @@
 		"loading": "Cargando datos…",
 		"offline": "No se pudieron cargar los datos",
 		"ready": "Listo"
+	},
+	"import": {
+		"title": "Importar datos",
+		"description": "Los datos del enlace se importarán en esta aplicación. Las entradas existentes se reemplazarán y el resto de los datos locales no se modificarán.",
+		"records": "Entradas a importar: {count}",
+		"cancel": "Cancelar",
+		"confirm": "Importar",
+		"invalid": "No se pudieron leer los datos del enlace",
+		"unsupported": "Este formato de enlace no es compatible con esta versión de la aplicación",
+		"error": "No se pudieron aplicar los datos",
+		"success": "Entradas importadas: {count}"
 	}
 }

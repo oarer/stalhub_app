@@ -21,10 +21,12 @@ let server: UtilityProcess | undefined
 let origin = ''
 let capabilityToken = ''
 let rendererReady = false
+let importReady = false
 let quitting = false
 let overlayWindow: BrowserWindow | null = null
 let lastOverlayState: unknown = null
 const pending: string[] = []
+const pendingImports: string[] = []
 
 type UpdateStatus =
 	| 'unsupported'
@@ -190,6 +192,29 @@ function callbackUrl(value: unknown): string | null {
 		return null
 	}
 }
+// Deeplink переноса локальных данных (stalhub://import/<token>). Ограничение
+// длины шире, чем у auth, чтобы влезали сжатые (deflate) данные пользователя.
+const IMPORT_URL_MAX_LENGTH = 300_000
+function importUrl(value: unknown): string | null {
+	if (typeof value !== 'string' || value.length > IMPORT_URL_MAX_LENGTH)
+		return null
+	try {
+		const url = new URL(value)
+		if (
+			url.protocol !== 'stalhub:' ||
+			url.hostname !== 'import' ||
+			url.username ||
+			url.password ||
+			url.port ||
+			url.hash ||
+			!url.pathname.startsWith('/')
+		)
+			return null
+		return url.href
+	} catch {
+		return null
+	}
+}
 function externalUrl(value: unknown): string {
 	if (typeof value !== 'string' || value.length > 8192)
 		throw new Error('Invalid external URL')
@@ -217,6 +242,21 @@ function flushCallbacks() {
 	while (pending.length)
 		window.webContents.send('stalhub:auth-callback', pending.shift())
 }
+function flushImportCallbacks() {
+	if (!importReady || !window || window.webContents.isDestroyed()) return
+	while (pendingImports.length)
+		window.webContents.send('stalhub:import', pendingImports.shift())
+}
+function acceptImport(value: unknown) {
+	const url = importUrl(value)
+	if (!url) return
+	if (!pendingImports.includes(url)) {
+		if (pendingImports.length >= 16) pendingImports.shift()
+		pendingImports.push(url)
+	}
+	focusWindow()
+	flushImportCallbacks()
+}
 function acceptCallback(value: unknown) {
 	const url = callbackUrl(value)
 	if (!url) return
@@ -226,6 +266,10 @@ function acceptCallback(value: unknown) {
 	}
 	focusWindow()
 	flushCallbacks()
+}
+function acceptDeeplink(value: unknown) {
+	if (importUrl(value)) acceptImport(value)
+	else acceptCallback(value)
 }
 function trustedSender(
 	event: Electron.IpcMainEvent | Electron.IpcMainInvokeEvent
@@ -736,6 +780,7 @@ async function createWindow() {
 	current.on('closed', () => {
 		window = null
 		rendererReady = false
+		importReady = false
 		closeTradingOverlay()
 	})
 	current.webContents.on(
@@ -759,14 +804,14 @@ if (!app.requestSingleInstanceLock()) {
 } else {
 	app.on('open-url', (event, url) => {
 		event.preventDefault()
-		acceptCallback(url)
+		acceptDeeplink(url)
 	})
 	app.on('second-instance', (_event, argv) => {
-		argv.forEach(acceptCallback)
+		argv.forEach(acceptDeeplink)
 		if (!window && origin) void createWindow().catch(console.error)
 		else focusWindow()
 	})
-	process.argv.forEach(acceptCallback)
+	process.argv.forEach(acceptDeeplink)
 
 	for (const channel of ['stalhub:open-external', 'stalhub:begin-auth']) {
 		ipcMain.handle(channel, async (event, value: unknown) => {
@@ -782,6 +827,15 @@ if (!app.requestSingleInstanceLock()) {
 	})
 	ipcMain.on('stalhub:renderer-not-ready', (event) => {
 		if (trustedSender(event)) rendererReady = false
+	})
+	ipcMain.on('stalhub:import-ready', (event) => {
+		if (trustedSender(event)) {
+			importReady = true
+			flushImportCallbacks()
+		}
+	})
+	ipcMain.on('stalhub:import-not-ready', (event) => {
+		if (trustedSender(event)) importReady = false
 	})
 	ipcMain.handle('stalhub:trading-overlay:open', (event) => {
 		if (!trustedSender(event)) throw new Error('Untrusted IPC sender')

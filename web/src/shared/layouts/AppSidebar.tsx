@@ -2,11 +2,12 @@
 
 import { Icon } from '@iconify/react'
 import { useQuery } from '@tanstack/react-query'
+import { AnimatePresence, motion } from 'motion/react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useTranslations } from 'next-intl'
-import { useEffect, useMemo, useState } from 'react'
+import { type ReactNode, useEffect, useMemo, useState } from 'react'
 import { montserrat, unbounded } from '@/app/fonts'
 import { Button } from '@/components/ui/Button'
 import { Divider } from '@/components/ui/Divider'
@@ -14,6 +15,7 @@ import { NAV_STRUCTURE, type NavItem } from '@/constants/nav.const'
 import useSvg from '@/hooks/useSvg'
 import { cn } from '@/lib/cn'
 import { userQueries } from '@/queries/user/user.queries'
+import { useSidebarStore } from '@/stores/useSidebar.store'
 import { filterTabsByRoles, tabGroups } from '@/types/me.types'
 
 type SidebarView = 'tools' | 'me'
@@ -25,16 +27,93 @@ function isHrefActive(pathname: string, href?: string) {
 	)
 }
 
-function linkClass(active: boolean) {
+function linkClass(active: boolean, collapsed: boolean) {
 	return cn(
-		'group flex min-h-11 items-center gap-3 rounded-xl px-3 transition-colors',
+		'group flex min-h-11 w-full items-center gap-3 rounded-xl px-3 transition-colors',
+		collapsed ? 'justify-center' : 'justify-center sm:justify-start',
 		active
 			? 'bg-primary text-primary-foreground'
 			: 'text-card-foreground hover:bg-muted/70 hover:text-muted-foreground'
 	)
 }
 
-function SidebarLink({ item, active }: { item: NavItem; active: boolean }) {
+function SlideLabel({
+	collapsed,
+	className,
+	children,
+}: {
+	collapsed: boolean
+	className?: string
+	children: ReactNode
+}) {
+	return (
+		<AnimatePresence initial={false}>
+			{!collapsed && (
+				<motion.div
+					animate={{ opacity: 1, x: 0 }}
+					className={cn('hidden sm:block', className)}
+					exit={{ opacity: 0, x: -12 }}
+					initial={{ opacity: 0, x: -12 }}
+					key="label"
+					transition={{ duration: 0.22, ease: 'easeOut' }}
+				>
+					{children}
+				</motion.div>
+			)}
+		</AnimatePresence>
+	)
+}
+
+function GroupHeader({
+	collapsed,
+	title,
+	showDivider,
+	className,
+}: {
+	collapsed: boolean
+	title?: string
+	showDivider: boolean
+	className?: string
+}) {
+	return (
+		<AnimatePresence initial={false}>
+			{collapsed
+				? showDivider && (
+						<motion.div
+							animate={{ opacity: 1 }}
+							exit={{ opacity: 0 }}
+							initial={{ opacity: 0 }}
+							key="divider"
+							transition={{ duration: 0.18, ease: 'easeOut' }}
+						>
+							<Divider className="my-2" />
+						</motion.div>
+					)
+				: title && (
+						<motion.p
+							animate={{ opacity: 1 }}
+							className={className}
+							exit={{ opacity: 0 }}
+							initial={{ opacity: 0 }}
+							key="title"
+							transition={{ duration: 0.18, ease: 'easeOut' }}
+						>
+							{title}
+						</motion.p>
+					)}
+		</AnimatePresence>
+	)
+}
+
+function SidebarLink({
+	item,
+	active,
+	collapsed,
+}: {
+	item: NavItem
+	active: boolean
+	collapsed: boolean
+}) {
 	const t = useTranslations()
 	const href = item.href ?? item.submenu?.find((entry) => entry.href)?.href
 
@@ -43,14 +122,17 @@ function SidebarLink({ item, active }: { item: NavItem; active: boolean }) {
 	return (
 		<Link
 			aria-current={active ? 'page' : undefined}
-			className={linkClass(active)}
+			className={linkClass(active, collapsed)}
 			href={href}
 			title={t(item.labelKey)}
 		>
 			<Icon className="size-5 shrink-0" icon={item.icon} />
-			<span className="hidden truncate font-semibold text-sm sm:block">
+			<SlideLabel
+				className="truncate font-semibold text-sm"
+				collapsed={collapsed}
+			>
 				{t(item.labelKey)}
-			</span>
+			</SlideLabel>
 		</Link>
 	)
 }
@@ -65,6 +147,16 @@ export default function AppSidebar() {
 
 	const t = useTranslations()
 	const svgPath = useSvg()
+	const collapsed = useSidebarStore((s) => s.collapsed)
+	const toggle = useSidebarStore((s) => s.toggle)
+
+	const [mounted, setMounted] = useState(false)
+
+	useEffect(() => {
+		setMounted(true)
+	}, [])
+
+	const isCollapsed = mounted && collapsed
 
 	const isMeRoute = pathname === '/me' || pathname.startsWith('/me/')
 	const [view, setView] = useState<SidebarView>(isMeRoute ? 'me' : 'tools')
@@ -136,7 +228,12 @@ export default function AppSidebar() {
 	}, [meGroups, pathname])
 
 	return (
-		<aside className="fixed inset-y-0 left-0 z-80 flex w-16 flex-col gap-2 border-primary/20 border-r bg-card/90 px-2 py-3 shadow-xl backdrop-blur-xl sm:w-72 sm:px-4">
+		<aside
+			className={cn(
+				'fixed inset-y-0 left-0 z-80 flex w-16 flex-col gap-2 overflow-hidden border-primary/20 border-r bg-card/90 px-2 py-3 shadow-xl backdrop-blur-xl transition-[width,padding] duration-300 ease-in-out',
+				!isCollapsed && 'sm:w-72 sm:px-4'
+			)}
+		>
 			<Link
 				className="flex h-12 items-center gap-3 rounded-xl px-2 transition-opacity hover:opacity-80"
 				href="/"
@@ -147,17 +244,21 @@ export default function AppSidebar() {
 					src={`${svgPath}logo.svg`}
 					width={32}
 				/>
-				<span
-					className={`${unbounded.className} hidden font-bold text-md tracking-widest sm:block`}
+				<SlideLabel
+					className={`${unbounded.className} font-bold text-md tracking-widest`}
+					collapsed={isCollapsed}
 				>
 					STALHUB
-				</span>
+				</SlideLabel>
 			</Link>
 
 			{user ? (
 				<Link
 					className={cn(
-						'flex items-center gap-3 rounded-xl bg-accent/50 p-2 transition-colors hover:bg-muted',
+						'flex items-center gap-3 rounded-xl bg-accent/50 transition-colors hover:bg-muted',
+						isCollapsed
+							? 'justify-center p-1'
+							: 'p-2 sm:justify-start',
 						isMeRoute ? 'ring-primary' : 'ring-primary/20'
 					)}
 					href="/me"
@@ -165,12 +266,15 @@ export default function AppSidebar() {
 				>
 					<Image
 						alt={user.name || user.username}
-						className="size-10 shrink-0 rounded-lg border border-primary/50 object-cover"
+						className={cn(
+							'shrink-0 rounded-lg border border-primary/50 object-cover',
+							isCollapsed ? 'size-8' : 'size-10'
+						)}
 						height={40}
-						src={`${process.env.NEXT_PUBLIC_API}/api/v1/users/avatar/${user.id}`}
+						src={`/api/v1/users/avatar/${user.id}`}
 						width={40}
 					/>
-					<div className="hidden min-w-0 sm:block">
+					<SlideLabel className="min-w-0" collapsed={isCollapsed}>
 						<p className="truncate font-semibold">
 							{user.name || user.username}
 						</p>
@@ -179,16 +283,21 @@ export default function AppSidebar() {
 						>
 							@{user.username}
 						</p>
-					</div>
+					</SlideLabel>
 				</Link>
 			) : (
 				<Link
-					className="mb-3 flex min-h-11 items-center justify-center gap-2 rounded-xl bg-primary px-3 font-semibold text-primary-foreground transition-opacity hover:opacity-85 sm:justify-start"
+					className={cn(
+						'mb-3 flex min-h-11 items-center justify-center gap-2 rounded-xl bg-primary px-3 font-semibold text-primary-foreground transition-opacity hover:opacity-85',
+						!isCollapsed && 'sm:justify-start'
+					)}
 					href="/auth"
 					title={t('auth.title')}
 				>
 					<Icon className="size-5 shrink-0" icon="lucide:log-in" />
-					<span className="hidden sm:block">{t('auth.login')}</span>
+					<SlideLabel collapsed={isCollapsed}>
+						{t('auth.login')}
+					</SlideLabel>
 				</Link>
 			)}
 
@@ -196,7 +305,8 @@ export default function AppSidebar() {
 				<Link
 					aria-current={isNotificationsRoute ? 'page' : undefined}
 					className={cn(
-						'flex min-h-11 items-center justify-center gap-3 rounded-xl px-3 transition-colors sm:justify-start',
+						'flex min-h-11 items-center justify-center gap-3 rounded-xl px-3 transition-colors',
+						!isCollapsed && 'sm:justify-start',
 						isNotificationsRoute
 							? 'bg-primary text-primary-foreground'
 							: 'text-card-foreground hover:bg-muted/70 hover:text-muted-foreground'
@@ -219,15 +329,24 @@ export default function AppSidebar() {
 							</span>
 						)}
 					</span>
-					<span className="hidden truncate font-semibold text-sm sm:block">
+					<SlideLabel
+						className="truncate font-semibold text-sm"
+						collapsed={isCollapsed}
+					>
 						{t('me.nav.notifications')}
-					</span>
+					</SlideLabel>
 				</Link>
 			)}
 
-			<div className="grid grid-cols-2 gap-1 rounded-xl bg-muted/40 p-1">
+			<div
+				className={cn(
+					'grid gap-1 rounded-xl bg-muted/40 p-1 transition-all duration-300',
+					isCollapsed ? 'grid-cols-1' : 'grid-cols-2'
+				)}
+			>
 				<Button
 					aria-pressed={view === 'tools'}
+					className="px-0"
 					onClick={() => setView('tools')}
 					title={t('landing.tools.title')}
 					variant={view === 'tools' ? 'primary' : 'ghost'}
@@ -239,6 +358,7 @@ export default function AppSidebar() {
 				</Button>
 				<Button
 					aria-pressed={view === 'me'}
+					className="px-0"
 					onClick={() => setView('me')}
 					title={t('dashboard.categories.account')}
 					variant={view === 'me' ? 'primary' : 'ghost'}
@@ -252,13 +372,14 @@ export default function AppSidebar() {
 
 			<nav className="min-h-0 flex-1 space-y-4 overflow-y-auto overscroll-contain pr-0 sm:pr-1">
 				{view === 'tools'
-					? NAV_STRUCTURE.map((group) => (
+					? NAV_STRUCTURE.map((group, groupIndex) => (
 							<section key={group.key}>
-								<p
+								<GroupHeader
 									className={`${unbounded.className} hidden font-semibold text-[10px] text-muted-foreground uppercase tracking-[0.2em] sm:block`}
-								>
-									{t(group.titleKey)}
-								</p>
+									collapsed={isCollapsed}
+									showDivider={groupIndex > 0}
+									title={t(group.titleKey)}
+								/>
 								<div className="space-y-1">
 									{group.items.map((item) => (
 										<SidebarLink
@@ -266,6 +387,7 @@ export default function AppSidebar() {
 												toolsActive ===
 												`${group.key}:${item.key}`
 											}
+											collapsed={isCollapsed}
 											item={item}
 											key={item.key}
 										/>
@@ -278,13 +400,14 @@ export default function AppSidebar() {
 								className="flex flex-col gap-2"
 								key={group.label ?? index}
 							>
-								{group.label && (
-									<p
-										className={`${unbounded.className} hidden font-semibold text-[10px] text-muted-foreground uppercase tracking-[0.2em] sm:block`}
-									>
-										{t(group.label)}
-									</p>
-								)}
+								<GroupHeader
+									className={`${unbounded.className} hidden font-semibold text-[10px] text-muted-foreground uppercase tracking-[0.2em] sm:block`}
+									collapsed={isCollapsed}
+									showDivider={index > 0}
+									title={
+										group.label ? t(group.label) : undefined
+									}
+								/>
 								<div className="space-y-1">
 									{group.items.map((tab) => {
 										const active = meActive === tab.href
@@ -294,7 +417,10 @@ export default function AppSidebar() {
 												aria-current={
 													active ? 'page' : undefined
 												}
-												className={linkClass(active)}
+												className={linkClass(
+													active,
+													isCollapsed
+												)}
 												href={tab.href}
 												key={tab.href}
 												title={t(tab.title)}
@@ -303,9 +429,12 @@ export default function AppSidebar() {
 													className="size-5 shrink-0"
 													icon={tab.icon}
 												/>
-												<span className="hidden truncate font-semibold text-sm sm:block">
+												<SlideLabel
+													className="truncate font-semibold text-sm"
+													collapsed={isCollapsed}
+												>
 													{t(tab.title)}
-												</span>
+												</SlideLabel>
 											</Link>
 										)
 									})}
@@ -314,18 +443,68 @@ export default function AppSidebar() {
 						))}
 			</nav>
 			<Divider className="bg-accent/80" />
-			<div className="flex items-center justify-center gap-1 py-2 sm:justify-start">
+			<div
+				className={cn(
+					'flex items-center py-2 transition-all duration-300',
+					isCollapsed ? 'flex-col justify-center gap-1' : 'gap-1'
+				)}
+			>
 				<Link
-					aria-current={isHrefActive(pathname, '/settings') ? 'page' : undefined}
-					className={linkClass(isHrefActive(pathname, '/settings'))}
+					aria-current={
+						isHrefActive(pathname, '/settings') ? 'page' : undefined
+					}
+					className={linkClass(
+						isHrefActive(pathname, '/settings'),
+						isCollapsed
+					)}
 					href="/settings"
 					title={t('nav.settings')}
 				>
 					<Icon className="size-5 shrink-0" icon="lucide:settings" />
-					<span className="hidden truncate font-semibold text-sm sm:block">
+					<SlideLabel
+						className="truncate font-semibold text-sm"
+						collapsed={isCollapsed}
+					>
 						{t('nav.settings')}
-					</span>
+					</SlideLabel>
 				</Link>
+				<Button
+					aria-label={t(isCollapsed ? 'nav.expand' : 'nav.collapse')}
+					aria-pressed={!isCollapsed}
+					className={cn(
+						'flex min-h-11 items-center justify-center rounded-xl transition-colors',
+						isCollapsed ? 'w-full px-0' : 'shrink-0 gap-3 px-3'
+					)}
+					onClick={toggle}
+					title={t(isCollapsed ? 'nav.expand' : 'nav.collapse')}
+					type="button"
+					variant="ghost"
+				>
+					<motion.span
+						animate={{ rotate: isCollapsed ? 180 : 0 }}
+						className="inline-flex"
+						transition={{
+							type: 'spring',
+							stiffness: 260,
+							damping: 20,
+						}}
+					>
+						<Icon
+							className="size-5 shrink-0"
+							icon={
+								isCollapsed
+									? 'lucide:panel-left-open'
+									: 'lucide:panel-left-close'
+							}
+						/>
+					</motion.span>
+					<SlideLabel
+						className="truncate font-semibold text-sm"
+						collapsed={isCollapsed}
+					>
+						{t(isCollapsed ? 'nav.expand' : 'nav.collapse')}
+					</SlideLabel>
+				</Button>
 			</div>
 		</aside>
 	)

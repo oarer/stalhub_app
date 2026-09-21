@@ -11,6 +11,7 @@ import { getMetadataByPath } from '@/constants/meta'
 import LocaleProvider from '@/providers/LocaleProvider'
 import Providers from '@/providers/providers'
 import { GridBackgroundWithBeams } from '@/shared/Background'
+import { AppMain } from '@/shared/layouts/AppMain'
 import AppSidebar from '@/shared/layouts/AppSidebar'
 import GiveawayModal from '@/shared/layouts/GiveawayModal'
 import LoadingSplash from '@/shared/layouts/LoadingSplash'
@@ -82,9 +83,7 @@ export default async function RootLayout({ children }: LayoutProps) {
 										<LoadingSplash />
 										<AppSidebar />
 										{/* <PageTransitionEffect> */}
-										<main className="min-h-screen pl-16 sm:pl-72">
-											{children}
-										</main>
+										<AppMain>{children}</AppMain>
 										{/* </PageTransitionEffect> */}
 										<CookieConsent />
 										<GiveawayModal />

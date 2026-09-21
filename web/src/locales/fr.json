@@ -2162,7 +2162,9 @@
 				"title": "Autre"
 			}
 		},
-		"settings": "Paramètres"
+		"settings": "Paramètres",
+		"collapse": "Réduire",
+		"expand": "Développer"
 	},
 	"onboarding": {
 		"back": "Retour",
@@ -2799,19 +2801,12 @@
 	},
 	"settings": {
 		"appearance": {
-
 			"title": "Apparence",
-
 			"language": "Langue",
-
 			"language_desc": "Langue de l'interface",
-
 			"theme": "Thème",
-
 			"theme_desc": "Thème clair, sombre ou système"
-
 		},
-
 		"data": {
 			"local_storage": "Enregistrer les données localement",
 			"local_storage_desc": "Stocker le catalogue d’objets et vos constructions localement sur cet appareil",
@@ -2850,5 +2845,16 @@
 		"loading": "Chargement des données…",
 		"offline": "Impossible de charger les données",
 		"ready": "Prêt"
+	},
+	"import": {
+		"title": "Importer des données",
+		"description": "Les données du lien seront importées dans cette application. Les entrées existantes seront remplacées, les autres données locales resteront inchangées.",
+		"records": "Entrées à importer : {count}",
+		"cancel": "Annuler",
+		"confirm": "Importer",
+		"invalid": "Impossible de lire les données du lien",
+		"unsupported": "Ce format de lien n'est pas pris en charge par cette version de l'application",
+		"error": "Impossible d'appliquer les données",
+		"success": "Entrées importées : {count}"
 	}
 }

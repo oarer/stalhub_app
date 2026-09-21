@@ -75,7 +75,7 @@ export function useScreenshotUpload(profile: UserClanProfile) {
 			const formData = new FormData()
 			formData.append('file', file)
 			await axios.post(
-				`${process.env.NEXT_PUBLIC_API}/api/v1/clan/analytics/sessions/${session.id}/screenshots`,
+				`/api/v1/clan/analytics/sessions/${session.id}/screenshots`,
 				formData,
 				{ withCredentials: true }
 			)

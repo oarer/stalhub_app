@@ -174,7 +174,7 @@ export default function LoadingSplash() {
 					<audio
 						autoPlay
 						preload="auto"
-						src="/sounds/loading-placeholder.wav"
+						src="/sounds/boot.mp3"
 					>
 						<track kind="captions" />
 					</audio>
