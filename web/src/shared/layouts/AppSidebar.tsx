@@ -230,7 +230,7 @@ export default function AppSidebar() {
 	return (
 		<aside
 			className={cn(
-				'fixed inset-y-0 left-0 z-80 flex w-16 flex-col gap-2 overflow-hidden border-primary/20 border-r bg-card/90 px-2 py-3 shadow-xl backdrop-blur-xl transition-[width,padding] duration-300 ease-in-out',
+				'fixed inset-y-0 left-0 z-80 flex w-16 flex-col gap-2 overflow-hidden border-primary/20 border-r bg-card/90 px-2 py-3 shadow-xl backdrop-blur-xl transition-[width,padding] duration-500 ease-in-out',
 				!isCollapsed && 'sm:w-72 sm:px-4'
 			)}
 		>
