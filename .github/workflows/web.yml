@@ -154,13 +154,12 @@ jobs:
           if-no-files-found: error
 
   android:
-    # Release-track: APK signing needs keystore secrets, and the first run
-    # needs a locally scaffolded project (see below). Skipped silently until
-    # ANDROID_KEYSTORE_BASE64 is configured.
+    # Release-track: APK signing needs keystore secrets (checked in the
+    # first step with a clear error). gen/android scaffold must be committed
+    # (see the scaffold check below).
     if: >-
-      ((github.event_name == 'push' && github.ref == 'refs/heads/main') ||
-      github.event_name == 'workflow_dispatch') &&
-      secrets.ANDROID_KEYSTORE_BASE64 != ''
+      (github.event_name == 'push' && github.ref == 'refs/heads/main') ||
+      github.event_name == 'workflow_dispatch'
     needs: [version]
     runs-on: ubuntu-latest
     steps:
@@ -176,6 +175,20 @@ jobs:
           java-version: 21
       - uses: android-actions/setup-android@v3
       - run: sdkmanager "platform-tools" "platforms;android-34" "build-tools;34.0.0" "ndk;27.0.12077973"
+      - name: Check Android signing secrets
+        shell: bash
+        env:
+          KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          missing=0
+          [ -n "$KEYSTORE_BASE64" ] || { echo "::error::Missing secret ANDROID_KEYSTORE_BASE64"; missing=1; }
+          [ -n "$KEYSTORE_PASSWORD" ] || { echo "::error::Missing secret ANDROID_KEYSTORE_PASSWORD"; missing=1; }
+          [ -n "$KEY_ALIAS" ] || { echo "::error::Missing secret ANDROID_KEY_ALIAS"; missing=1; }
+          [ -n "$KEY_PASSWORD" ] || { echo "::error::Missing secret ANDROID_KEY_PASSWORD"; missing=1; }
+          exit $missing
       - name: Check Android project scaffold
         shell: bash
         run: |
