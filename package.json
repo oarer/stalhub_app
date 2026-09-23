@@ -7,7 +7,7 @@
   "private": true,
   "scripts": {
     "dev": "tauri dev",
-    "build:export": "bun --cwd web run build:export",
+    "build:export": "bun run --cwd web build:export",
     "build:tauri": "tauri build",
     "tauri": "tauri",
     "lint": "eslint --ext .ts,.tsx ."
