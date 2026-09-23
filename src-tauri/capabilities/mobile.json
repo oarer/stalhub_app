@@ -1,0 +1,32 @@
+{
+  "$schema": "../gen/schemas/mobile-schema.json",
+  "identifier": "mobile",
+  "description": "Permissions for the mobile Stalhub app",
+  "platforms": [
+    "android",
+    "iOS"
+  ],
+  "windows": [
+    "main"
+  ],
+  "permissions": [
+    "core:default",
+    "log:default",
+    "opener:default",
+    "store:default",
+    "dialog:default",
+    "notification:default",
+    "clipboard-manager:default",
+    "process:default",
+    "os:default",
+    "deep-link:default",
+    {
+      "identifier": "core:event:default",
+      "allow": [
+        {
+          "name": "stalhub:/*"
+        }
+      ]
+    }
+  ]
+}

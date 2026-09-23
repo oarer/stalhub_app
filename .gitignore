@@ -91,5 +91,9 @@ web/public/ocr/
 # Vite
 .vite/
 
-# electron-builder output
+# Build output (web/out static export)
 out/
+
+# Tauri
+/src-tauri/target/
+/src-tauri/gen/schemas/

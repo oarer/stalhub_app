@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/Button'
 import { Combobox } from '@/components/ui/Combobox'
 import Input from '@/components/ui/Input'
 import { playerQueries } from '@/queries/player/player.queries'
+import { playerHref } from '@/lib/desktop-href'
 import { Regions } from '@/types/api.type'
 import PlayersCards from './components/PlayersCards'
 
@@ -29,7 +30,7 @@ export default function PlayerSearchView() {
 
 	const handleSearch = () => {
 		if (!character.trim()) return
-		router.push(`/player/${region}/${encodeURIComponent(character.trim())}`)
+		router.push(playerHref(region, character.trim()))
 	}
 
 	const handleKeyDown = (e: React.KeyboardEvent) => {

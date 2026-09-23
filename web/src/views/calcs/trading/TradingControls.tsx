@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
 import { CheckBox } from '@/components/ui/CheckBox'
 import { Combobox } from '@/components/ui/Combobox'
+import { isTauri } from '@/lib/tauri-bridge'
 import type { Locale } from '@/types/item.type'
 import type { Regions, Selection } from './trading'
 import type { TradingCapture } from './useTradingCapture'
@@ -53,6 +54,16 @@ export function TradingControls({
 }) {
 	const t = useTranslations('trading')
 	const running = capture.status !== 'idle'
+	const tauriMode = isTauri()
+	const sourceOptions = [
+		{ value: '', label: t('primaryMonitor') },
+		...capture.sources.map((source) => ({
+			value: source.id,
+			label: source.title
+				? `${source.title} — ${source.app}`
+				: source.app,
+		})),
+	]
 
 	return (
 		<Card.Root>
@@ -140,6 +151,23 @@ export function TradingControls({
 						/>
 					</div>
 				</div>
+				{tauriMode && capture.connected && (
+					<div className="flex w-full flex-col gap-1">
+						<span className="text-muted-foreground text-xs">
+							{t('sourceWindow')}
+						</span>
+						<Combobox
+							className="w-full"
+							disabled={running || capture.selecting}
+							onValueChange={(value) => {
+								capture.selectWindow(value === '' ? null : value)
+							}}
+							options={sourceOptions}
+							translateOptions={false}
+							value={capture.sourceId ?? ''}
+						/>
+					</div>
+				)}
 
 				<CheckBox
 					checked={upscale}

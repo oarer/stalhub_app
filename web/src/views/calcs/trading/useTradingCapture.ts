@@ -2,6 +2,13 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react'
 import type { Worker } from 'tesseract.js'
+import { isTauri } from '@/lib/tauri-bridge'
+import {
+	captureFindGame,
+	captureFrame,
+	captureListWindows,
+} from '@/lib/tauri-capture'
+import type { TauriCaptureWindow } from '@/types/tauri'
 import { sameFrame } from './frame'
 import type { Selection } from './trading'
 
@@ -32,6 +39,20 @@ export function useTradingCapture() {
 	const previewGeneration = useRef(0)
 	const removeEndedListener = useRef<(() => void) | null>(null)
 	const timer = useRef<ReturnType<typeof setInterval> | null>(null)
+	// Tauri-режим (Rust pull-кадры вместо getDisplayMedia-потока).
+	const tauriMode = isTauri()
+	const tauriSource = useRef<{ windowId: string | null } | null>(null)
+	const tauriFrame = useRef<{
+		source: ImageBitmap | HTMLImageElement
+		width: number
+		height: number
+	} | null>(null)
+	const pullTimer = useRef<ReturnType<typeof setInterval> | null>(null)
+	const pullBusy = useRef(false)
+	const previewUrlRef = useRef<string | null>(null)
+	const [previewUrl, setPreviewUrlState] = useState<string | null>(null)
+	const [sources, setSources] = useState<TauriCaptureWindow[]>([])
+	const [sourceId, setSourceId] = useState<string | null>(null)
 	const [connected, setConnected] = useState(false)
 	const [selecting, setSelecting] = useState(false)
 	const [pausePreview, updatePausePreview] = useState(false)
@@ -57,6 +78,56 @@ export function useTradingCapture() {
 		setStatus('idle')
 	}, [])
 
+	const setPreviewUrl = useCallback((url: string | null) => {
+		const previous = previewUrlRef.current
+		previewUrlRef.current = url
+		if (previous) URL.revokeObjectURL(previous)
+		setPreviewUrlState(url)
+	}, [])
+
+	const stopPullLoop = useCallback(() => {
+		if (pullTimer.current) clearInterval(pullTimer.current)
+		pullTimer.current = null
+		pullBusy.current = false
+	}, [])
+
+	// Pull-цикл Rust-кадров (Tauri): кормит frozen-canvas OCR и img-превью.
+	// Один цикл на подключение — и для выбора регионов, и для распознавания.
+	const startPullLoop = useCallback(() => {
+		if (pullTimer.current) return
+		const token = sourceGeneration.current
+		const pull = async () => {
+			if (token !== sourceGeneration.current) {
+				stopPullLoop()
+				return
+			}
+			const source = tauriSource.current
+			if (!source || pullBusy.current) return
+			pullBusy.current = true
+			try {
+				const frame = await captureFrame(source.windowId)
+				if (token !== sourceGeneration.current) return
+				tauriFrame.current = frame
+				const url = URL.createObjectURL(
+					new Blob([frame.bytes as BlobPart], { type: 'image/jpeg' })
+				)
+				if (token !== sourceGeneration.current) {
+					URL.revokeObjectURL(url)
+					return
+				}
+				setPreviewUrl(url)
+			} catch {
+				/* Следующий тик повторит; фатальные ошибки — в start/select. */
+			} finally {
+				pullBusy.current = false
+			}
+		}
+		pullTimer.current = setInterval(() => {
+			void pull()
+		}, 200)
+		void pull()
+	}, [setPreviewUrl, stopPullLoop])
+
 	const setPausePreview = useCallback(
 		(paused: boolean) => {
 			const token = ++previewGeneration.current
@@ -64,11 +135,11 @@ export function useTradingCapture() {
 			if (paused) {
 				// Selection must not publish OCR from an in-flight live frame.
 				stop()
-				video?.pause()
+				if (!tauriMode) video?.pause()
 				updatePausePreview(true)
 			} else {
 				updatePausePreview(false)
-				if (video?.srcObject)
+				if (!tauriMode && video?.srcObject)
 					void video.play().catch(() => {
 						if (token === previewGeneration.current) {
 							updatePausePreview(true)
@@ -77,13 +148,19 @@ export function useTradingCapture() {
 					})
 			}
 		},
-		[stop]
+		[stop, tauriMode]
 	)
 
 	const disconnect = useCallback(() => {
 		sourceGeneration.current++
 		previewGeneration.current++
 		stop()
+		stopPullLoop()
+		tauriSource.current = null
+		tauriFrame.current = null
+		setPreviewUrl(null)
+		setSources([])
+		setSourceId(null)
 		removeEndedListener.current?.()
 		removeEndedListener.current = null
 		for (const track of streamRef.current?.getTracks() ?? []) track.stop()
@@ -95,20 +172,27 @@ export function useTradingCapture() {
 		updatePausePreview(false)
 		setConnected(false)
 		setSelecting(false)
-	}, [stop])
+	}, [stop, stopPullLoop, setPreviewUrl])
 
 	useEffect(() => () => disconnect(), [disconnect])
 
-	const resetSnapshot = () =>
-		setSnapshot((previous) => ({
-			...emptySnapshot,
-			revision: previous.revision + 1,
-		}))
+	const resetSnapshot = useCallback(
+		() =>
+			setSnapshot((previous) => ({
+				...emptySnapshot,
+				revision: previous.revision + 1,
+			})),
+		[]
+	)
 
 	const selectSource = async () => {
 		disconnect()
 		resetSnapshot()
 		setError(null)
+		if (tauriMode) {
+			await selectSourceTauri()
+			return
+		}
 		if (!navigator.mediaDevices?.getDisplayMedia) {
 			setError('unsupported')
 			return
@@ -148,6 +232,46 @@ export function useTradingCapture() {
 		}
 	}
 
+	// Tauri: источник — окно из Rust (автовыбор игры) или primary monitor.
+	// Потока getDisplayMedia во webview нет — кадры тянет pull-цикл.
+	const selectSourceTauri = async () => {
+		const token = sourceGeneration.current
+		setSelecting(true)
+		try {
+			const windows = await captureListWindows()
+			if (token !== sourceGeneration.current) return
+			setSources(windows)
+			const game = await captureFindGame().catch(() => null)
+			if (token !== sourceGeneration.current) return
+			// Окно игры либо primary monitor (windowId null).
+			const windowId = game?.id ?? null
+			tauriSource.current = { windowId }
+			setSourceId(windowId)
+			startPullLoop()
+			if (token !== sourceGeneration.current) return
+			setConnected(true)
+		} catch {
+			if (token !== sourceGeneration.current) return
+			disconnect()
+			setError('captureError')
+		} finally {
+			if (token === sourceGeneration.current) setSelecting(false)
+		}
+	}
+
+	// Ручной выбор окна (Tauri). Pull-цикл подхватывает новый id со следующего
+	// тика; текущий кадр сбрасываем, чтобы OCR не ел stale-пиксели.
+	const selectWindow = useCallback(
+		(windowId: string | null) => {
+			if (!tauriMode || !tauriSource.current) return
+			tauriSource.current = { windowId }
+			tauriFrame.current = null
+			setSourceId(windowId)
+			resetSnapshot()
+		},
+		[tauriMode, resetSnapshot]
+	)
+
 	const start = async (
 		region: Selection,
 		language: string,
@@ -169,9 +293,21 @@ export function useTradingCapture() {
 		)
 		try {
 			const video = videoRef.current
-			if (!video?.srcObject) throw new Error('Video unavailable')
+			if (tauriMode) {
+				// Pull-цикл крутится с selectSource, но первого кадра могло
+				// не быть — дотягиваем синхронно перед запуском OCR.
+				const source = tauriSource.current
+				if (!source) throw new Error('Video unavailable')
+				if (!tauriFrame.current) {
+					tauriFrame.current = await captureFrame(source.windowId)
+				}
+			} else if (!video?.srcObject) {
+				throw new Error('Video unavailable')
+			}
 			previewGeneration.current++
-			await video.play()
+			if (!tauriMode && video) {
+				await video.play()
+			}
 			if (!active()) return
 			updatePausePreview(false)
 			const { createWorker, PSM } = await import('tesseract.js')
@@ -216,26 +352,36 @@ export function useTradingCapture() {
 			setStatus('running')
 			let busy = false
 			const recognize = async () => {
-				const video = videoRef.current
-				if (
-					busy ||
-					!active() ||
-					!video ||
-					video.readyState < 2 ||
-					video.paused ||
-					!video.videoWidth ||
-					!video.videoHeight
-				)
-					return
+				if (busy || !active()) return
 				busy = true
 				try {
-					// This is the only live-video read in a cycle. All crops, including
-					// those recognized after an await, come from this frozen frame.
-					if (frozen.width !== video.videoWidth)
-						frozen.width = video.videoWidth
-					if (frozen.height !== video.videoHeight)
-						frozen.height = video.videoHeight
-					sourceContext.drawImage(video, 0, 0)
+					if (tauriMode) {
+						// Rust-кадр (уже декодирован pull-циклом) вместо video.
+						const frame = tauriFrame.current
+						if (!frame) return
+						if (frozen.width !== frame.width)
+							frozen.width = frame.width
+						if (frozen.height !== frame.height)
+							frozen.height = frame.height
+						sourceContext.drawImage(frame.source, 0, 0)
+					} else {
+						const video = videoRef.current
+						if (
+							!video ||
+							video.readyState < 2 ||
+							video.paused ||
+							!video.videoWidth ||
+							!video.videoHeight
+						)
+							return
+						// This is the only live-video read in a cycle. All crops, including
+						// those recognized after an await, come from this frozen frame.
+						if (frozen.width !== video.videoWidth)
+							frozen.width = video.videoWidth
+						if (frozen.height !== video.videoHeight)
+							frozen.height = video.videoHeight
+						sourceContext.drawImage(video, 0, 0)
+					}
 					const started = performance.now()
 					let changed = false
 					for (const [index, cache] of caches.entries()) {
@@ -342,6 +488,10 @@ export function useTradingCapture() {
 
 	return {
 		videoRef,
+		previewUrl,
+		sources,
+		sourceId,
+		selectWindow,
 		connected,
 		selecting,
 		status,

@@ -13,6 +13,7 @@ import { useDebounce } from '@/hooks/useDebounce'
 import { usePreparedSearch } from '@/hooks/usePreparedSearch'
 import type { SitePage } from '@/hooks/useSearchSitePages'
 import { formatDate } from '@/lib/date'
+import { articleHref } from '@/lib/desktop-href'
 import { getLocale } from '@/lib/getLocale'
 import type { ItemListing } from '@/types/api.type'
 import type { Article } from '@/types/article.type'
@@ -121,7 +122,7 @@ const ArticleCard = React.memo(function ArticleCard({
 	return (
 		<Card.Link
 			className="py-2"
-			href={`/articles/${article.id}`}
+			href={articleHref(article.id)}
 			onClick={close}
 		>
 			<Card.Header className="flex flex-row items-center gap-4">

@@ -1,0 +1,27 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "main-window",
+  "description": "Permissions for the main Stalhub window",
+  "windows": ["main"],
+  "permissions": [
+    "core:default",
+    "log:default",
+    "opener:default",
+    "store:default",
+    "dialog:default",
+    "notification:default",
+    "clipboard-manager:default",
+    "process:default",
+    "os:default",
+    "deep-link:default",
+    "updater:default",
+    {
+      "identifier": "core:event:default",
+      "allow": [
+        {
+          "name": "stalhub:/*"
+        }
+      ]
+    }
+  ]
+}

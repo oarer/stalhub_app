@@ -14,6 +14,7 @@ import { Divider } from '@/components/ui/Divider'
 import { NAV_STRUCTURE, type NavItem } from '@/constants/nav.const'
 import useSvg from '@/hooks/useSvg'
 import { cn } from '@/lib/cn'
+import { avatarImageUrl } from '@/lib/imageUrl'
 import { userQueries } from '@/queries/user/user.queries'
 import { useSidebarStore } from '@/stores/useSidebar.store'
 import { filterTabsByRoles, tabGroups } from '@/types/me.types'
@@ -271,7 +272,7 @@ export default function AppSidebar() {
 							isCollapsed ? 'size-8' : 'size-10'
 						)}
 						height={40}
-						src={`/api/v1/users/avatar/${user.id}`}
+						src={avatarImageUrl(user.id)}
 						width={40}
 					/>
 					<SlideLabel className="min-w-0" collapsed={isCollapsed}>

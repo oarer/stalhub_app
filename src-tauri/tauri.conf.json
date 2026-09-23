@@ -1,0 +1,69 @@
+{
+  "$schema": "../node_modules/@tauri-apps/cli/config.schema.json",
+  "productName": "Stalhub",
+  "version": "0.0.1",
+  "identifier": "dev.stalhub.app",
+  "build": {
+    "frontendDist": "../web/out",
+    "devUrl": "http://localhost:3000",
+    "beforeDevCommand": "bun run --cwd web dev",
+    "beforeBuildCommand": "bun run --cwd web build:export"
+  },
+  "app": {
+    "windows": [
+      {
+        "label": "main",
+        "title": "Stalhub",
+        "width": 1440,
+        "height": 960,
+        "minWidth": 900,
+        "minHeight": 640,
+        "center": true,
+        "resizable": true,
+        "fullscreen": false,
+        "backgroundColor": "#09090b"
+      }
+    ],
+    "security": {
+      "csp": "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' 'wasm-unsafe-eval' https://telegram.org https://oauth.telegram.org; style-src 'self' 'unsafe-inline'; img-src 'self' asset: http://asset.localhost https: data: blob:; font-src 'self' https: data:; connect-src 'self' ipc: http://ipc.localhost asset: http://asset.localhost https:; worker-src 'self' blob:; media-src 'self' https: blob: data:; frame-src https://oauth.telegram.org https://www.youtube.com https://www.youtube-nocookie.com; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'"
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": "all",
+    "createUpdaterArtifacts": true,
+    "icon": [
+      "icons/32x32.png",
+      "icons/128x128.png",
+      "icons/128x128@2x.png",
+      "icons/icon.icns",
+      "icons/icon.ico"
+    ],
+    "android": {
+      "debugApplicationIdSuffix": ".debug"
+    }
+  },
+  "plugins": {
+    "updater": {
+      "active": true,
+      "endpoints": [
+        "https://github.com/oarer/stalhub_app/releases/latest/download/latest.json"
+      ],
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDI0MjE4MDZEMUQ3QzVDMkUKUldRdVhId2RiWUFoSk5JdmF4NzZaNjVWU1JmVjhXOFRudnMxMmFXWjZPSEhtQ3VxdjEvbUVESEsK"
+    },
+    "deep-link": {
+      "desktop": {
+        "schemes": [
+          "stalhub"
+        ]
+      },
+      "mobile": [
+        {
+          "scheme": [
+            "stalhub"
+          ]
+        }
+      ]
+    }
+  }
+}

@@ -1,7 +1,12 @@
-import { headers } from 'next/headers'
 import { type Locale, VALID_LOCALES } from '@/types/item.type'
 
+const IS_STATIC_EXPORT = process.env.STALHUB_STATIC_EXPORT === '1'
+
 export const getLocaleServer = async (): Promise<Locale> => {
+	// Десктоп-сборка (Tauri) — статический export: headers() недоступен.
+	if (IS_STATIC_EXPORT) return 'ru'
+
+	const { headers } = await import('next/headers')
 	const headerList = await headers()
 
 	const langCookie = headerList

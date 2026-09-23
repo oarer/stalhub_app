@@ -1,6 +1,7 @@
 import Image from 'next/image'
 import Link from 'next/link'
 import { Divider } from '@/components/ui/Divider'
+import { itemHref } from '@/lib/desktop-href'
 import type { BarterItemResult } from '@/types/barter.type'
 import { InfoColor, infoColorMap, type Locale } from '@/types/item.type'
 import { formatBarterAmount } from '@/utils/barterUtils'
@@ -18,7 +19,7 @@ export function BarterItem({ item, amount, locale }: Props) {
 	return (
 		<Link
 			className="group flex flex-col items-center gap-3 rounded-xl border-2 border-primary p-2"
-			href={`/items${item.category}`}
+			href={itemHref(item.category)}
 		>
 			<Image
 				alt={messageToString(item.lines, locale)}

@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/Button'
 import Input from '@/components/ui/Input'
 import { toast } from '@/components/ui/Toast'
 import { getQueryClient } from '@/providers/QueryProvider'
+import { meArticleEditHref } from '@/lib/desktop-href'
 import { articleService } from '@/services/article/article.service'
 import { useAuthStore } from '@/stores/useAuth.store'
 import { ArticleType } from '@/types/article.type'
@@ -60,7 +61,7 @@ export default function NewArticleView() {
 		onSuccess: (article) => {
 			queryClient.invalidateQueries({ queryKey: ['articles'] })
 			toast.success(t('me.newArticle.toastCreated'))
-			router.push(`/me/articles/${article.id}/edit`)
+			router.push(meArticleEditHref(article.id))
 		},
 		onError: () => {
 			toast.error(t('me.newArticle.toastCreateError'))

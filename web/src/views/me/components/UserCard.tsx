@@ -7,6 +7,7 @@ import { montserrat, unbounded } from '@/app/fonts'
 import { Tooltip } from '@/components/ui/Tooltip'
 import Avatar from '@/components/ui/user/Avatar'
 import { cn } from '@/lib/cn'
+import { avatarImageUrl } from '@/lib/imageUrl'
 import type { UserCardProps } from '@/types/me.types'
 import type { UserBadge } from '@/types/user.type'
 import { BgVariantSelector } from '@/views/me/components/BgSelector'
@@ -39,7 +40,7 @@ export default forwardRef<HTMLDivElement, UserCardProps>(function UserCard(
 						alt={user.name ?? ''}
 						className="absolute inset-0 scale-105 object-cover blur-sm"
 						fill
-						src={`/api/v1/users/avatar/${user.id}`}
+						src={avatarImageUrl(user.id)}
 						unoptimized
 					/>
 					<div className="absolute inset-0 bg-black/40" />

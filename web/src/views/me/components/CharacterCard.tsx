@@ -6,6 +6,7 @@ import Link from 'next/link'
 import { useTranslations } from 'next-intl'
 import type { Regions } from '@/types/api.type'
 import type { PlayerResponse } from '@/types/player.type'
+import { playerHref } from '@/lib/desktop-href'
 import { allianceBackground } from '@/types/user.type'
 
 interface Props {
@@ -19,7 +20,7 @@ export function CharacterCard({ character, region }: Props) {
 	return (
 		<Link
 			className={`${allianceBackground[character.alliance] ?? 'bg-card'} flex items-center gap-3 rounded-lg p-3 transition-all hover:brightness-90`}
-			href={`/player/${region}/${character.username}`}
+			href={playerHref(region, character.username)}
 		>
 			<div className="rounded-lg bg-card p-1">
 				{character.alliance ? (

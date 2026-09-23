@@ -1,6 +1,9 @@
 import type { MetadataRoute } from 'next'
 import meta from '@/constants/meta.json'
 
+// Требуется для static export (десктоп); на сайте даёт ISR-кэш на час.
+export const revalidate = 3600
+
 export default function sitemap(): MetadataRoute.Sitemap {
 	const baseUrl = 'https://stalhub.dev'
 

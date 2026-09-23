@@ -6,6 +6,7 @@ import { Toaster } from 'sonner'
 import ImportDeeplinkHandler from '@/components/import/ImportDeeplinkHandler'
 import { UwuProvider } from '@/providers/uwuProvider'
 import { userService } from '@/services/user/user.service'
+import { initTauriBridge } from '@/lib/tauri-bridge'
 import { useAuthStore } from '@/stores/useAuth.store'
 import { useBanStore } from '@/stores/useBan.store'
 import BannedView from '@/views/errors/banned/BannedView'
@@ -23,6 +24,9 @@ export default function Providers({ children }: Props) {
 
 	useEffect(() => {
 		setMounted(true)
+		// Tauri-шим window.stalhubDesktop: no-op вне Tauri-webview (сайт),
+		// не ставится поверх Electron-preload. Идемпотентен.
+		initTauriBridge()
 
 		if (pathname.startsWith('/auth')) return
 

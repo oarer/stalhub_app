@@ -1,9 +1,9 @@
 'use client'
 
-import axios from 'axios'
 import { usePathname } from 'next/navigation'
 import { NextIntlClientProvider } from 'next-intl'
 import { useEffect, useState } from 'react'
+import { apiClient } from '@/app/api/interceptors/root.interceptor'
 import GlobalErrorView from '@/views/errors/globalError/GlobalErrorView'
 
 type GlobalErrorProps = {
@@ -43,7 +43,7 @@ export default function GlobalError({ error, reset }: GlobalErrorProps) {
 				}
 
 				const content = parts.join('\n')
-				const response = await axios.post('/api/error-report', {
+				const response = await apiClient.post('/api/error-report', {
 					content,
 				})
 

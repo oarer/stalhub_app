@@ -7,6 +7,7 @@ import { useTranslations } from 'next-intl'
 import { unbounded } from '@/app/fonts'
 import GradientText from '@/components/ui/GradientText'
 import Avatar from '@/components/ui/user/Avatar'
+import { userHref } from '@/lib/desktop-href'
 
 import { tierListQueries } from '@/queries/tier-list/tier-list.queries'
 import type { WeeklyTopAuthor, WeeklyTopWork } from '@/types/tier-list.type'
@@ -38,7 +39,7 @@ function AuthorCard({
 			/>
 			<Link
 				className={`${unbounded.className} text-center font-bold text-lg text-primary uppercase tracking-widest`}
-				href={`/users/${entry.user.username}`}
+				href={userHref(entry.user.username)}
 			>
 				{entry.user.name || entry.user.username}
 			</Link>

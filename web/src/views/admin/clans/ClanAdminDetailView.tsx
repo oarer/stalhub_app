@@ -8,6 +8,7 @@ import { useTranslations } from 'next-intl'
 import { useState } from 'react'
 import { Badge } from '@/components/ui/Badge'
 import { Button } from '@/components/ui/Button'
+import { adminUserHref } from '@/lib/desktop-href'
 import { Card } from '@/components/ui/Card'
 import { Combobox } from '@/components/ui/Combobox'
 import Input from '@/components/ui/Input'
@@ -515,7 +516,7 @@ export default function ClanAdminDetailView({ clanId }: Props) {
 												{member.user ? (
 													<Link
 														className="text-sky-400 hover:underline"
-														href={`/admin/users/${member.user.id}`}
+														href={adminUserHref(member.user.id)}
 													>
 														{member.user.username ||
 															member.user.name}
