@@ -8,6 +8,7 @@ import { useState } from 'react'
 import { Badge } from '@/components/ui/Badge'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
+import { adminClanHref } from '@/lib/desktop-href'
 import Input from '@/components/ui/Input'
 import { Table } from '@/components/ui/Table'
 import { useDebounce } from '@/hooks/useDebounce'
@@ -86,7 +87,7 @@ export default function ClansAdminView() {
 									<Table.Cell>
 										<Link
 											className="font-semibold text-sky-400 hover:underline"
-											href={`/admin/clans/${clan.id}`}
+											href={adminClanHref(clan.id)}
 										>
 											{clan.name}
 										</Link>
@@ -127,7 +128,7 @@ export default function ClansAdminView() {
 										)}
 									</Table.Cell>
 									<Table.Cell>
-										<Link href={`/admin/clans/${clan.id}`}>
+										<Link href={adminClanHref(clan.id)}>
 											<Button size="sm" variant="ghost">
 												<Icon icon="lucide:eye" />
 											</Button>

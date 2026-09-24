@@ -2,6 +2,7 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { useTranslations } from 'next-intl'
 import { Divider } from '@/components/ui/Divider'
+import { itemHref } from '@/lib/desktop-href'
 import type { UsedInItem } from '@/types/barter.type'
 import { InfoColor, infoColorMap, type Locale } from '@/types/item.type'
 import { messageToString } from '@/utils/itemUtils'
@@ -26,7 +27,7 @@ export function BarterUsedIn({ items, locale }: Props) {
 					{items.map((item) => (
 						<Link
 							className="group flex flex-col items-center gap-3 rounded-xl border-2 border-primary p-2"
-							href={`/items${item.category}`}
+							href={itemHref(item.category)}
 							key={item.item_id}
 						>
 							<Image

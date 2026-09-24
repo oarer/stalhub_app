@@ -16,7 +16,7 @@ permissions:
   contents: read
 
 # Serialize runs per ref so the version computed below cannot race with an
-# in-flight release (electron-builder bakes the version into the artifacts).
+# in-flight release (tauri.conf.json bakes the version into the artifacts).
 concurrency:
   group: ci-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: false
@@ -87,20 +87,22 @@ jobs:
         env:
           STALHUB_API_ORIGIN: https://api.stalhub.dev
 
-  electron:
+  tauri:
     needs: [web, version]
     strategy:
       fail-fast: false
       matrix:
         include:
           - name: linux-x64
-            os: ubuntu-latest
-            platform: linux
-            arch: x64
+            os: ubuntu-22.04
+            bundles: deb appimage
           - name: windows-x64
             os: windows-latest
-            platform: win
-            arch: x64
+            bundles: nsis
+          # macOS opt-in (needs a mac runner): uncomment to enable.
+          # - name: macos-arm64
+          #   os: macos-latest
+          #   bundles: dmg
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v5
@@ -108,37 +110,127 @@ jobs:
         with:
           bun-version: latest
           cache: true
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Install Linux packaging tools
+        if: runner.os == 'Linux'
+        run: >
+          sudo apt-get update && sudo apt-get install -y
+          libwebkit2gtk-4.1-dev build-essential curl wget file
+          libxdo-dev libssl-dev libayatana-appindicator3-dev librsvg2-dev
       - run: bun install --frozen-lockfile
       - run: bun install --frozen-lockfile
         working-directory: web
-      - run: bun run typecheck
       - name: Set app version
         shell: bash
         env:
           APP_VERSION: ${{ needs.version.outputs.version }}
         run: |
-          node -e "const fs=require('fs');const p=JSON.parse(fs.readFileSync('package.json','utf8'));p.version=process.env.APP_VERSION;fs.writeFileSync('package.json',JSON.stringify(p,null,2)+'\n')"
-      - run: bun run build:web
+          node -e "const fs=require('fs');const p='src-tauri/tauri.conf.json';const c=JSON.parse(fs.readFileSync(p,'utf8'));c.version=process.env.APP_VERSION;fs.writeFileSync(p,JSON.stringify(c,null,2)+'\n');const t='src-tauri/Cargo.toml';let m=fs.readFileSync(t,'utf8');m=m.replace(/^version = \".*\"$/m,'version = \"'+process.env.APP_VERSION+'\"');fs.writeFileSync(t,m)"
+      - name: Build web static export
+        run: bun run build:export
         env:
           STALHUB_API_ORIGIN: https://api.stalhub.dev
-      - run: bun run build:electron
-      - name: Install Linux packaging tools
-        if: runner.os == 'Linux'
-        run: sudo apt-get update && sudo apt-get install -y rpm
-      - name: Package
-        run: bunx electron-builder --${{ matrix.platform }} --${{ matrix.arch }} --publish never
+      - uses: tauri-apps/tauri-action@v0
+        with:
+          projectPath: src-tauri
+          tauriScript: bunx tauri
+          args: --bundles ${{ matrix.bundles }}
+        env:
+          # Updater artifacts (.sig/latest.json) are signed only when the key
+          # is present; without it tauri-action builds unsigned bundles.
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
       - uses: actions/upload-artifact@v7
         with:
-          name: stalhub-${{ matrix.name }}
+          name: tauri-${{ matrix.name }}
           path: |
-            out/*.exe
-            out/*.AppImage
-            out/*.deb
-            out/*.rpm
-            out/*.dmg
-            out/*.zip
-            out/latest*.yml
-            out/*.blockmap
+            src-tauri/target/release/bundle/deb/*.deb
+            src-tauri/target/release/bundle/appimage/*.AppImage
+            src-tauri/target/release/bundle/nsis/*.exe
+            src-tauri/target/release/bundle/msi/*.msi
+            src-tauri/target/release/bundle/dmg/*.dmg
+            # Всё из updater/: .sig, latest.json и архивы для скачивания
+            # (nsis.zip / AppImage.tar.gz) — latest.json ссылается на них.
+            src-tauri/target/release/bundle/updater/*
+          if-no-files-found: error
+
+  android:
+    # Release-track: APK signing needs keystore secrets (checked in the
+    # first step with a clear error). gen/android scaffold must be committed
+    # (see the scaffold check below).
+    if: >-
+      (github.event_name == 'push' && github.ref == 'refs/heads/main') ||
+      github.event_name == 'workflow_dispatch'
+    needs: [version]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+          cache: true
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Install Android Rust targets
+        run: >
+          rustup target add aarch64-linux-android
+          armv7-linux-androideabi x86_64-linux-android i686-linux-android
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: 21
+      - uses: android-actions/setup-android@v3
+      - run: sdkmanager "platform-tools" "platforms;android-34" "build-tools;34.0.0" "ndk;27.0.12077973"
+      - name: Check Android signing secrets
+        shell: bash
+        env:
+          KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          missing=0
+          [ -n "$KEYSTORE_BASE64" ] || { echo "::error::Missing secret ANDROID_KEYSTORE_BASE64"; missing=1; }
+          [ -n "$KEYSTORE_PASSWORD" ] || { echo "::error::Missing secret ANDROID_KEYSTORE_PASSWORD"; missing=1; }
+          [ -n "$KEY_ALIAS" ] || { echo "::error::Missing secret ANDROID_KEY_ALIAS"; missing=1; }
+          [ -n "$KEY_PASSWORD" ] || { echo "::error::Missing secret ANDROID_KEY_PASSWORD"; missing=1; }
+          exit $missing
+      - name: Check Android project scaffold
+        shell: bash
+        run: |
+          if [ ! -d src-tauri/gen/android ]; then
+            echo "::error::src-tauri/gen/android is missing. Run 'bun tauri android init' locally with the Android SDK/NDK and commit the scaffold (without keystores)."
+            exit 1
+          fi
+      - name: Set app version
+        shell: bash
+        env:
+          APP_VERSION: ${{ needs.version.outputs.version }}
+        run: |
+          node -e "const fs=require('fs');const p='src-tauri/tauri.conf.json';const c=JSON.parse(fs.readFileSync(p,'utf8'));c.version=process.env.APP_VERSION;fs.writeFileSync(p,JSON.stringify(c,null,2)+'\n');const t='src-tauri/Cargo.toml';let m=fs.readFileSync(t,'utf8');m=m.replace(/^version = \".*\"$/m,'version = \"'+process.env.APP_VERSION+'\"');fs.writeFileSync(t,m)"
+      - name: Build web static export
+        run: bun run build:export
+        env:
+          STALHUB_API_ORIGIN: https://api.stalhub.dev
+      - name: Decode keystore
+        shell: bash
+        env:
+          KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+        run: |
+          echo "$KEYSTORE_BASE64" | base64 --decode > /tmp/stalhub.keystore
+      - name: Build Android packages
+        shell: bash
+        env:
+          TAURI_ANDROID_KEYSTORE_PATH: /tmp/stalhub.keystore
+          TAURI_ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          TAURI_ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          TAURI_ANDROID_KEY_ALIAS_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: bunx tauri android build
+      - uses: actions/upload-artifact@v7
+        with:
+          name: tauri-android
+          path: |
+            src-tauri/gen/android/app/build/outputs/apk/**/release/*.apk
+            src-tauri/gen/android/app/build/outputs/bundle/**/release/*.aab
           if-no-files-found: error
 
   release:
@@ -146,7 +238,7 @@ jobs:
       (github.event_name == 'push' && github.ref == 'refs/heads/main' &&
       !contains(github.event.head_commit.message, '[skip release]')) ||
       (github.event_name == 'workflow_dispatch' && inputs.skip_version == false)
-    needs: [web, electron, version]
+    needs: [web, tauri, android, version]
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -154,14 +246,34 @@ jobs:
       - uses: actions/checkout@v5
         with:
           fetch-depth: 0
+      # Tauri desktop bundles + updater artifacts (.sig/latest.json) and
+      # Android packages. Skipped jobs (e.g. android without secrets) are
+      # simply absent here.
       - uses: actions/download-artifact@v8
         with:
-          pattern: stalhub-*
+          pattern: tauri-*
           path: release-assets
           merge-multiple: true
+      # Манифест кастомного Android-апдейтера (update_android.rs): ищет
+      # universal-APK среди артефактов и привязывает его к тегу. Без APK
+      # (android-job пропущен) манифест не создаётся — десктопу он не нужен.
+      - name: Generate Android update manifest
+        shell: bash
+        env:
+          TAG: ${{ needs.version.outputs.tag }}
+          VERSION: ${{ needs.version.outputs.version }}
+        run: |
+          apk=$(find release-assets -name '*.apk' | grep -i universal | head -1)
+          if [ -z "$apk" ]; then
+            echo "No universal APK — skipping android-update.json"
+            exit 0
+          fi
+          name=$(basename "$apk")
+          node -e "const fs=require('fs');const m={version:process.env.VERSION,url:'https://github.com/oarer/stalhub_app/releases/download/'+process.env.TAG+'/'+process.argv[1]};fs.writeFileSync('release-assets/android-update.json',JSON.stringify(m,null,2)+'\n')" "$name"
       - uses: softprops/action-gh-release@v3
         with:
           tag_name: ${{ needs.version.outputs.tag }}
           name: Stalhub ${{ needs.version.outputs.tag }}
+          prerelease: true
           generate_release_notes: true
           files: release-assets/**/*

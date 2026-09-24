@@ -1,4 +1,13 @@
-import type { Paragraph, Root, Text } from 'mdast'
+import type { Paragraph, Root, RootContent, Text } from 'mdast'
+
+/** Минимальная структура untyped mdast-узлов (directive/jsx). */
+type LooseNode = {
+	type: string
+	name?: string
+	value?: string
+	attributes?: Record<string, unknown>
+	children?: LooseNode[]
+}
 
 const CALLOUT_TYPES = new Set([
 	'info',
@@ -56,7 +65,7 @@ export function remarkCalloutContainers() {
 					: ''
 				: body
 
-			const children: any[] = contentText.trim()
+			const children: LooseNode[] = contentText.trim()
 				? [
 						{
 							type: 'paragraph',
@@ -72,7 +81,7 @@ export function remarkCalloutContainers() {
 				name: calloutType,
 				attributes: title ? { title } : {},
 				children,
-			} as any
+			} as unknown as RootContent
 		}
 	}
 }
@@ -80,12 +89,14 @@ export function remarkCalloutContainers() {
 export function remarkCallouts() {
 	return (tree: Root) => {
 		for (let i = tree.children.length - 1; i >= 0; i--) {
-			const node = tree.children[i] as any
+			const node = tree.children[i] as unknown as LooseNode
 			if (node.type !== 'containerDirective') continue
-			if (!CALLOUT_TYPES.has(node.name)) continue
+			if (!node.name || !CALLOUT_TYPES.has(node.name)) continue
 
 			const calloutType = node.name
-			const title = node.attributes?.title ?? undefined
+			const rawTitle = node.attributes?.title
+			const title =
+				typeof rawTitle === 'string' ? rawTitle : undefined
 
 			const titleAttr = title
 				? [
@@ -118,7 +129,7 @@ export function remarkCallouts() {
 								children: [],
 							},
 						],
-			} as any
+			} as unknown as RootContent
 		}
 	}
 }

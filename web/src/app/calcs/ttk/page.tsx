@@ -2,8 +2,12 @@ import { dehydrate, HydrationBoundary } from '@tanstack/react-query'
 import { getQueryClient } from '@/providers/QueryProvider'
 import { itemsQueries } from '@/queries/calcs/items.queries'
 import { TTKView } from '@/views/calcs/ttk/TTKView'
+import { IS_STATIC_EXPORT } from '@/lib/isStaticExport'
 
 export default async function TTKPage() {
+	// Десктоп: каталоги тянутся на клиенте (через мост), без build-time fetch.
+	if (IS_STATIC_EXPORT) return <TTKView />
+
 	const queryClient = getQueryClient()
 
 	await Promise.all([

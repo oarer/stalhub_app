@@ -10,6 +10,7 @@ import { loadoutQueries } from '@/queries/loadout/loadout.queries'
 import { tierListQueries } from '@/queries/tier-list/tier-list.queries'
 import { userQueries } from '@/queries/user/user.queries'
 import type { Item } from '@/types/item.type'
+import { tierlistHref } from '@/lib/desktop-href'
 import { ItemCell } from '@/views/clan/components/squads/ItemCell'
 import UserCard from '@/views/me/components/UserCard'
 import { ArticleCard } from '../me/components/article/ArticleCard'
@@ -281,7 +282,7 @@ export default function UserProfileView({
 						<div className="grid grid-cols-1 gap-2 md:grid-cols-2">
 							{tierLists.data.map((tl) => (
 								<CLink
-									href={`/tierlists/${tl.external_id}`}
+									href={tierlistHref(tl.external_id)}
 									key={tl.id}
 								>
 									<div className="flex items-center gap-3 rounded-lg border border-muted bg-card p-3 transition-colors hover:border-primary/30">

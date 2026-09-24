@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/Button'
 import Input from '@/components/ui/Input'
 import { toast } from '@/components/ui/Toast'
 import { getQueryClient } from '@/providers/QueryProvider'
+import { meArtEditHref } from '@/lib/desktop-href'
 import { artService } from '@/services/art/art.service'
 import { type ArtCreate, ArtType } from '@/types/art.type'
 import { ArtImageField } from '@/views/me/components/ArtImageField'
@@ -37,7 +38,7 @@ export default function NewArtView() {
 		onSuccess: (art) => {
 			queryClient.invalidateQueries({ queryKey: ['arts'] })
 			toast.success(t('me.newArt.toastCreated'))
-			router.push(`/me/arts/${art.id}/edit`)
+			router.push(meArtEditHref(art.id))
 		},
 		onError: () => {
 			toast.error(t('me.newArt.toastCreateError'))

@@ -2164,7 +2164,8 @@
 		},
 		"settings": "Ajustes",
 		"collapse": "Contraer",
-		"expand": "Expandir"
+		"expand": "Expandir",
+		"home": "Inicio"
 	},
 	"onboarding": {
 		"back": "Atrás",
@@ -2575,6 +2576,7 @@
 		"priceAdded": "Precio añadido",
 		"prices": "Precios de objetos",
 		"pricesLocal": "Los precios se guardan solo en este dispositivo. El OCR puede equivocarse: verifica el intercambio antes de aceptarlo.",
+		"primaryMonitor": "Monitor principal",
 		"privacy": "Las imágenes se procesan localmente. Los modelos de idioma se descargan en el primer uso. Incluye solo las columnas de nombre y cantidad.",
 		"raw": "Texto OCR sin procesar",
 		"ready": "Listo",
@@ -2589,6 +2591,7 @@
 		"skipUpdate": "Omitir",
 		"snapshot": "Fotograma actual, no totales acumulados",
 		"source": "Seleccionar pantalla / ventana",
+		"sourceWindow": "Ventana de captura",
 		"start": "Iniciar",
 		"status": "Estado",
 		"statusAgreement": "Acuerdo",

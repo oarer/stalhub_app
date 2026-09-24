@@ -8,6 +8,7 @@ import { useState } from 'react'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
 import { Modal } from '@/components/ui/Modal'
+import { artHref } from '@/lib/desktop-href'
 import { Table } from '@/components/ui/Table'
 import { toast } from '@/components/ui/Toast'
 import { cn } from '@/lib/cn'
@@ -117,7 +118,7 @@ export default function ArtsAdminView() {
 									<Table.Cell>
 										<Link
 											className="font-semibold text-sky-400 hover:underline"
-											href={`/arts/${art.id}`}
+											href={artHref(art.id)}
 										>
 											{art.title}
 										</Link>

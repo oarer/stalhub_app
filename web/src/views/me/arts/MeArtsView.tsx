@@ -12,6 +12,7 @@ import { Button } from '@/components/ui/Button'
 import { CLink } from '@/components/ui/Link'
 import { toast } from '@/components/ui/Toast'
 import { cn } from '@/lib/cn'
+import { artHref, meArtEditHref } from '@/lib/desktop-href'
 import { formatDate } from '@/lib/date'
 import { resolveImageUrl } from '@/lib/imageUrl'
 import { getQueryClient } from '@/providers/QueryProvider'
@@ -169,7 +170,7 @@ export default function MeArtsView() {
 							</div>
 
 							<div className="flex shrink-0 items-center gap-1">
-								<Link href={`/arts/${art.id}`}>
+								<Link href={artHref(art.id)}>
 									<Button size="sm" variant="ghost">
 										<Icon
 											className="size-4"
@@ -177,7 +178,7 @@ export default function MeArtsView() {
 										/>
 									</Button>
 								</Link>
-								<Link href={`/me/arts/${art.id}/edit`}>
+								<Link href={meArtEditHref(art.id)}>
 									<Button size="sm" variant="ghost">
 										<Icon
 											className="size-4"

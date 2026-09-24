@@ -13,6 +13,7 @@ import HoverUserCard from '@/components/ui/user/HoverUserCard'
 import { useMDXComponents } from '@/components/wiki/mdx-components'
 import { compileMdx } from '@/lib/actions/mdx'
 import { formatDate } from '@/lib/date'
+import { avatarImageUrl } from '@/lib/imageUrl'
 import { getQueryClient } from '@/providers/QueryProvider'
 import { articleQueries } from '@/queries/article/article.queries'
 import { articleService } from '@/services/article/article.service'
@@ -95,7 +96,7 @@ export default function ArticleView({ articleId }: ArticleViewProps) {
 							alt={article.author.username}
 							className="rounded-full"
 							height={42}
-							src={`/api/v1/users/avatar/${article.author.id}`}
+							src={avatarImageUrl(article.author.id)}
 							unoptimized
 							width={42}
 						/>

@@ -5,6 +5,7 @@ import { useTranslations } from 'next-intl'
 import { type PointerEvent, useEffect, useRef } from 'react'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
+import { isTauri } from '@/lib/tauri-bridge'
 import {
 	type Point,
 	type RegionKey,
@@ -229,13 +230,23 @@ export function RegionCard({
 					}}
 					style={{ width: `${zoom}%` }}
 				>
-					<video
-						aria-label={t('source')}
-						className="block h-auto w-full"
-						muted
-						playsInline
-						ref={capture.videoRef}
-					/>
+					{isTauri() && capture.previewUrl ? (
+						<img
+							alt=""
+							aria-label={t('source')}
+							className="block h-auto w-full"
+							draggable={false}
+							src={capture.previewUrl}
+						/>
+					) : (
+						<video
+							aria-label={t('source')}
+							className="block h-auto w-full"
+							muted
+							playsInline
+							ref={capture.videoRef}
+						/>
+					)}
 					{capture.connected &&
 						(
 							Object.entries(regions) as [

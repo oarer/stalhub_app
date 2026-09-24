@@ -14,6 +14,7 @@ import { Divider } from '@/components/ui/Divider'
 import { NAV_STRUCTURE, type NavItem } from '@/constants/nav.const'
 import useSvg from '@/hooks/useSvg'
 import { cn } from '@/lib/cn'
+import { avatarImageUrl } from '@/lib/imageUrl'
 import { userQueries } from '@/queries/user/user.queries'
 import { useSidebarStore } from '@/stores/useSidebar.store'
 import { filterTabsByRoles, tabGroups } from '@/types/me.types'
@@ -230,7 +231,7 @@ export default function AppSidebar() {
 	return (
 		<aside
 			className={cn(
-				'fixed inset-y-0 left-0 z-80 flex w-16 flex-col gap-2 overflow-hidden border-primary/20 border-r bg-card/90 px-2 py-3 shadow-xl backdrop-blur-xl transition-[width,padding] duration-500 ease-in-out',
+				'fixed inset-y-0 left-0 z-80 hidden w-16 flex-col gap-2 overflow-hidden border-primary/20 border-r bg-card/90 px-2 py-3 shadow-xl backdrop-blur-xl transition-[width,padding] duration-500 ease-in-out sm:flex',
 				!isCollapsed && 'sm:w-72 sm:px-4'
 			)}
 		>
@@ -271,7 +272,7 @@ export default function AppSidebar() {
 							isCollapsed ? 'size-8' : 'size-10'
 						)}
 						height={40}
-						src={`/api/v1/users/avatar/${user.id}`}
+						src={avatarImageUrl(user.id)}
 						width={40}
 					/>
 					<SlideLabel className="min-w-0" collapsed={isCollapsed}>

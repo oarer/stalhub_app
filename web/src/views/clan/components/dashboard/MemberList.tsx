@@ -6,6 +6,7 @@ import { montserrat } from '@/app/fonts'
 import { Badge } from '@/components/ui/Badge'
 import { Skeleton } from '@/components/ui/Skeleton'
 import Avatar from '@/components/ui/user/Avatar'
+import { userHref } from '@/lib/desktop-href'
 import HoverUserCard from '@/components/ui/user/HoverUserCard'
 import type { ClanMember } from '@/types/clan/clan.type'
 import { Section } from '../../../me/components/Section'
@@ -55,7 +56,7 @@ export function MemberList({ members, isLoading }: MemberListProps) {
 										<HoverUserCard id={member.user.id}>
 											<Link
 												className={`${montserrat.className} font-semibold text-text-accent text-xs`}
-												href={`/users/${member.user.id}`}
+												href={userHref(member.user.id)}
 											>
 												{member.user.name}
 											</Link>

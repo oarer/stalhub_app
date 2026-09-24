@@ -8,6 +8,7 @@ import { useState } from 'react'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
 import { Modal } from '@/components/ui/Modal'
+import { articleHref } from '@/lib/desktop-href'
 import { Table } from '@/components/ui/Table'
 import { toast } from '@/components/ui/Toast'
 import { getQueryClient } from '@/providers/QueryProvider'
@@ -135,7 +136,7 @@ export default function ArticlesAdminView() {
 									<Table.Cell>
 										<Link
 											className="font-semibold text-sky-400 hover:underline"
-											href={`/articles/${article.id}`}
+											href={articleHref(article.id)}
 										>
 											{article.title}
 										</Link>

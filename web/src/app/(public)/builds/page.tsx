@@ -3,8 +3,12 @@ import { getQueryClient } from '@/providers/QueryProvider'
 import { buildApiQueries } from '@/queries/build-api/build-api.queries'
 import { itemsQueries } from '@/queries/calcs/items.queries'
 import BuildsPublicView from '@/views/builds/BuildsPublicView'
+import { IS_STATIC_EXPORT } from '@/lib/isStaticExport'
 
 export default async function BuildsPage() {
+	// Десктоп: данные тянутся на клиенте (через мост), без build-time fetch.
+	if (IS_STATIC_EXPORT) return <BuildsPublicView />
+
 	const queryClient = getQueryClient()
 
 	await Promise.all([

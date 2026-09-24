@@ -15,6 +15,7 @@ import Input from '@/components/ui/Input'
 import { Skeleton } from '@/components/ui/Skeleton'
 import { toast } from '@/components/ui/Toast'
 import { GITHUB_RAW_BASE } from '@/constants/github.const'
+import { tierlistEditHref } from '@/lib/desktop-href'
 import { tierListQueries } from '@/queries/tier-list/tier-list.queries'
 import { tierListService } from '@/services/tier-list/tier-list.service'
 import {
@@ -181,12 +182,18 @@ const TIER_LIST_CATEGORIES: Array<{ key: string; labelKey: string }> = [
 	{ key: 'pistol', labelKey: 'tierlists.categories.pistol' },
 ]
 
-export default function TierListEditorView() {
+export default function TierListEditorView({
+	editIdProp,
+}: {
+	// Десктоп (query-схема ?edit=): id приходит пропсом.
+	// Сайт (path-схема /tierlists/[id]/edit): id берётся из useParams.
+	editIdProp?: string
+}) {
 	const t = useTranslations()
 	const router = useRouter()
 	const params = useParams()
 	const queryClient = useQueryClient()
-	const editId = params.id as string | undefined
+	const editId = editIdProp ?? (params.id as string | undefined)
 	const isEditing = Boolean(editId)
 
 	const { data: existing, isLoading: loadingExisting } = useQuery({
@@ -323,7 +330,7 @@ export default function TierListEditorView() {
 		onSuccess: (result) => {
 			toast.success(t('tierlists.saved'))
 			queryClient.invalidateQueries({ queryKey: ['tier-lists'] })
-			router.push(`/tierlists/${result.external_id}`)
+			router.push(tierlistEditHref(result.external_id))
 		},
 		onError: () => {
 			toast.error(t('tierlists.saveError'))

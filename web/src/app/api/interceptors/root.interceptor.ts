@@ -1,5 +1,7 @@
 import axios from 'axios'
 import { useBanStore } from '@/stores/useBan.store'
+import { tauriApiAdapter } from '@/lib/tauri-api-adapter'
+import { isTauri } from '@/lib/tauri-bridge'
 
 declare module 'axios' {
 	interface AxiosRequestConfig {
@@ -27,6 +29,13 @@ export const apiClient = axios.create({
 	},
 	withCredentials: true,
 })
+
+// Десктоп (Tauri, static export): относительных /api/* в webview нет —
+// все запросы идут через Rust API-мост (Фаза 3, api_bridge.rs: reqwest +
+// cookie-jar в store). На сайте, в SSR и вне Tauri — обычный adapter.
+if (isTauri()) {
+	apiClient.defaults.adapter = tauriApiAdapter
+}
 
 let isRefreshing = false
 

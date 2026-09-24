@@ -8,6 +8,7 @@ import { useState } from 'react'
 import { unbounded } from '@/app/fonts'
 import { Button } from '@/components/ui/Button'
 import { formatDate } from '@/lib/date'
+import { articleHref } from '@/lib/desktop-href'
 import { articleQueries } from '@/queries/article/article.queries'
 
 export default function ArticlesView() {
@@ -48,7 +49,7 @@ export default function ArticlesView() {
 					{articles.map((article) => (
 						<Link
 							className="group flex flex-col gap-3 rounded-lg border-2 border-primary/50 bg-card p-4 transition-colors hover:bg-accent/70"
-							href={`/articles/${article.id}`}
+							href={articleHref(article.id)}
 							key={article.id}
 						>
 							<h2 className="font-semibold text-lg transition-colors group-hover:text-primary">

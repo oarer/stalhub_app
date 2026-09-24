@@ -4,20 +4,13 @@
   "desktopName": "stalhub.desktop",
   "version": "1.0.0",
   "description": "Stalhub desktop application",
-  "main": ".vite/build/main.js",
   "private": true,
   "scripts": {
-    "start": "node scripts/dev.mjs",
-    "dev": "node scripts/dev.mjs",
-    "build:web": "node scripts/build-web.mjs",
-    "build:electron": "node scripts/build-electron.mjs",
-    "package": "bun run build:web && bun run build:electron && electron-builder --dir",
-    "make": "bun run build:web && bun run build:electron && electron-builder",
-    "make:win": "bun run build:web && bun run build:electron && electron-builder --win",
-    "make:linux": "bun run build:web && bun run build:electron && electron-builder --linux",
-    "make:mac": "bun run build:web && bun run build:electron && electron-builder --mac",
-    "lint": "eslint --ext .ts,.tsx .",
-    "typecheck": "tsc --noEmit"
+    "dev": "tauri dev",
+    "build:export": "bun run --cwd web build:export",
+    "build:tauri": "tauri build",
+    "tauri": "tauri",
+    "lint": "eslint --ext .ts,.tsx ."
   },
   "keywords": [],
   "author": {
@@ -27,16 +20,11 @@
   "license": "MIT",
   "devDependencies": {
     "@playwright/test": "^1.63.0",
+    "@tauri-apps/cli": "^2.11.5",
     "@typescript-eslint/eslint-plugin": "^5.62.0",
     "@typescript-eslint/parser": "^5.62.0",
-    "electron": "44.4.1",
-    "electron-builder": "^26.15.3",
     "eslint": "^8.57.1",
     "eslint-plugin-import": "^2.32.0",
-    "typescript": "^6.0.3",
-    "vite": "^5.4.21"
-  },
-  "dependencies": {
-    "electron-updater": "^6.8.9"
+    "typescript": "^6.0.3"
   }
 }

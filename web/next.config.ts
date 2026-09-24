@@ -1,13 +1,17 @@
 import type { NextConfig } from 'next'
 import createNextIntlPlugin from 'next-intl/plugin'
 
+// Публичный сайт (stalhub.dev) собирается standalone-профилем по умолчанию.
+// Десктоп-сборка (Tauri) использует STALHUB_STATIC_EXPORT=1 → output: 'export'.
+const isStaticExport = process.env.STALHUB_STATIC_EXPORT === '1'
+
 const withNextIntl = createNextIntlPlugin('./src/i18n/request.ts')
 
 const nextConfig: NextConfig = {
 	assetPrefix: undefined,
 	outputFileTracingRoot: process.cwd(),
 	outputFileTracingIncludes: { '/legal/tos': ['./src/app/(public)/legal/tos/tos.mdx'] },
-	output: 'standalone',
+	output: isStaticExport ? 'export' : 'standalone',
 	allowedDevOrigins: ['192.168.1.40', 'localhost'],
 	images: {
 		// Electron's Linux runtime can conflict with sharp/libvips. Browser-side
@@ -48,6 +52,11 @@ const nextConfig: NextConfig = {
 			{
 				protocol: 'https',
 				hostname: 'cdn.stalhub.dev',
+				pathname: '/**',
+			},
+			{
+				protocol: 'https',
+				hostname: 'api.stalhub.dev',
 				pathname: '/**',
 			},
 		],

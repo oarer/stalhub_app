@@ -18,7 +18,7 @@ export default function ModernLayout({ children, user }: MeLayoutProps) {
 						user={user}
 					/>
 				</div>
-				<div className="py-6 lg:px-0 lg:py-0 z-1">{children}</div>
+				<div className="z-1 py-6 lg:px-0 lg:py-0">{children}</div>
 			</div>
 		</div>
 	)

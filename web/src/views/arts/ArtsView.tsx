@@ -14,6 +14,7 @@ import Input from '@/components/ui/Input'
 import { Modal } from '@/components/ui/Modal'
 import { useDebounce } from '@/hooks/useDebounce'
 import { cn } from '@/lib/cn'
+import { artHref } from '@/lib/desktop-href'
 import { isVideoUrl, resolveImageUrl } from '@/lib/imageUrl'
 import { artQueries } from '@/queries/art/art.queries'
 import { useNsfwGateStore } from '@/stores/useNsfwGate.store'
@@ -123,7 +124,7 @@ export default function ArtsView() {
 					{arts.map((art) => (
 						<Link
 							className="group relative mb-3 block cursor-pointer break-inside-avoid overflow-hidden rounded-lg bg-card ring-2 ring-primary/30 duration-200 hover:ring-primary/70"
-							href={`/arts/${art.id}`}
+							href={artHref(art.id)}
 							key={art.id}
 							onClick={
 								art.type === ArtType.NSFW && !ageConfirmed
@@ -289,7 +290,7 @@ export default function ArtsView() {
 								const id = pendingNsfwId.current
 								pendingNsfwId.current = null
 
-								if (id) router.push(`/arts/${id}`)
+								if (id) router.push(artHref(id))
 							}}
 						>
 							{t('arts.nsfwAge.confirm')}

@@ -11,6 +11,7 @@ import { Modal } from '@/components/ui/Modal'
 import { toast } from '@/components/ui/Toast'
 import HoverUserCard from '@/components/ui/user/HoverUserCard'
 import { formatDate } from '@/lib/date'
+import { avatarImageUrl } from '@/lib/imageUrl'
 import { getQueryClient } from '@/providers/QueryProvider'
 import { articleCommentQueries } from '@/queries/article/comment.queries'
 import { articleCommentService } from '@/services/article/comment.service'
@@ -194,7 +195,7 @@ function CommentItem({
 							alt={comment.author.name}
 							className="rounded-full"
 							height={42}
-							src={`/api/v1/users/avatar/${comment.author.id}`}
+							src={avatarImageUrl(comment.author.id)}
 							unoptimized
 							width={42}
 						/>

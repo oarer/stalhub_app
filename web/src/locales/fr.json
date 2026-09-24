@@ -2164,7 +2164,8 @@
 		},
 		"settings": "Paramètres",
 		"collapse": "Réduire",
-		"expand": "Développer"
+		"expand": "Développer",
+		"home": "Accueil"
 	},
 	"onboarding": {
 		"back": "Retour",
@@ -2575,6 +2576,7 @@
 		"priceAdded": "Prix ajouté",
 		"prices": "Prix des objets",
 		"pricesLocal": "Les prix sont stockés uniquement sur cet appareil. L’OCR peut se tromper : vérifiez l’échange avant de l’accepter.",
+		"primaryMonitor": "Écran principal",
 		"privacy": "Les images sont traitées localement. Les modèles de langue sont téléchargés lors de la première utilisation. Incluez uniquement les colonnes du nom et de la quantité.",
 		"raw": "Texte OCR brut",
 		"ready": "Prêt",
@@ -2589,6 +2591,7 @@
 		"skipUpdate": "Ignorer",
 		"snapshot": "Image actuelle, sans cumul des quantités",
 		"source": "Sélectionner un écran / une fenêtre",
+		"sourceWindow": "Fenêtre de capture",
 		"start": "Démarrer",
 		"status": "Statut",
 		"statusAgreement": "Accord",

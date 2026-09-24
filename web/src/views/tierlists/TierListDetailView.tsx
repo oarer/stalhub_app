@@ -37,6 +37,7 @@ import {
 	TierListKind,
 	type TierRank,
 } from '@/types/tier-list.type'
+import { meTierlistEditHref } from '@/lib/desktop-href'
 import { messageToString } from '@/utils/itemUtils'
 import { ItemHoverCard } from './components/ItemHoverCard'
 import { TierListPngTemplate } from './components/TierListPngTemplate'
@@ -52,12 +53,18 @@ const emptyRanks = (): Record<TierRank, TierListEntry[]> => ({
 	E: [],
 })
 
-export default function TierListDetailView() {
+export default function TierListDetailView({
+	detailId,
+}: {
+	// Десктоп (query-схема /tierlists?id=): id приходит пропсом.
+	// Сайт (path-схема /tierlists/[id]): id берётся из useParams.
+	detailId?: string
+}) {
 	const t = useTranslations()
 	const params = useParams()
 	const user = useAuthStore((s) => s.user)
 	const queryClient = useQueryClient()
-	const id = params.id as string
+	const id = detailId ?? (params.id as string)
 	const locale = useLocale() as Locale
 
 	const { data: tierList, isLoading } = useQuery(tierListQueries.get(id))
@@ -216,7 +223,7 @@ export default function TierListDetailView() {
 						<>
 							<CLink
 								className="gap-2 font-semibold"
-								href={`/me/tierlists/${id}/edit`}
+								href={meTierlistEditHref(id)}
 								variant={'outline'}
 							>
 								<Icon className="size-4" icon="lucide:pencil" />

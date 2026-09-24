@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/Badge'
 import { Button } from '@/components/ui/Button'
 import { Tooltip } from '@/components/ui/Tooltip'
 import Avatar from '@/components/ui/user/Avatar'
+import { userHref } from '@/lib/desktop-href'
 import HoverUserCard from '@/components/ui/user/HoverUserCard'
 import { cn } from '@/lib/cn'
 import type { ClanSchedule } from '@/types/clan/clan.type'
@@ -154,7 +155,7 @@ export function KickList({
 											<HoverUserCard id={row.user.id}>
 												<Link
 													className={`${montserrat.className} truncate font-semibold text-text-accent text-xs`}
-													href={`/users/${row.user.id}`}
+													href={userHref(row.user.id)}
 												>
 													{row.user.name}
 												</Link>

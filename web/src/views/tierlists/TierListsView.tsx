@@ -8,6 +8,7 @@ import { montserrat, unbounded } from '@/app/fonts'
 import { Badge } from '@/components/ui/Badge'
 import { Button } from '@/components/ui/Button'
 import { CLink } from '@/components/ui/Link'
+import { tierlistHref } from '@/lib/desktop-href'
 import { Pagination } from '@/components/ui/Pagination'
 import { Skeleton } from '@/components/ui/Skeleton'
 import { tierListQueries } from '@/queries/tier-list/tier-list.queries'
@@ -195,7 +196,7 @@ export default function TierListsView({ mine = false }: { mine?: boolean }) {
 						{data?.data.map((tierList) => (
 							<CLink
 								className="group flex flex-col items-start gap-3 rounded-lg border-2 border-primary/50 bg-card p-4 transition-colors hover:bg-muted"
-								href={`/tierlists/${tierList.external_id}`}
+								href={tierlistHref(tierList.external_id)}
 								key={tierList.id}
 							>
 								<div className="flex items-center justify-between gap-2">

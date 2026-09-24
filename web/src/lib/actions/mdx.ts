@@ -1,5 +1,8 @@
-'use server'
-
+// Изоморфная сериализация MDX: работает и на сервере (сайт), и в браузере
+// (десктоп, static export). Раньше был Server Action ('use server'), но
+// Server Actions несовместимы с output:'export', а все вызовы (ArticleView,
+// TOSView, useCompiledPreview) идут из клиентских компонентов — поэтому
+// сериализация выполняется на клиенте в обеих сборках.
 import { serialize } from 'next-mdx-remote/serialize'
 import remarkBreaks from 'remark-breaks'
 import remarkDirective from 'remark-directive'
