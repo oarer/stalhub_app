@@ -6,6 +6,7 @@ import { CookieConsent } from '@/components/cookies/CookieConsent'
 import Providers from '@/providers/providers'
 import { AppMain } from '@/shared/layouts/AppMain'
 import AppSidebar from '@/shared/layouts/AppSidebar'
+import MobileNavbar from '@/shared/layouts/MobileNavbar'
 import GiveawayModal from '@/shared/layouts/GiveawayModal'
 import LoadingSplash from '@/shared/layouts/LoadingSplash'
 import ThemeApplier from '@/shared/layouts/nav/components/theme/ThemeApplier'
@@ -22,7 +23,8 @@ export default function DesktopChromeGate({
 	const pathname = usePathname()
 
 	if (pathname === '/calcs/trading/overlay') {
-		return <main className="min-h-screen">{children}</main>
+		// body locked в аппке: оверлею нужен свой скроллер.
+		return <main className="h-full min-h-screen overflow-y-auto">{children}</main>
 	}
 
 	return (
@@ -31,6 +33,7 @@ export default function DesktopChromeGate({
 			<Providers>
 				<LoadingSplash />
 				<AppSidebar />
+				<MobileNavbar />
 				<AppMain>{children}</AppMain>
 				<CookieConsent />
 				<GiveawayModal />

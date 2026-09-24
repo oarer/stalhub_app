@@ -2164,7 +2164,8 @@
 		},
 		"settings": "Ajustes",
 		"collapse": "Contraer",
-		"expand": "Expandir"
+		"expand": "Expandir",
+		"home": "Inicio"
 	},
 	"onboarding": {
 		"back": "Atrás",

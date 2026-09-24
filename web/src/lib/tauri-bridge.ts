@@ -56,9 +56,13 @@ function dispatchDomEvent(name: TauriInboundEvent, detail: string): void {
 	window.dispatchEvent(new CustomEvent(name, { detail }))
 }
 
-function toNodePlatform(platform: string): string {
+function toNodePlatform(platform: string): string | undefined {
 	if (platform === 'macos') return 'darwin'
 	if (platform === 'windows') return 'win32'
+	// Бэк валидирует platform паттерном ^(aix|darwin|freebsd|linux|openbsd|sunos|win32)$ —
+	// mobile-значений там нет, поэтому их не шлём (поле опционально,
+	// бэк подставит user-agent в подпись сессии).
+	if (platform === 'android' || platform === 'ios') return undefined
 	return platform
 }
 
@@ -341,7 +345,7 @@ async function install(): Promise<void> {
 		update: (state: TradingOverlayState): void => {
 			void import('@tauri-apps/api/event')
 				.then(({ emitTo }) => emitTo('overlay', OVERLAY_STATE_EVENT, state))
-				.catch(() => {})
+				.catch(() => undefined)
 		},
 		// Уничтожает окно (mirror closeTradingOverlay), не прячет.
 		close: async (): Promise<boolean> => {
@@ -357,7 +361,7 @@ async function install(): Promise<void> {
 		complete: (): void => {
 			void import('@tauri-apps/api/event')
 				.then(({ emitTo }) => emitTo('main', OVERLAY_COMPLETE_EVENT))
-				.catch(() => {})
+				.catch(() => undefined)
 		},
 		onState: (callback: (state: TradingOverlayState) => void) =>
 			overlayStateChannel.subscribe(callback),

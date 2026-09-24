@@ -1,4 +1,6 @@
+#[cfg(not(target_os = "android"))]
 use base64::Engine;
+#[cfg(not(target_os = "android"))]
 use image::RgbaImage;
 use serde::{Deserialize, Serialize};
 
@@ -34,6 +36,7 @@ const JPEG_QUALITY: u8 = 70;
 const MAX_JPEG_BYTES: usize = 8 * 1024 * 1024;
 
 /// Пересечение региона с кадром. Чистая функция — покрыта unit-тестами.
+#[cfg(any(test, not(target_os = "android")))]
 fn clip_region(img_w: u32, img_h: u32, region: CaptureRegion) -> Option<(u32, u32, u32, u32)> {
     let x = region.x.min(img_w);
     let y = region.y.min(img_h);
@@ -48,6 +51,7 @@ fn clip_region(img_w: u32, img_h: u32, region: CaptureRegion) -> Option<(u32, u3
 /// Приоритет окна игры (меньше — лучше). Зеркалит порядок PowerShell-матчинга
 /// из src/game-window.ts: сначала точное имя процесса stalzone, затем stalcraft;
 /// заголовки — только fallback (вкладки браузеров тоже содержат имя игры).
+#[cfg(any(test, not(target_os = "android")))]
 fn game_score(app: &str, title: &str) -> Option<u8> {
     let app = app.to_lowercase();
     let title = title.to_lowercase();
@@ -72,6 +76,7 @@ fn game_score(app: &str, title: &str) -> Option<u8> {
     None
 }
 
+#[cfg(not(target_os = "android"))]
 fn crop_and_encode(
     image: &RgbaImage,
     region: Option<CaptureRegion>,

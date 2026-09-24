@@ -3,6 +3,7 @@
 import { Icon } from '@iconify/react'
 import { AnimatePresence, motion } from 'motion/react'
 import { memo, type ReactNode, useEffect, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { cn } from '@/lib/cn'
 
 type Props = {
@@ -29,7 +30,18 @@ const Sidebar = ({
 }: Props) => {
 	const [isOpenInternal, setIsOpenInternal] = useState(defaultOpen)
 	const [sidebarWidth, setSidebarWidth] = useState(0)
+	const [mounted, setMounted] = useState(false)
+	const [isMobile, setIsMobile] = useState(false)
 	const sidebarRef = useRef<HTMLElement | null>(null)
+
+	useEffect(() => {
+		setMounted(true)
+		const query = window.matchMedia('(max-width: 639px)')
+		const update = () => setIsMobile(query.matches)
+		update()
+		query.addEventListener('change', update)
+		return () => query.removeEventListener('change', update)
+	}, [])
 
 	const isOpen = openProp ?? isOpenInternal
 
@@ -62,7 +74,12 @@ const Sidebar = ({
 		return () => observer.disconnect()
 	}, [isOpen])
 
-	return (
+	// Портал в body: fixed-позиция и z-index не должны зависеть
+	// от stacking-контекстов предков (трансформы карт/motion),
+	// иначе панель уходит под layout-сайдбар.
+	if (!mounted) return null
+
+	return createPortal(
 		<>
 			<AnimatePresence>
 				{isOpen && (
@@ -70,6 +87,7 @@ const Sidebar = ({
 						animate={{ opacity: 1, x: 0 }}
 						className={cn(
 							'fixed top-1/2 z-999 flex max-h-[70vh] min-w-70 -translate-y-1/2 flex-col gap-4 overflow-y-auto overflow-x-hidden rounded-lg bg-card/60 p-2 shadow-lg ring-2 ring-primary/60 backdrop-blur-md',
+							'max-sm:inset-x-3 max-sm:top-auto max-sm:bottom-24 max-sm:max-h-[55dvh] max-sm:min-w-0 max-sm:translate-y-0',
 							sidebarSideClass,
 							className
 						)}
@@ -88,11 +106,14 @@ const Sidebar = ({
 				animate={{
 					opacity: 1,
 					scale: 1,
-					x: isOpen
-						? isLeft
-							? sidebarWidth + 4
-							: -(sidebarWidth + 4)
-						: 0,
+					// На мобиле панель — bottom-sheet на всю ширину,
+					// кнопку никуда не сдвигаем (иначе улетит за экран).
+					x:
+						isOpen && !isMobile
+							? isLeft
+								? sidebarWidth + 4
+								: -(sidebarWidth + 4)
+							: 0,
 				}}
 				aria-label={isOpen ? 'Close sidebar' : 'Open sidebar'}
 				className={cn(
@@ -123,7 +144,8 @@ const Sidebar = ({
 					</motion.span>
 				</AnimatePresence>
 			</motion.button>
-		</>
+		</>,
+		document.body
 	)
 }
 

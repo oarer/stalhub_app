@@ -19,7 +19,7 @@ export function AppMain({ children }: { children: ReactNode }) {
 	return (
 		<main
 			className={cn(
-				'min-h-screen pl-16 transition-[padding] duration-300 ease-in-out',
+				'app-main min-h-screen pb-20 pl-0 transition-[padding] duration-300 ease-in-out sm:pb-0',
 				isCollapsed ? 'sm:pl-16' : 'sm:pl-72'
 			)}
 		>

@@ -94,6 +94,10 @@ web/public/ocr/
 # Build output (web/out static export)
 out/
 
+# Desktop-export route stash (build-export.mjs archive/restore).
+# Normally removed by restore(); stays only if a build is interrupted.
+/web/.desktop-excluded/
+
 # Tauri
 /src-tauri/target/
 /src-tauri/gen/schemas/

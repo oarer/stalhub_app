@@ -1,4 +1,5 @@
 import { Suspense, type ReactNode } from 'react'
+import type { Viewport } from 'next'
 
 import '@/shared/styles/index.css'
 import Script from 'next/script'
@@ -16,11 +17,19 @@ import Providers from '@/providers/providers'
 import { GridBackgroundWithBeams } from '@/shared/Background'
 import { AppMain } from '@/shared/layouts/AppMain'
 import AppSidebar from '@/shared/layouts/AppSidebar'
+import { cn } from '@/lib/cn'
 import DesktopChromeGate from '@/shared/layouts/DesktopChromeGate'
+import MobileNavbar from '@/shared/layouts/MobileNavbar'
 import GiveawayModal from '@/shared/layouts/GiveawayModal'
 import LoadingSplash from '@/shared/layouts/LoadingSplash'
 import ThemeApplier from '@/shared/layouts/nav/components/theme/ThemeApplier'
 /* import PageTransitionEffect from '@/shared/transitionEffects/PageTransitionEffect' */
+
+export const viewport: Viewport = {
+	width: 'device-width',
+	initialScale: 1,
+	viewportFit: 'cover',
+}
 
 export const generateMetadata = async () => {
 	if (IS_STATIC_EXPORT) return getMetadataByPath(undefined)
@@ -56,7 +65,10 @@ export default async function RootLayout({ children }: LayoutProps) {
 			suppressHydrationWarning
 		>
 			<body
-				className={`${raleway.className} bg-background text-foreground transition-colors duration-500 ease-in-out`}
+				className={cn(
+					`${raleway.className} bg-background text-foreground transition-colors duration-500 ease-in-out`,
+					IS_STATIC_EXPORT && 'tauri-app'
+				)}
 			>
 				{!isTradingOverlay && (
 					<GridBackgroundWithBeams
@@ -102,6 +114,7 @@ export default async function RootLayout({ children }: LayoutProps) {
 											<Providers>
 												<LoadingSplash />
 												<AppSidebar />
+												<MobileNavbar />
 												{/* <PageTransitionEffect> */}
 												<AppMain>{children}</AppMain>
 												{/* </PageTransitionEffect> */}

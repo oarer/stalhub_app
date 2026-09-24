@@ -62,6 +62,7 @@
 		"zustand": "^5.0.15"
 	},
 	"devDependencies": {
+		"@biomejs/biome": "2.5.8",
 		"@tailwindcss/postcss": "^4.3.3",
 		"@tailwindcss/typography": "^0.5.20",
 		"@types/jszip": "^3.4.1",

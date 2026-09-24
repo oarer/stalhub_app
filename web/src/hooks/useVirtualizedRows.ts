@@ -1,6 +1,6 @@
 'use client'
 
-import { useWindowVirtualizer } from '@tanstack/react-virtual'
+import { useVirtualizer } from '@tanstack/react-virtual'
 import {
 	useCallback,
 	useEffect,
@@ -14,6 +14,38 @@ type Options = {
 	bottomThreshold?: number
 	hasMore?: boolean
 	onLoadMore?: () => void
+}
+
+function isAppShell() {
+	return (
+		typeof document !== 'undefined' &&
+		document.body.classList.contains('tauri-app')
+	)
+}
+
+/**
+ * Скроллер списка: в аппке документ locked (app-shell) и скроллит
+ * main AppMain, на сайте — документ как раньше.
+ */
+function resolveScroller(container: HTMLElement | null): Element | null {
+	if (!container || typeof document === 'undefined') return null
+	if (isAppShell()) return container.closest('main.app-main')
+	return document.scrollingElement
+}
+
+function scrollerMetrics(scroller: Element) {
+	if (scroller === document.scrollingElement) {
+		return {
+			scrollHeight: scroller.scrollHeight,
+			scrollTop: window.scrollY,
+			clientHeight: window.innerHeight,
+		}
+	}
+	return {
+		scrollHeight: scroller.scrollHeight,
+		scrollTop: scroller.scrollTop,
+		clientHeight: scroller.clientHeight,
+	}
 }
 
 export function useVirtualizedRows<T>(
@@ -30,11 +62,12 @@ export function useVirtualizedRows<T>(
 	const onLoadMoreRef = useRef(onLoadMore)
 	onLoadMoreRef.current = onLoadMore
 
-	const virtualizer = useWindowVirtualizer({
+	const virtualizer = useVirtualizer({
 		count: rows.length,
 		estimateSize: () => estimateSize,
 		overscan: 5,
 		scrollMargin,
+		getScrollElement: () => resolveScroller(containerRef.current),
 	})
 
 	const loadMore = useCallback(() => {
@@ -43,41 +76,54 @@ export function useVirtualizedRows<T>(
 
 	useLayoutEffect(() => {
 		const update = () => {
-			if (!containerRef.current) return
-			const rect = containerRef.current.getBoundingClientRect()
-			setScrollMargin(rect.top + window.scrollY)
+			const container = containerRef.current
+			const scroller = resolveScroller(container)
+			if (!container || !scroller) return
+			const rect = container.getBoundingClientRect()
+			if (scroller === document.scrollingElement) {
+				setScrollMargin(rect.top + window.scrollY)
+			} else {
+				const scrollerRect = scroller.getBoundingClientRect()
+				setScrollMargin(
+					rect.top - scrollerRect.top + scroller.scrollTop
+				)
+			}
 		}
 		update()
 		window.addEventListener('resize', update)
 		return () => window.removeEventListener('resize', update)
 	}, [])
 
+	const checkBottom = useCallback(() => {
+		const scroller = resolveScroller(containerRef.current)
+		if (!scroller) return false
+		const { scrollHeight, scrollTop, clientHeight } =
+			scrollerMetrics(scroller)
+		return scrollHeight - scrollTop - clientHeight < bottomThreshold
+	}, [bottomThreshold])
+
 	/* biome-ignore lint/correctness/useExhaustiveDependencies: re-check the bottom after rows grow to auto-fill */
 	useEffect(() => {
 		if (!hasMore) return
-		const doc = document.documentElement
-		if (
-			doc.scrollHeight - window.scrollY - window.innerHeight <
-			bottomThreshold
-		) {
+		if (checkBottom()) {
 			loadMore()
 		}
-	}, [hasMore, bottomThreshold, rows.length, loadMore])
+	}, [hasMore, bottomThreshold, rows.length, loadMore, checkBottom])
 
 	useEffect(() => {
 		if (!hasMore) return
+		const scroller = resolveScroller(containerRef.current)
+		if (!scroller) return
+		// Документ скроллится окном, main AppMain — сам по себе.
+		const target = scroller === document.scrollingElement ? window : scroller
 		const onScroll = () => {
-			const doc = document.documentElement
-			if (
-				doc.scrollHeight - window.scrollY - window.innerHeight <
-				bottomThreshold
-			) {
+			if (checkBottom()) {
 				loadMore()
 			}
 		}
-		window.addEventListener('scroll', onScroll, { passive: true })
-		return () => window.removeEventListener('scroll', onScroll)
-	}, [hasMore, bottomThreshold, loadMore])
+		target.addEventListener('scroll', onScroll, { passive: true })
+		return () => target.removeEventListener('scroll', onScroll)
+	}, [hasMore, loadMore, checkBottom])
 
 	return {
 		containerRef,

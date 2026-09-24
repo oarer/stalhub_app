@@ -62,6 +62,8 @@ fn valid_import(raw: &str) -> Option<String> {
 
 fn focus_main(app: &AppHandle) {
     if let Some(window) = app.get_webview_window("main") {
+        // unminimize — только desktop, на mobile такого состояния окон нет.
+        #[cfg(desktop)]
         let _ = window.unminimize();
         let _ = window.show();
         let _ = window.set_focus();

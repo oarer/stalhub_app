@@ -6,7 +6,7 @@ mod update_android;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
-    tauri::Builder::default()
+    let builder = tauri::Builder::default()
         .manage(deeplink::PendingLinks::default())
         .invoke_handler(tauri::generate_handler![
             api_bridge::api_proxy,
@@ -21,18 +21,22 @@ pub fn run() {
             update_android::android_download_update,
             update_android::android_install_update
         ])
-        .plugin(tauri_plugin_log::Builder::default().build())
-        .plugin(tauri_plugin_single_instance::init(|app, argv, _cwd| {
-            // Second-instance argv (аналог app.on('second-instance')):
-            // ссылки вида stalhub:* уходят в тот же accept-путь.
-            let urls: Vec<url::Url> = argv
-                .iter()
-                .filter_map(|arg| url::Url::parse(arg).ok())
-                .collect();
-            if !urls.is_empty() {
-                deeplink::handle_open(app, urls);
-            }
-        }))
+        .plugin(tauri_plugin_log::Builder::default().build());
+    // single-instance — только desktop: плагин не поддерживает mobile,
+    // да и второй копии приложения на mobile быть не может.
+    #[cfg(desktop)]
+    let builder = builder.plugin(tauri_plugin_single_instance::init(|app, argv, _cwd| {
+        // Second-instance argv (аналог app.on('second-instance')):
+        // ссылки вида stalhub:* уходят в тот же accept-путь.
+        let urls: Vec<url::Url> = argv
+            .iter()
+            .filter_map(|arg| url::Url::parse(arg).ok())
+            .collect();
+        if !urls.is_empty() {
+            deeplink::handle_open(app, urls);
+        }
+    }));
+    builder
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_store::Builder::default().build())
         .plugin(tauri_plugin_dialog::init())

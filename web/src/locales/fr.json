@@ -2164,7 +2164,8 @@
 		},
 		"settings": "Paramètres",
 		"collapse": "Réduire",
-		"expand": "Développer"
+		"expand": "Développer",
+		"home": "Accueil"
 	},
 	"onboarding": {
 		"back": "Retour",

@@ -2311,7 +2311,8 @@
 		},
 		"settings": "Settings",
 		"collapse": "Collapse",
-		"expand": "Expand"
+		"expand": "Expand",
+		"home": "Home"
 	},
 	"onboarding": {
 		"back": "Back",

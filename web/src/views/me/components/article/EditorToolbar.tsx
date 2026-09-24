@@ -79,7 +79,7 @@ export function EditorToolbar({
 				return {
 					icon: '',
 					label: '',
-					action: () => {},
+					action: () => undefined,
 					separator: true,
 				}
 			}
@@ -170,7 +170,7 @@ export function EditorToolbar({
 			{
 				icon: '',
 				label: '',
-				action: () => {},
+				action: () => undefined,
 				separator: true,
 			},
 			{

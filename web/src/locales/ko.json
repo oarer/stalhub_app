@@ -2168,7 +2168,8 @@
 		},
 		"settings": "설정",
 		"collapse": "접기",
-		"expand": "펼치기"
+		"expand": "펼치기",
+		"home": "홈"
 	},
 	"onboarding": {
 		"back": "이전",
