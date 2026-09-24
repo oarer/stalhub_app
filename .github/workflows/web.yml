@@ -178,8 +178,11 @@ jobs:
         with:
           distribution: temurin
           java-version: 21
-      - uses: android-actions/setup-android@v3
-      - run: sdkmanager "platform-tools" "platforms;android-34" "build-tools;34.0.0" "ndk;27.0.12077973"
+      - uses: android-actions/setup-android@v4
+        with:
+          # The deprecated `tools` SDK package was removed from Google's repository.
+          packages: platform-tools
+      - run: sdkmanager "platforms;android-34" "build-tools;34.0.0" "ndk;27.0.12077973"
       - name: Check Android signing secrets
         shell: bash
         env:
