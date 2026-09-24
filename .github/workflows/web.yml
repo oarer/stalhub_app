@@ -95,7 +95,7 @@ jobs:
         include:
           - name: linux-x64
             os: ubuntu-22.04
-            bundles: deb
+            bundles: deb appimage
           - name: windows-x64
             os: windows-latest
             bundles: nsis
@@ -149,8 +149,9 @@ jobs:
             src-tauri/target/release/bundle/nsis/*.exe
             src-tauri/target/release/bundle/msi/*.msi
             src-tauri/target/release/bundle/dmg/*.dmg
-            src-tauri/target/release/bundle/updater/*.sig
-            src-tauri/target/release/bundle/updater/*.json
+            # Всё из updater/: .sig, latest.json и архивы для скачивания
+            # (nsis.zip / AppImage.tar.gz) — latest.json ссылается на них.
+            src-tauri/target/release/bundle/updater/*
           if-no-files-found: error
 
   android:
