@@ -169,6 +169,9 @@ jobs:
         with:
           bun-version: latest
           cache: true
+      - run: bun install --frozen-lockfile
+      - run: bun install --frozen-lockfile
+        working-directory: web
       - uses: dtolnay/rust-toolchain@stable
       - name: Install Android Rust targets
         run: >
