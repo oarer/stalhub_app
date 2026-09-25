@@ -229,8 +229,17 @@ jobs:
           TAURI_ANDROID_KEYSTORE_PATH: /tmp/stalhub.keystore
           TAURI_ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
           TAURI_ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
-          TAURI_ANDROID_KEY_ALIAS_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+          TAURI_ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
         run: bunx tauri android build
+      - name: Rename packages
+        shell: bash
+        env:
+          VERSION: ${{ needs.version.outputs.version }}
+        run: |
+          apk=$(find src-tauri/gen/android/app/build/outputs/apk -name 'app-universal-release.apk' | head -1)
+          aab=$(find src-tauri/gen/android/app/build/outputs/bundle -name 'app-universal-release.aab' | head -1)
+          [ -n "$apk" ] && mv "$apk" "$(dirname "$apk")/stalhub-$VERSION-android.apk"
+          [ -n "$aab" ] && mv "$aab" "$(dirname "$aab")/stalhub-$VERSION-android.aab"
       - uses: actions/upload-artifact@v7
         with:
           name: tauri-android
@@ -269,7 +278,7 @@ jobs:
           TAG: ${{ needs.version.outputs.tag }}
           VERSION: ${{ needs.version.outputs.version }}
         run: |
-          apk=$(find release-assets -name '*.apk' | grep -i universal | head -1)
+          apk=$(find release-assets -name '*.apk' | grep -iE 'android|universal' | head -1)
           if [ -z "$apk" ]; then
             echo "No universal APK — skipping android-update.json"
             exit 0
