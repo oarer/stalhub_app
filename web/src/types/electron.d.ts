@@ -10,6 +10,8 @@ export type DesktopUpdateStatus =
 	| 'not-available'
 	| 'error'
 
+export type UpdateChannel = 'stable' | 'prerelease'
+
 export type DesktopUpdateState = {
 	supported: boolean
 	currentVersion: string
@@ -19,12 +21,15 @@ export type DesktopUpdateState = {
 	percent: number | null
 	error: string | null
 	lastCheckedAt: number | null
+	// Канал обновлений: только Android (десктоп — null, там plugin-updater).
+	channel: UpdateChannel | null
 }
 
 export type DesktopUpdatesApi = {
 	info(): Promise<DesktopUpdateState>
 	check(): Promise<DesktopUpdateState>
 	setAutoUpdate(enabled: boolean): Promise<DesktopUpdateState>
+	setChannel(channel: UpdateChannel): Promise<DesktopUpdateState>
 	restart(): void
 	onStatus(callback: (state: DesktopUpdateState) => void): () => void
 }

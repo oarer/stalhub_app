@@ -4273,6 +4273,7 @@ dependencies = [
  "reqwest 0.12.28",
  "serde",
  "serde_json",
+ "stalhub-installer",
  "tauri",
  "tauri-build",
  "tauri-plugin-clipboard-manager",
@@ -4288,6 +4289,17 @@ dependencies = [
  "tauri-plugin-updater",
  "url",
  "xcap",
+]
+
+[[package]]
+name = "stalhub-installer"
+version = "0.1.0"
+dependencies = [
+ "log",
+ "serde",
+ "serde_json",
+ "tauri",
+ "tauri-plugin",
 ]
 
 [[package]]

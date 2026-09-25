@@ -3,11 +3,28 @@ use std::time::Duration;
 use serde::{Deserialize, Serialize};
 use tauri::{AppHandle, Manager};
 
-const MANIFEST_URL: &str =
-    "https://github.com/oarer/stalhub_app/releases/latest/download/android-update.json";
+/// Резолв через GitHub API: /releases/latest отдаёт только стабильные
+/// релизы, а наши — пререлизы. API возвращает и те, и другие (новые сверху).
+const RELEASES_API_URL: &str =
+    "https://api.github.com/repos/oarer/stalhub_app/releases?per_page=10";
+const MANIFEST_ASSET_NAME: &str = "android-update.json";
+const USER_AGENT: &str = "stalhub-app";
 const ALLOWED_HOST: &str = "github.com";
 const ALLOWED_PREFIX: &str = "/oarer/stalhub_app/releases/";
-const MAX_APK_BYTES: u64 = 200 * 1024 * 1024;
+/// Universal-APK на 4 ABI в release-профиле — сотни мегабайт.
+const MAX_APK_BYTES: u64 = 600 * 1024 * 1024;
+
+#[derive(Debug, Deserialize)]
+struct ReleaseAsset {
+    name: String,
+    browser_download_url: String,
+}
+
+#[derive(Debug, Deserialize)]
+struct GithubRelease {
+    prerelease: bool,
+    assets: Vec<ReleaseAsset>,
+}
 
 #[derive(Debug, Deserialize)]
 struct AndroidUpdateManifest {
@@ -71,16 +88,24 @@ fn valid_download_url(raw: &str) -> bool {
 }
 
 /// Проверка обновления: манифест → сравнение с текущей версией пакета.
+/// manifest_url для тестов/кастома; channel: "stable" — только стабильные
+/// релизы, иначе (None/"prerelease") — любые свежие, включая пререлизы.
 #[tauri::command]
 pub async fn android_check_update(
     app: AppHandle,
     manifest_url: Option<String>,
+    channel: Option<String>,
 ) -> Result<UpdateInfo, String> {
-    let url = manifest_url.unwrap_or_else(|| MANIFEST_URL.to_string());
-    let manifest: AndroidUpdateManifest = reqwest::Client::builder()
+    let client = reqwest::Client::builder()
         .timeout(Duration::from_secs(20))
         .build()
-        .map_err(|e| format!("http client failed: {e}"))?
+        .map_err(|e| format!("http client failed: {e}"))?;
+    let stable_only = channel.as_deref() == Some("stable");
+    let url = match manifest_url {
+        Some(url) => url,
+        None => resolve_manifest_url(&client, stable_only).await?,
+    };
+    let manifest: AndroidUpdateManifest = client
         .get(&url)
         .send()
         .await
@@ -101,6 +126,32 @@ pub async fn android_check_update(
         notes: manifest.notes,
         url: manifest.url,
     })
+}
+
+/// Новейший релиз с android-update.json. stable_only отбрасывает пререлизы.
+async fn resolve_manifest_url(
+    client: &reqwest::Client,
+    stable_only: bool,
+) -> Result<String, String> {
+    let releases: Vec<GithubRelease> = client
+        .get(RELEASES_API_URL)
+        .header(reqwest::header::USER_AGENT, USER_AGENT)
+        .header(reqwest::header::ACCEPT, "application/vnd.github+json")
+        .send()
+        .await
+        .map_err(|e| format!("update manifest unavailable: {e}"))?
+        .error_for_status()
+        .map_err(|e| format!("update manifest unavailable: {e}"))?
+        .json()
+        .await
+        .map_err(|e| format!("invalid update manifest: {e}"))?;
+    releases
+        .iter()
+        .filter(|release| !stable_only || !release.prerelease)
+        .flat_map(|release| release.assets.iter())
+        .find(|asset| asset.name == MANIFEST_ASSET_NAME)
+        .map(|asset| asset.browser_download_url.clone())
+        .ok_or_else(|| "update manifest unavailable: no manifest asset".to_string())
 }
 
 /// Скачивание APK в cache_dir. Работает везде (нужно и для тестов моста).
@@ -164,9 +215,9 @@ pub async fn android_download_update(app: AppHandle, url: String) -> Result<Down
     })
 }
 
-/// Установка скачанного APK. Полная реализация — Фаза 6b: ACTION_VIEW-интент
-/// через FileProvider/SAF требует JNI-мост и gen/android (нет SDK здесь).
-/// Путь валидируется уже сейчас, чтобы команда была безопасной заглушкой.
+/// Установка скачанного APK: ACTION_VIEW-интент через FileProvider
+/// (install-плагин). Системный установщик сам запросит разрешение
+/// на установку из неизвестных источников (Android 8+).
 #[tauri::command]
 pub fn android_install_update(app: AppHandle, path: String) -> Result<(), String> {
     let cache = app
@@ -182,8 +233,8 @@ pub fn android_install_update(app: AppHandle, path: String) -> Result<(), String
     }
     #[cfg(target_os = "android")]
     {
-        let _ = target;
-        return Err("install intent needs FileProvider/SAF bridge (Phase 6b)".to_string());
+        use stalhub_installer::InstallerExt;
+        app.installer().install_apk(path)
     }
     #[cfg(not(target_os = "android"))]
     {
@@ -237,8 +288,43 @@ mod tests {
     }
 
     #[test]
-    fn parses_manifest() {
-        let manifest: AndroidUpdateManifest = serde_json::from_str(
+    fn finds_manifest_asset_in_releases() {
+        let releases: Vec<GithubRelease> = serde_json::from_str(
+            r#"[{"tag_name":"v0.0.2","prerelease":true,"assets":[]},{"tag_name":"v0.0.1","prerelease":false,"assets":[{"name":"android-update.json","browser_download_url":"https://github.com/oarer/stalhub_app/releases/download/v0.0.1/android-update.json"}]}]"#,
+        )
+        .expect("releases");
+        let pick = |stable_only: bool| {
+            releases
+                .iter()
+                .filter(|release| !stable_only || !release.prerelease)
+                .flat_map(|release| release.assets.iter())
+                .find(|asset| asset.name == MANIFEST_ASSET_NAME)
+                .map(|asset| asset.browser_download_url.clone())
+        };
+        assert_eq!(
+            pick(false).as_deref(),
+            Some("https://github.com/oarer/stalhub_app/releases/download/v0.0.1/android-update.json")
+        );
+        assert_eq!(
+            pick(true).as_deref(),
+            Some("https://github.com/oarer/stalhub_app/releases/download/v0.0.1/android-update.json")
+        );
+        let empty: Vec<GithubRelease> = serde_json::from_str(
+            r#"[{"tag_name":"v0.0.2","prerelease":true,"assets":[]}]"#,
+        )
+        .expect("releases");
+        assert!(
+            empty
+                .iter()
+                .filter(|release| !release.prerelease)
+                .flat_map(|release| release.assets.iter())
+                .find(|asset| asset.name == MANIFEST_ASSET_NAME)
+                .is_none()
+        );
+    }
+
+    #[test]
+    fn parses_manifest() {        let manifest: AndroidUpdateManifest = serde_json::from_str(
 			r#"{"version":"1.2.0","url":"https://github.com/oarer/stalhub_app/releases/download/v1.2.0/app.apk","notes":"fix"}"#,
 		)
 		.expect("manifest");

@@ -79,6 +79,7 @@ jobs:
       - uses: oven-sh/setup-bun@v2
         with:
           bun-version: latest
+          cache: true
       - run: bun install --frozen-lockfile
       - run: bun run lint
       - run: bun run typecheck
@@ -111,6 +112,11 @@ jobs:
           bun-version: latest
           cache: true
       - uses: dtolnay/rust-toolchain@stable
+      # Кэш cargo target dir: главный выигрыш для Rust-сборок.
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+          shared-key: stalhub-tauri
       - name: Install Linux packaging tools
         if: runner.os == 'Linux'
         run: >
@@ -173,14 +179,20 @@ jobs:
       - run: bun install --frozen-lockfile
         working-directory: web
       - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+          shared-key: stalhub-tauri
       - name: Install Android Rust targets
-        run: >
-          rustup target add aarch64-linux-android
-          armv7-linux-androideabi x86_64-linux-android i686-linux-android
+        # Только физические устройства: arm64 + armv7.
+        # x86/x86_64 нужны лишь эмуляторам — их не пакуем.
+        run: rustup target add aarch64-linux-android armv7-linux-androideabi
       - uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: 21
+          # Кэш Gradle (зависимости + wrapper): второй большой выигрыш.
+          cache: gradle
       - uses: android-actions/setup-android@v4
         with:
           # The deprecated `tools` SDK package was removed from Google's repository.
@@ -230,7 +242,7 @@ jobs:
           TAURI_ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
           TAURI_ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
           TAURI_ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
-        run: bunx tauri android build
+        run: bunx tauri android build -t aarch64 armv7
       - name: Rename packages
         shell: bash
         env:

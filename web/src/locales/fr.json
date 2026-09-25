@@ -2840,7 +2840,11 @@
 			"title": "Mises à jour de l’application",
 			"toggle_error": "Impossible de modifier les paramètres de mise à jour",
 			"version": "Version de l’application",
-			"version_desc": "Build actuel installé sur cet appareil"
+			"version_desc": "Build actuel installé sur cet appareil",
+			"channel_label": "Canal de mise à jour",
+			"channel_desc": "Suivre les versions stables ou pré-versions",
+			"channel_stable": "Stable",
+			"channel_prerelease": "Pré-version"
 		}
 	},
 	"splash": {

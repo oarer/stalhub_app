@@ -38,6 +38,7 @@ tauri-plugin-os = "2"
 tauri-plugin-single-instance = "2"
 tauri-plugin-deep-link = "2"
 tauri-plugin-updater = "2"
+stalhub-installer = { path = "plugins/installer" }
 
 # xcap не поддерживает Android (X11/CoreGraphics-only), остальное кроссплатформенно.
 [target.'cfg(not(target_os = "android"))'.dependencies]

@@ -7,7 +7,11 @@ import { Badge } from '@/components/ui/Badge'
 import { Button } from '@/components/ui/Button'
 import { Switch } from '@/components/ui/Switch'
 import { toast } from '@/components/ui/Toast'
-import type { DesktopUpdateState, DesktopUpdatesApi } from '@/types/electron'
+import type {
+	DesktopUpdateState,
+	DesktopUpdatesApi,
+	UpdateChannel,
+} from '@/types/electron'
 import { Section } from '@/views/me/components/Section'
 import { SettingRow } from '@/views/me/components/settings/SettingRow'
 
@@ -55,6 +59,13 @@ export default function UpdatesSection() {
 			.check()
 			.then(setState)
 			.catch(() => toast.error(t('check_error')))
+	}
+
+	const handleChannel = (channel: UpdateChannel) => {
+		void api
+			.setChannel(channel)
+			.then(setState)
+			.catch(() => toast.error(t('toggle_error')))
 	}
 
 	const handleRestart = () => api.restart()
@@ -117,6 +128,35 @@ export default function UpdatesSection() {
 						onCheckedChange={handleAutoUpdate}
 					/>
 				</SettingRow>
+				{state?.channel !== null && (
+					<SettingRow
+						description={t('channel_desc')}
+						title={t('channel_label')}
+					>
+						<div className="flex shrink-0 gap-2">
+							<Button
+								onClick={() => handleChannel('stable')}
+								variant={
+									state?.channel === 'stable'
+										? 'primary'
+										: 'ghost'
+								}
+							>
+								{t('channel_stable')}
+							</Button>
+							<Button
+								onClick={() => handleChannel('prerelease')}
+								variant={
+									state?.channel === 'prerelease'
+										? 'primary'
+										: 'ghost'
+								}
+							>
+								{t('channel_prerelease')}
+							</Button>
+						</div>
+					</SettingRow>
+				)}
 				<div className="flex flex-wrap items-center gap-2">
 					<Button
 						className="gap-2"

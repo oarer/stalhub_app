@@ -2840,7 +2840,11 @@
 			"title": "Actualizaciones de la aplicación",
 			"toggle_error": "No se pudo cambiar la configuración de actualización",
 			"version": "Versión de la aplicación",
-			"version_desc": "Compilación actual instalada en este dispositivo"
+			"version_desc": "Compilación actual instalada en este dispositivo",
+			"channel_label": "Canal de actualizaciones",
+			"channel_desc": "Seguir versiones estables o preliminares",
+			"channel_stable": "Estable",
+			"channel_prerelease": "Prelanzamiento"
 		}
 	},
 	"splash": {

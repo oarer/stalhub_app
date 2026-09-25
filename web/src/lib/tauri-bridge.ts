@@ -17,6 +17,7 @@
 import type {
 	DesktopUpdatesApi,
 	DesktopUpdateState,
+	UpdateChannel,
 } from '@/types/electron'
 import type { TauriInboundEvent } from '@/types/tauri'
 import type { TradingOverlayState } from '@/views/calcs/trading/trading'
@@ -76,12 +77,22 @@ async function install(): Promise<void> {
 			import('@tauri-apps/plugin-store'),
 		])
 
-	const nodePlatform = toNodePlatform(platform())
+	const rawPlatform = platform()
+	const nodePlatform = toNodePlatform(rawPlatform)
+	const isAndroid = rawPlatform === 'android'
 
 	const currentVersion = await getVersion().catch(() => 'unknown')
 	const settings = await load(SETTINGS_STORE).catch(() => null)
 	const autoUpdate =
 		(await settings?.get<boolean>('autoUpdate').catch(() => null)) ?? true
+	// Канал обновлений: только Android (десктоп игнорит, там plugin-updater).
+	const storedChannel = await settings
+		?.get<UpdateChannel>('updateChannel')
+		.catch(() => null)
+	let initialChannel: UpdateChannel | null = null
+	if (isAndroid) {
+		initialChannel = storedChannel === 'prerelease' ? 'prerelease' : 'stable'
+	}
 
 	// --- deep-link подписки (ленивые, как в preload) ---
 	const authListeners = new Set<(url: string) => void>()
@@ -174,8 +185,81 @@ async function install(): Promise<void> {
 		percent: null,
 		error: null,
 		lastCheckedAt: null,
+		channel: initialChannel,
 	}
 	let checking = false
+
+	type AndroidUpdateInfo = {
+		currentVersion: string
+		latestVersion: string
+		notes: string | null
+		url: string
+		needsUpdate: boolean
+	}
+
+	// Android: свой цикл через Rust-команды (plugin-updater — только десктоп).
+	// После скачивания открывается системный установщик, дальше — там.
+	const downloadAndInstallAndroid = async (url: string): Promise<void> => {
+		try {
+			const { invoke } = await import('@tauri-apps/api/core')
+			emitUpdate({ status: 'downloading', percent: 0 })
+			const downloaded = await invoke<{ path: string; size: number }>(
+				'android_download_update',
+				{ url }
+			)
+			emitUpdate({ status: 'downloading', percent: 100 })
+			await invoke('android_install_update', {
+				path: downloaded.path,
+			})
+			emitUpdate({ status: 'downloaded', percent: 100 })
+		} catch (error: unknown) {
+			emitUpdate({
+				status: 'error',
+				error: error instanceof Error ? error.message : String(error),
+			})
+		}
+	}
+
+	const checkAndroidUpdate = async (): Promise<DesktopUpdateState> => {
+		checking = true
+		emitUpdate({ status: 'checking', percent: null, error: null })
+		try {
+			const { invoke } = await import('@tauri-apps/api/core')
+			const info = await invoke<AndroidUpdateInfo>(
+				'android_check_update',
+				{
+					manifestUrl: null,
+					channel: updateState.channel ?? 'stable',
+				}
+			)
+			emitUpdate({
+				supported: true,
+				currentVersion: info.currentVersion,
+				lastCheckedAt: Date.now(),
+			})
+			if (!info.needsUpdate) {
+				emitUpdate({ status: 'not-available', newVersion: null })
+				return { ...updateState }
+			}
+			emitUpdate({
+				status: 'available',
+				newVersion: info.latestVersion,
+				percent: 0,
+			})
+			void downloadAndInstallAndroid(info.url)
+			return { ...updateState }
+		} catch (error: unknown) {
+			emitUpdate({
+				supported: true,
+				status: 'error',
+				error: error instanceof Error ? error.message : String(error),
+				lastCheckedAt: Date.now(),
+			})
+			return { ...updateState }
+		} finally {
+			checking = false
+		}
+	}
 
 	const emitUpdate = (patch: Partial<DesktopUpdateState>) => {
 		updateState = { ...updateState, ...patch }
@@ -193,6 +277,7 @@ async function install(): Promise<void> {
 		info: async () => ({ ...updateState }),
 		check: async () => {
 			if (checking) return { ...updateState }
+			if (isAndroid) return checkAndroidUpdate()
 			checking = true
 			emitUpdate({ status: 'checking', percent: null, error: null })
 			try {
@@ -261,6 +346,19 @@ async function install(): Promise<void> {
 				/* Память переживёт рестарт и без store; состояние держим локально. */
 			}
 			emitUpdate({ autoUpdate: enabled })
+			return { ...updateState }
+		},
+		setChannel: async (channel: UpdateChannel) => {
+			if (channel !== 'stable' && channel !== 'prerelease') {
+				throw new TypeError('Expected stable or prerelease channel')
+			}
+			try {
+				await settings?.set('updateChannel', channel)
+				await settings?.save()
+			} catch {
+				/* См. setAutoUpdate выше. */
+			}
+			emitUpdate({ channel })
 			return { ...updateState }
 		},
 		restart: () => {

@@ -123,6 +123,9 @@ body.tauri-app {
 body.tauri-app main.app-main {
     height: 100%;
     overflow-y: auto;
+    /* Явный контракт панорамирования: браузер сразу ведёт жест как скролл,
+       не гадая между выделением текста / drag / скроллом на карточках. */
+    touch-action: pan-x pan-y;
 }
 
 html:has(body.tauri-app),

@@ -46,6 +46,7 @@ pub fn run() {
         .plugin(tauri_plugin_os::init())
         .plugin(tauri_plugin_deep_link::init())
         .plugin(tauri_plugin_updater::Builder::new().build())
+        .plugin(stalhub_installer::init())
         .setup(|app| {
             use tauri_plugin_deep_link::DeepLinkExt;
             #[cfg(desktop)]

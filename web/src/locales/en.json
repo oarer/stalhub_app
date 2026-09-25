@@ -3002,7 +3002,11 @@
 			"title": "Application updates",
 			"toggle_error": "Could not change update settings",
 			"version": "App version",
-			"version_desc": "Current build installed on this device"
+			"version_desc": "Current build installed on this device",
+			"channel_label": "Update channel",
+			"channel_desc": "Track stable releases or pre-releases",
+			"channel_stable": "Release",
+			"channel_prerelease": "Pre-release"
 		}
 	},
 	"splash": {

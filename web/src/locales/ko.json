@@ -2844,7 +2844,11 @@
 			"title": "앱 업데이트",
 			"toggle_error": "업데이트 설정을 변경할 수 없습니다",
 			"version": "앱 버전",
-			"version_desc": "이 기기에 설치된 현재 빌드"
+			"version_desc": "이 기기에 설치된 현재 빌드",
+			"channel_label": "업데이트 채널",
+			"channel_desc": "안정 릴리스 또는 프리릴리스 추적",
+			"channel_stable": "정식",
+			"channel_prerelease": "프리릴리스"
 		}
 	},
 	"splash": {
