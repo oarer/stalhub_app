@@ -77,7 +77,11 @@ export function useScreenshotUpload(profile: UserClanProfile) {
 			await apiClient.post(
 				`/api/v1/clan/analytics/sessions/${session.id}/screenshots`,
 				formData,
-				{ headers: { 'Content-Type': 'multipart/form-data' } }
+				{
+					headers: { 'Content-Type': 'multipart/form-data' },
+					// Скриншоты грузятся дольше глобальных 10с apiClient.
+					timeout: 0,
+				}
 			)
 		},
 		onMutate: () => setUploading(true),

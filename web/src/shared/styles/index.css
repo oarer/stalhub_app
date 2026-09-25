@@ -130,3 +130,11 @@ body.tauri-app,
 body.tauri-app * {
     overscroll-behavior: none !important;
 }
+
+/* Tauri mobile shell: нативный drag картинок перехватывает тач-скролл
+   (страница скроллится только с пустых мест). Гасим drag/select у img —
+   DnD на div'ах и лайтбокс (уже draggable={false}) не затрагиваются. */
+body.tauri-app img {
+    -webkit-user-drag: none;
+    user-select: none;
+}

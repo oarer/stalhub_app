@@ -12,7 +12,7 @@ export default function ClassicLayout({
 	const customization = user.customization
 
 	return (
-		<section className="grid grid-cols-[20%_1fr] gap-8 px-4 pt-22">
+		<section className="grid grid-cols-1 gap-4 px-4 pt-22 lg:grid-cols-[20%_1fr] lg:gap-8">
 			<MeSidebar onCardChange={onCardChange} showBanner user={user} />
 			<div className="pointer-events-none fixed inset-0 z-0">
 				<MeBanner
