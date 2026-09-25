@@ -24,6 +24,20 @@ android {
         versionCode = tauriProperties.getProperty("tauri.android.versionCode", "1").toInt()
         versionName = tauriProperties.getProperty("tauri.android.versionName", "1.0")
     }
+    signingConfigs {
+        // Релизная подпись через env (CI: секреты ANDROID_*).
+        // Без keystore в env конфиг пустой и никуда не привязывается —
+        // локальные сборки остаются unsigned как раньше.
+        create("release") {
+            val keystorePath = System.getenv("TAURI_ANDROID_KEYSTORE_PATH")
+            if (!keystorePath.isNullOrBlank()) {
+                storeFile = file(keystorePath)
+                storePassword = System.getenv("TAURI_ANDROID_KEYSTORE_PASSWORD")
+                keyAlias = System.getenv("TAURI_ANDROID_KEY_ALIAS")
+                keyPassword = System.getenv("TAURI_ANDROID_KEY_PASSWORD")
+            }
+        }
+    }
     buildTypes {
         getByName("debug") {
             applicationIdSuffix = ".debug"
@@ -39,6 +53,10 @@ android {
         }
         getByName("release") {
             isMinifyEnabled = true
+            // Подпись только если задан keystore (см. signingConfigs выше).
+            if (!System.getenv("TAURI_ANDROID_KEYSTORE_PATH").isNullOrBlank()) {
+                signingConfig = signingConfigs.getByName("release")
+            }
             proguardFiles(
                 *fileTree(".") { include("**/*.pro") }
                     .plus(getDefaultProguardFile("proguard-android-optimize.txt"))

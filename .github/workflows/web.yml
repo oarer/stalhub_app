@@ -238,6 +238,7 @@ jobs:
         run: |
           apk=$(find src-tauri/gen/android/app/build/outputs/apk -name 'app-universal-release.apk' | head -1)
           aab=$(find src-tauri/gen/android/app/build/outputs/bundle -name 'app-universal-release.aab' | head -1)
+          [ -n "$apk" ] || echo "::warning::signed APK missing (unsigned build?)"
           [ -n "$apk" ] && mv "$apk" "$(dirname "$apk")/stalhub-$VERSION-android.apk"
           [ -n "$aab" ] && mv "$aab" "$(dirname "$aab")/stalhub-$VERSION-android.aab"
       - uses: actions/upload-artifact@v7
