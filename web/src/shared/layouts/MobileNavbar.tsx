@@ -122,7 +122,8 @@ export default function MobileNavbar() {
 		[user?.roles]
 	)
 
-	const tabs = [		{
+	const tabs = [
+		{
 			key: 'home',
 			href: '/',
 			icon: 'lucide:house',
@@ -173,7 +174,10 @@ export default function MobileNavbar() {
 								href={tab.href}
 								key={tab.key}
 							>
-								<Icon className="size-6 shrink-0" icon={tab.icon} />
+								<Icon
+									className="size-6 shrink-0"
+									icon={tab.icon}
+								/>
 								<span className="max-w-full truncate font-semibold text-[10px] leading-none">
 									{tab.label}
 								</span>
@@ -183,9 +187,9 @@ export default function MobileNavbar() {
 					<button
 						aria-expanded={sheetOpen}
 						className={cn(
-							'flex min-h-14 cursor-pointer flex-col items-center justify-center gap-1 px-1 py-2 transition-colors',
+							'flex min-h-14 cursor-pointer flex-col items-center justify-center gap-1 rounded-lg px-1 py-2 transition-colors',
 							moreActive || sheetOpen
-								? 'text-primary'
+								? 'bg-primary/50 text-primary'
 								: 'text-muted-foreground'
 						)}
 						onClick={() => setSheetOpen(true)}

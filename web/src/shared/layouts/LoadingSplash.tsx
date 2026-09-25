@@ -15,7 +15,7 @@ const FADE_OUT_MS = 400
 // композитор WebKitGTK на битых GPU-стеках (NVIDIA + Wayland) —
 // exit-анимация AnimatePresence не завершается и шторка никогда
 // не размонтируется, накрывая приложение. Появление/уход —
-// CSS transition + таймеры, пульс — animate-pulse.
+// CSS transition + таймеры
 export default function LoadingSplash() {
 	const t = useTranslations('splash')
 	const [visible, setVisible] = useState(true)
@@ -86,14 +86,12 @@ export default function LoadingSplash() {
 			role="status"
 		>
 			<div className="relative flex size-42 flex-col items-center justify-center gap-4">
-				<div className={cn(!settledPhase && 'animate-pulse')}>
-					<img
-						alt="Stalhub"
-						height={110}
-						src={`${svgPath}logo.svg`}
-						width={110}
-					/>
-				</div>
+				<img
+					alt="Stalhub"
+					height={110}
+					src={`${svgPath}logo.svg`}
+					width={110}
+				/>
 				<h1
 					className={`${unbounded.className} font-bold text-xl uppercase tracking-widest`}
 				>
@@ -106,7 +104,9 @@ export default function LoadingSplash() {
 					<div
 						className={cn(
 							'h-full rounded-full transition-[width] duration-500',
-							phase === 'offline' ? 'bg-destructive' : 'bg-primary'
+							phase === 'offline'
+								? 'bg-destructive'
+								: 'bg-primary'
 						)}
 						style={{ width: '100%' }}
 					/>
