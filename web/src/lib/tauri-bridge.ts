@@ -177,9 +177,6 @@ async function install(): Promise<void> {
 	// --- updates (полный цикл — в Фазе 6, пока честный unsupported) ---
 	const updateListeners = new Set<(state: DesktopUpdateState) => void>()
 	let updateState: DesktopUpdateState = {
-		// На Android апдейтер поддерживается сразу (Rust-команды),
-		// статус idle вместо unsupported — иначе кнопку проверки
-		// нельзя нажать и круг замыкается.
 		supported: isAndroid,
 		currentVersion,
 		autoUpdate,
