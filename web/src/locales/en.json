@@ -605,7 +605,10 @@
 		"stars": "Stars",
 		"title": "Art",
 		"total": "total",
-		"type": "Type"
+		"type": "Type",
+		"backToList": "To artworks",
+		"prevArt": "Previous",
+		"nextArt": "Next"
 	},
 	"attachments": {
 		"empty_slot": "Not selected",

@@ -607,7 +607,10 @@
 		"stars": "별점",
 		"title": "아트",
 		"total": "전체",
-		"type": "유형"
+		"type": "유형",
+		"backToList": "아트 목록으로",
+		"prevArt": "이전",
+		"nextArt": "다음"
 	},
 	"attachments": {
 		"empty_slot": "선택 안 됨",

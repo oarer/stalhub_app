@@ -607,7 +607,10 @@
 		"stars": "Étoiles",
 		"title": "Art",
 		"total": "total",
-		"type": "Type"
+		"type": "Type",
+		"backToList": "Aux œuvres",
+		"prevArt": "Précédent",
+		"nextArt": "Suivant"
 	},
 	"attachments": {
 		"empty_slot": "Non sélectionné",

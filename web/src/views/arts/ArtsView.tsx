@@ -4,9 +4,9 @@ import { Icon } from '@iconify/react'
 import { useQuery } from '@tanstack/react-query'
 import Image from 'next/image'
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
+import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { useTranslations } from 'next-intl'
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { montserrat, unbounded } from '@/app/fonts'
 import { Badge } from '@/components/ui/Badge'
 import { Button } from '@/components/ui/Button'
@@ -23,15 +23,60 @@ import { ArtType } from '@/types/art.type'
 export default function ArtsView() {
 	const t = useTranslations()
 	const router = useRouter()
-	const [page, setPage] = useState(1)
-	const [search, setSearch] = useState('')
-	const [type, setType] = useState<ArtType | ''>('')
+	const pathname = usePathname()
+	const searchParams = useSearchParams()
+
+	// Состояние списка живёт в URL: «назад» из рисунка возвращает
+	// на ту же страницу/фильтры, позиция восстанавливается скроллом.
+	const page = Math.max(1, Number(searchParams.get('page')) || 1)
+	const typeParam = searchParams.get('type')
+	const type: ArtType | '' =
+		typeParam === ArtType.NSFW ? ArtType.NSFW : ''
+	const [search, setSearch] = useState(searchParams.get('q') ?? '')
 	const [nsfwGateOpen, setNsfwGateOpen] = useState(false)
 	const pendingNsfwId = useRef<string | null>(null)
 	const ageConfirmed = useNsfwGateStore((s) => s.ageConfirmed)
 	const confirmAge = useNsfwGateStore((s) => s.confirmAge)
 	const debouncedSearch = useDebounce(search, 300)
 	const take = 24
+
+	const updateParams = (
+		patch: { page?: number; type?: string; q?: string },
+		scrollToTop = false
+	) => {
+		const params = new URLSearchParams(searchParams.toString())
+		if (patch.page !== undefined) {
+			if (patch.page <= 1) params.delete('page')
+			else params.set('page', String(patch.page))
+		}
+		if (patch.type !== undefined) {
+			if (!patch.type) params.delete('type')
+			else params.set('type', patch.type)
+		}
+		if (patch.q !== undefined) {
+			if (!patch.q) params.delete('q')
+			else params.set('q', patch.q)
+		}
+		const query = params.toString()
+		router.replace(query ? `${pathname}?${query}` : pathname, {
+			scroll: false,
+		})
+		if (scrollToTop) {
+			// В аппке скроллит main, на сайте — документ.
+			const main = document.querySelector('main.app-main')
+			if (main) main.scrollTo({ top: 0 })
+			else window.scrollTo({ top: 0 })
+		}
+	}
+
+	const setPage = (next: number | ((p: number) => number)) => {
+		const value = typeof next === 'function' ? next(page) : next
+		updateParams({ page: value }, true)
+	}
+
+	const setType = (next: ArtType | '') => {
+		updateParams({ type: next, page: 1 })
+	}
 
 	const tags = debouncedSearch
 		? debouncedSearch
@@ -46,6 +91,39 @@ export default function ArtsView() {
 
 	const arts = data?.data ?? []
 	const totalPages = data ? Math.ceil(data.total_count / take) : 1
+
+	// Поиск в URL (debounce), чтобы «назад» его тоже восстанавливал.
+	const firstRender = useRef(true)
+	// biome-ignore lint/correctness/useExhaustiveDependencies: sync on debounced value only
+	useEffect(() => {
+		if (firstRender.current) {
+			firstRender.current = false
+			return
+		}
+		const params = new URLSearchParams(searchParams.toString())
+		if (debouncedSearch) params.set('q', debouncedSearch)
+		else params.delete('q')
+		params.delete('page')
+		const query = params.toString()
+		router.replace(query ? `${pathname}?${query}` : pathname, {
+			scroll: false,
+		})
+	}, [debouncedSearch])
+
+	// Позиция в списке для стрелок ←/→ на странице рисунка.
+	const stashListPosition = (id: string) => {
+		try {
+			sessionStorage.setItem(
+				'arts.lastList',
+				JSON.stringify({
+					ids: arts.map((art) => art.id),
+					index: arts.findIndex((art) => art.id === id),
+				})
+			)
+		} catch {
+			/* ignore */
+		}
+	}
 
 	return (
 		<section className="mx-auto max-w-380 space-y-6 px-4 pt-32 pb-12 sm:px-6">
@@ -64,7 +142,6 @@ export default function ArtsView() {
 					label="arts.search"
 					onChange={(e) => {
 						setSearch(e.target.value)
-						setPage(1)
 					}}
 					value={search}
 				/>
@@ -74,7 +151,6 @@ export default function ArtsView() {
 						className="font-semibold"
 						onClick={() => {
 							setType('')
-							setPage(1)
 						}}
 						size="sm"
 						variant={type === '' ? 'secondary' : 'ghost'}
@@ -85,7 +161,6 @@ export default function ArtsView() {
 						className="font-semibold"
 						onClick={() => {
 							setType(type === ArtType.NSFW ? '' : ArtType.NSFW)
-							setPage(1)
 						}}
 						size="sm"
 						variant={type === ArtType.NSFW ? 'secondary' : 'ghost'}
@@ -133,7 +208,9 @@ export default function ArtsView() {
 											pendingNsfwId.current = art.id
 											setNsfwGateOpen(true)
 										}
-									: undefined
+									: () => {
+											stashListPosition(art.id)
+										}
 							}
 							onMouseEnter={
 								art.type === ArtType.NSFW && !ageConfirmed
@@ -290,7 +367,10 @@ export default function ArtsView() {
 								const id = pendingNsfwId.current
 								pendingNsfwId.current = null
 
-								if (id) router.push(artHref(id))
+								if (id) {
+									stashListPosition(id)
+									router.push(artHref(id))
+								}
 							}}
 						>
 							{t('arts.nsfwAge.confirm')}

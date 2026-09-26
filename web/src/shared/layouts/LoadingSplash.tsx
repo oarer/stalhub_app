@@ -80,7 +80,7 @@ export default function LoadingSplash() {
 			aria-label="Loading Stalhub"
 			aria-live="polite"
 			className={cn(
-				'fixed inset-0 z-200 flex flex-col items-center justify-center gap-3 bg-background transition-opacity duration-400',
+				'fixed inset-0 z-[1200] flex flex-col items-center justify-center gap-3 bg-background transition-opacity duration-400',
 				leaving ? 'opacity-0' : 'opacity-100'
 			)}
 			role="status"

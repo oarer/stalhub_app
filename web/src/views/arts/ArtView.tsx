@@ -6,8 +6,9 @@ import { Icon } from '@iconify/react'
 import { useMutation, useSuspenseQuery } from '@tanstack/react-query'
 import Image from 'next/image'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { useTranslations } from 'next-intl'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { montserrat, unbounded } from '@/app/fonts'
 import { Badge } from '@/components/ui/Badge'
 import { Button } from '@/components/ui/Button'
@@ -16,6 +17,7 @@ import { Divider } from '@/components/ui/Divider'
 import HoverUserCard from '@/components/ui/user/HoverUserCard'
 import { cn } from '@/lib/cn'
 import { formatDate } from '@/lib/date'
+import { artHref } from '@/lib/desktop-href'
 import { isVideoUrl, resolveImageUrl } from '@/lib/imageUrl'
 import { getQueryClient } from '@/providers/QueryProvider'
 import { artQueries } from '@/queries/art/art.queries'
@@ -41,11 +43,57 @@ interface ArtViewProps {
 
 export default function ArtView({ artId }: ArtViewProps) {
 	const t = useTranslations()
+	const router = useRouter()
 	const { data: art } = useSuspenseQuery(artQueries.get(artId))
 	const queryClient = getQueryClient()
 	const user = useAuthStore((s) => s.user)
 	const [revealed, setRevealed] = useState(false)
 	const [downloading, setDownloading] = useState(false)
+
+	// Соседи из списка (кладёт ArtsView): стрелки ←/→ без выхода в список.
+	const [neighborIds, setNeighborIds] = useState<{
+		ids: string[]
+		index: number
+	} | null>(null)
+	useEffect(() => {
+		try {
+			const raw = sessionStorage.getItem('arts.lastList')
+			if (!raw) return
+			const parsed = JSON.parse(raw) as {
+				ids: string[]
+				index: number
+			}
+			if (
+				Array.isArray(parsed.ids) &&
+				parsed.ids.includes(artId)
+			) {
+				setNeighborIds({
+					ids: parsed.ids,
+					index: parsed.ids.indexOf(artId),
+				})
+			} else {
+				setNeighborIds(null)
+			}
+		} catch {
+			setNeighborIds(null)
+		}
+	}, [artId])
+
+	const goNeighbor = (delta: -1 | 1) => {
+		if (!neighborIds) return
+		const nextIndex = neighborIds.index + delta
+		const nextId = neighborIds.ids[nextIndex]
+		if (!nextId) return
+		try {
+			sessionStorage.setItem(
+				'arts.lastList',
+				JSON.stringify({ ids: neighborIds.ids, index: nextIndex })
+			)
+		} catch {
+			/* ignore */
+		}
+		router.push(artHref(nextId))
+	}
 
 	const downloadArt = async () => {
 		const url = resolveImageUrl(art.image_url)
@@ -86,6 +134,45 @@ export default function ArtView({ artId }: ArtViewProps) {
 
 	return (
 		<section className="mx-auto flex max-w-380 flex-col gap-8 px-4 pt-32 pb-12 md:px-8 xl:pt-36">
+			<div className="flex items-center justify-between gap-2">
+				<Link
+					className="flex items-center gap-2 font-semibold text-muted-foreground text-sm transition-colors hover:text-foreground"
+					href="/arts"
+				>
+					<Icon className="size-4" icon="lucide:arrow-left" />
+					{t('arts.backToList')}
+				</Link>
+				{neighborIds && (
+					<div className="flex gap-2">
+						<Button
+							aria-label={t('arts.prevArt')}
+							disabled={neighborIds.index <= 0}
+							onClick={() => goNeighbor(-1)}
+							title={t('arts.prevArt')}
+							variant="secondary"
+						>
+							<Icon
+								className="size-4"
+								icon="lucide:chevron-left"
+							/>
+						</Button>
+						<Button
+							aria-label={t('arts.nextArt')}
+							disabled={
+								neighborIds.index >= neighborIds.ids.length - 1
+							}
+							onClick={() => goNeighbor(1)}
+							title={t('arts.nextArt')}
+							variant="secondary"
+						>
+							<Icon
+								className="size-4"
+								icon="lucide:chevron-right"
+							/>
+						</Button>
+					</div>
+				)}
+			</div>
 			<div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_360px]">
 				<div className="flex min-h-100 min-w-0 items-center justify-center overflow-hidden rounded-xl bg-card ring-2 ring-primary/40">
 					{art.image_url ? (

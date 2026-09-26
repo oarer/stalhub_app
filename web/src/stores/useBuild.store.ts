@@ -691,8 +691,12 @@ export const useBuildStore = create<BuildState>()(
 					createdAt: now,
 					updatedAt: now,
 				}
+				// Новую сборку тоже сразу показываем, иначе на экране
+				// остаётся старая (а currentBuildId уже указывает на новую).
 				set({
 					savedBuilds: [...savedBuilds, newBuild],
+					build: JSON.parse(JSON.stringify(newBuild.build)),
+					defaults: JSON.parse(JSON.stringify(newBuild.defaults)),
 					currentBuildId: id,
 				})
 			},

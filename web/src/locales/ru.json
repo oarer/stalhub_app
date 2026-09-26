@@ -617,7 +617,10 @@
 		"title": "Творчество",
 		"total": "всего: {count}",
 		"type": "Тип",
-		"views": "Просмотры"
+		"views": "Просмотры",
+		"backToList": "К рисункам",
+		"prevArt": "Предыдущий",
+		"nextArt": "Следующий"
 	},
 	"attachments": {
 		"empty_slot": "Не выбран",

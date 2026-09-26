@@ -157,7 +157,7 @@ export default function MobileNavbar() {
 		<>
 			<nav
 				aria-label={t('me.menu')}
-				className="fixed inset-x-0 bottom-0 z-80 border-primary/20 border-t bg-card/95 backdrop-blur-xl sm:hidden"
+				className="fixed inset-x-0 bottom-0 z-[1000] border-primary/20 border-t bg-card/95 backdrop-blur-xl sm:hidden"
 			>
 				<div className="grid grid-cols-5 pb-[env(safe-area-inset-bottom,0px)]">
 					{tabs.map((tab) => {
@@ -212,7 +212,7 @@ export default function MobileNavbar() {
 						<motion.button
 							animate={{ opacity: 1 }}
 							aria-label={t('me.menu')}
-							className="fixed inset-0 z-90 cursor-default bg-black/60 sm:hidden"
+							className="fixed inset-0 z-[1100] cursor-default bg-black/60 sm:hidden"
 							exit={{ opacity: 0 }}
 							initial={{ opacity: 0 }}
 							onClick={() => setSheetOpen(false)}
@@ -221,7 +221,7 @@ export default function MobileNavbar() {
 						/>
 						<motion.div
 							animate={{ y: 0 }}
-							className="fixed inset-x-0 bottom-0 z-90 flex max-h-[75dvh] flex-col rounded-t-2xl border-primary/20 border-t bg-card sm:hidden"
+							className="fixed inset-x-0 bottom-0 z-[1100] flex max-h-[75dvh] flex-col rounded-t-2xl border-primary/20 border-t bg-card sm:hidden"
 							drag="y"
 							dragConstraints={{ top: 0 }}
 							dragControls={dragControls}
