@@ -123,7 +123,7 @@ export default function AdminSidebar() {
 		<>
 			<motion.button
 				aria-label="Open admin navigation"
-				className="fixed bottom-7 left-1/2 z-99999 flex -translate-x-1/2 cursor-pointer items-center justify-center gap-2 rounded-full border-2 border-primary/60 bg-card p-2 shadow-lg backdrop-blur-md lg:hidden"
+				className="fixed bottom-24 left-1/2 z-99999 flex -translate-x-1/2 cursor-pointer items-center justify-center gap-2 rounded-full border-2 border-primary/60 bg-card p-2 shadow-lg backdrop-blur-md sm:bottom-7 lg:hidden"
 				onClick={() => setIsOpen(true)}
 				type="button"
 				whileTap={{ scale: 0.9 }}

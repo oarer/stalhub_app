@@ -102,7 +102,6 @@
     pointer-events: auto;
 }
 
-/* Tauri mobile shell: отступы под вырез камеры и жест-панель. */
 .tauri-app {
     padding-top: env(safe-area-inset-top, 0px);
     padding-right: env(safe-area-inset-right, 0px);
@@ -110,9 +109,6 @@
     padding-left: env(safe-area-inset-left, 0px);
 }
 
-/* Tauri mobile shell: app-shell паттерн — документ не скроллится
-   (убивает stretch/glow/pull-to-refresh браузера), скроллит один
-   контейнер AppMain. Только static-export, сайт не затрагивается. */
 body.tauri-app {
     position: fixed;
     width: 100%;
@@ -123,20 +119,15 @@ body.tauri-app {
 body.tauri-app main.app-main {
     height: 100%;
     overflow-y: auto;
-    /* Явный контракт панорамирования: браузер сразу ведёт жест как скролл,
-       не гадая между выделением текста / drag / скроллом на карточках. */
     touch-action: pan-x pan-y;
+    overscroll-behavior: none;
 }
 
 html:has(body.tauri-app),
-body.tauri-app,
-body.tauri-app * {
-    overscroll-behavior: none !important;
+body.tauri-app {
+    overscroll-behavior: none;
 }
 
-/* Tauri mobile shell: нативный drag картинок перехватывает тач-скролл
-   (страница скроллится только с пустых мест). Гасим drag/select у img —
-   DnD на div'ах и лайтбокс (уже draggable={false}) не затрагиваются. */
 body.tauri-app img {
     -webkit-user-drag: none;
     user-select: none;
