@@ -115,7 +115,7 @@ export default function ItemsView({ path, id, githubUrl }: ItemsViewProps) {
 	const categoryLabel = getCategoryLabel(data, locale)
 
 	return (
-		<section className="mx-auto grid max-w-360 grid-cols-1 flex-col gap-8 px-4 pt-32 pb-12 md:px-8 lg:grid-cols-[60%_40%] lg:pt-36">
+		<section className="mx-auto grid max-w-360 grid-cols-1 flex-col gap-8 px-4 pt-12 pb-12 md:px-8 lg:grid-cols-[60%_40%] lg:pt-36">
 			<div className="space-y-4">
 				<Card.Root>
 					<Card.Header className="space-y-4">

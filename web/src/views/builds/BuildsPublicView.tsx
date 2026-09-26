@@ -66,7 +66,7 @@ export default function BuildsPublicView() {
 	const totalPages = data ? Math.ceil(data.total_count / take) : 1
 
 	return (
-		<section className="mx-auto max-w-380 space-y-6 px-4 pt-32 pb-12 sm:px-6">
+		<section className="mx-auto max-w-380 space-y-6 px-4 pt-12 pb-12 sm:px-6">
 			<div className="flex items-center justify-between">
 				<h1 className={`${unbounded.className} font-bold text-3xl`}>
 					{t('buildsPublic.title')}

@@ -9,8 +9,8 @@ import { unbounded } from '@/app/fonts'
 import { Button } from '@/components/ui/Button'
 import { Combobox } from '@/components/ui/Combobox'
 import Input from '@/components/ui/Input'
-import { playerQueries } from '@/queries/player/player.queries'
 import { playerHref } from '@/lib/desktop-href'
+import { playerQueries } from '@/queries/player/player.queries'
 import { Regions } from '@/types/api.type'
 import PlayersCards from './components/PlayersCards'
 
@@ -40,7 +40,7 @@ export default function PlayerSearchView() {
 	}
 
 	return (
-		<section className="mx-auto flex max-w-4xl flex-col gap-8 px-4 pt-32 pb-12 lg:pt-36">
+		<section className="mx-auto flex max-w-4xl flex-col gap-8 px-4 pt-12 pb-12 lg:pt-36">
 			<div className="text-center">
 				<h1
 					className={`${unbounded.className} mb-2 font-semibold text-3xl tracking-tight md:text-3xl xl:text-4xl`}

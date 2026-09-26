@@ -53,7 +53,7 @@ export function BPView({ variant = 'page' }: BPViewProps) {
 			className={
 				variant === 'widget'
 					? 'flex flex-col gap-4'
-					: 'mx-auto flex max-w-5xl flex-col gap-10 px-4 pt-32 lg:pt-36'
+					: 'mx-auto flex max-w-5xl flex-col gap-10 px-4 pt-12 lg:pt-36'
 			}
 		>
 			{variant === 'page' && (

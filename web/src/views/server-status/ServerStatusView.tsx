@@ -61,7 +61,7 @@ export default function ServerStatusView() {
 	)
 
 	return (
-		<section className="mx-auto max-w-380 space-y-8 px-4 pt-32 pb-12 sm:px-6">
+		<section className="mx-auto max-w-380 space-y-8 px-4 pt-12 pb-12 sm:px-6">
 			<div className="flex items-center gap-3">
 				<Icon className="text-3xl text-primary" icon="lucide:server" />
 				<h1

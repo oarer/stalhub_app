@@ -87,7 +87,7 @@ const Sidebar = ({
 						animate={{ opacity: 1, x: 0 }}
 						className={cn(
 							'fixed top-1/2 z-999 flex max-h-[70vh] min-w-70 -translate-y-1/2 flex-col gap-4 overflow-y-auto overflow-x-hidden rounded-lg bg-card/60 p-2 shadow-lg ring-2 ring-primary/60 backdrop-blur-md',
-							'max-sm:inset-x-3 max-sm:top-auto max-sm:bottom-24 max-sm:max-h-[55dvh] max-sm:min-w-0 max-sm:translate-y-0',
+							'max-sm:inset-x-3 max-sm:top-auto max-sm:bottom-[var(--mobile-nav-offset)] max-sm:max-h-[55dvh] max-sm:min-w-0 max-sm:translate-y-0 max-sm:overflow-x-auto',
 							sidebarSideClass,
 							className
 						)}

@@ -6,7 +6,7 @@ import { Skeleton } from '@/components/ui/Skeleton'
 
 export default function SessionsLoading() {
 	return (
-		<section className="mx-auto flex max-w-6xl flex-col gap-8 px-4 pt-32 lg:pt-36">
+		<section className="mx-auto flex max-w-6xl flex-col gap-8 px-4 pt-12 lg:pt-36">
 			<div className="flex flex-col items-center gap-2">
 				<Skeleton className="h-9 w-80" />
 				<Skeleton className="h-4 w-72" />

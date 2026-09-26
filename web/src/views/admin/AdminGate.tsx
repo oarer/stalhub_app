@@ -2,13 +2,14 @@
 
 import { useQuery } from '@tanstack/react-query'
 import { useRouter } from 'next/navigation'
-import { useEffect, type ReactNode } from 'react'
+import { type ReactNode, useEffect } from 'react'
 import { userQueries } from '@/queries/user/user.queries'
 
 export default function AdminGate({ children }: { children: ReactNode }) {
 	const router = useRouter()
 	const session = useQuery(userQueries.getMe())
-	const status = (session.error as { response?: { status?: number } } | null)?.response?.status
+	const status = (session.error as { response?: { status?: number } } | null)
+		?.response?.status
 	const needsLogin = status === 401
 	const isAdmin = session.data?.roles?.some((role) => role.name === 'ADMIN')
 
@@ -19,7 +20,7 @@ export default function AdminGate({ children }: { children: ReactNode }) {
 
 	if (session.isPending || needsLogin || (session.data && !isAdmin)) {
 		return (
-			<main className="pt-32 text-center" aria-busy="true">
+			<main aria-busy="true" className="pt-12 text-center">
 				…
 			</main>
 		)

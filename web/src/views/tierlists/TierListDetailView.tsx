@@ -20,6 +20,7 @@ import { Tooltip } from '@/components/ui/Tooltip'
 import Avatar from '@/components/ui/user/Avatar'
 import HoverUserCard from '@/components/ui/user/HoverUserCard'
 import { GITHUB_RAW_BASE } from '@/constants/github.const'
+import { meTierlistEditHref } from '@/lib/desktop-href'
 import { tierListQueries } from '@/queries/tier-list/tier-list.queries'
 import { tierListService } from '@/services/tier-list/tier-list.service'
 import { useAuthStore } from '@/stores/useAuth.store'
@@ -37,7 +38,6 @@ import {
 	TierListKind,
 	type TierRank,
 } from '@/types/tier-list.type'
-import { meTierlistEditHref } from '@/lib/desktop-href'
 import { messageToString } from '@/utils/itemUtils'
 import { ItemHoverCard } from './components/ItemHoverCard'
 import { TierListPngTemplate } from './components/TierListPngTemplate'
@@ -125,7 +125,7 @@ export default function TierListDetailView({
 
 	if (isLoading) {
 		return (
-			<section className="mx-auto flex max-w-380 flex-col gap-8 px-4 pt-32 pb-12 md:px-8 xl:pt-36">
+			<section className="mx-auto flex max-w-380 flex-col gap-8 px-4 pt-12 pb-12 md:px-8 xl:pt-36">
 				<Skeleton className="mb-4 h-10 w-64" />
 				<Skeleton className="mb-2 h-20 w-full" />
 				<Skeleton className="mb-2 h-20 w-full" />
@@ -142,7 +142,7 @@ export default function TierListDetailView({
 	}
 
 	return (
-		<section className="mx-auto flex max-w-380 flex-col gap-8 px-4 pt-32 pb-12 md:px-8 xl:pt-36">
+		<section className="mx-auto flex max-w-380 flex-col gap-8 px-4 pt-12 pb-12 md:px-8 xl:pt-36">
 			<div className="flex items-start justify-between gap-4">
 				<div className="flex flex-col gap-2">
 					<div className="flex items-center gap-3">

@@ -217,7 +217,7 @@ export default function BuyView() {
 	}, [pngPreviewUrl, t])
 
 	return (
-		<section className="mx-auto flex max-w-300 flex-col gap-4 px-4 pt-32 pb-12 sm:px-6">
+		<section className="mx-auto flex max-w-300 flex-col gap-4 px-4 pt-12 pb-12 sm:px-6">
 			<h1
 				className={`${unbounded.className} font-semibold text-2xl tracking-tight md:text-3xl xl:text-4xl`}
 			>

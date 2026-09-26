@@ -12,7 +12,7 @@ export default async function AdminLayout({
 			<AdminGate>
 				<Suspense
 					fallback={
-						<div className="sticky top-0 hidden h-dvh w-64 shrink-0 border-primary/2 border-r-2 bg-background/80 px-4 pt-32 pb-6 lg:block">
+						<div className="sticky top-0 hidden h-dvh w-64 shrink-0 border-primary/2 border-r-2 bg-background/80 px-4 pt-12 pb-6 lg:block">
 							<div className="animate-pulse rounded-lg bg-card px-4 py-6">
 								<div className="h-8 w-32 animate-pulse rounded bg-border/20" />
 								<div className="mt-4 flex flex-col gap-2">

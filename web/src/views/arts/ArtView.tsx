@@ -1,7 +1,5 @@
 'use client'
 
-import { publicWebsiteUrl } from '@/lib/publicWebsiteUrl'
-
 import { Icon } from '@iconify/react'
 import { useMutation, useSuspenseQuery } from '@tanstack/react-query'
 import Image from 'next/image'
@@ -19,6 +17,7 @@ import { cn } from '@/lib/cn'
 import { formatDate } from '@/lib/date'
 import { artHref } from '@/lib/desktop-href'
 import { isVideoUrl, resolveImageUrl } from '@/lib/imageUrl'
+import { publicWebsiteUrl } from '@/lib/publicWebsiteUrl'
 import { getQueryClient } from '@/providers/QueryProvider'
 import { artQueries } from '@/queries/art/art.queries'
 import { artService } from '@/services/art/art.service'
@@ -63,10 +62,7 @@ export default function ArtView({ artId }: ArtViewProps) {
 				ids: string[]
 				index: number
 			}
-			if (
-				Array.isArray(parsed.ids) &&
-				parsed.ids.includes(artId)
-			) {
+			if (Array.isArray(parsed.ids) && parsed.ids.includes(artId)) {
 				setNeighborIds({
 					ids: parsed.ids,
 					index: parsed.ids.indexOf(artId),
@@ -133,7 +129,7 @@ export default function ArtView({ artId }: ArtViewProps) {
 	})
 
 	return (
-		<section className="mx-auto flex max-w-380 flex-col gap-8 px-4 pt-32 pb-12 md:px-8 xl:pt-36">
+		<section className="mx-auto flex max-w-380 flex-col gap-8 px-4 pt-12 pb-12 md:px-8 xl:pt-36">
 			<div className="flex items-center justify-between gap-2">
 				<Link
 					className="flex items-center gap-2 font-semibold text-muted-foreground text-sm transition-colors hover:text-foreground"
@@ -243,7 +239,9 @@ export default function ArtView({ artId }: ArtViewProps) {
 					<div className="flex gap-2">
 						<CopyButton
 							className="p-5"
-							text={publicWebsiteUrl(`/arts/${encodeURIComponent(artId)}`)}
+							text={publicWebsiteUrl(
+								`/arts/${encodeURIComponent(artId)}`
+							)}
 							variant={'secondary'}
 						/>
 						<Button

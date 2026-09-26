@@ -1,27 +1,22 @@
-import { Suspense, type ReactNode } from 'react'
 import type { Viewport } from 'next'
+import { type ReactNode, Suspense } from 'react'
 
 import '@/shared/styles/index.css'
 import Script from 'next/script'
 import { getLocale, getMessages } from 'next-intl/server'
 import { ThemeProvider } from 'next-themes'
 import { raleway } from '@/app/fonts'
-import { CookieConsent } from '@/components/cookies/CookieConsent'
 import { getMetadataByPath } from '@/constants/meta'
-// Статическая десктоп-сборка (Tauri) не имеет запросного контекста, локаль
-// и сообщения подбираются на клиенте; site-сборка использует LocaleProvider.
-const IS_STATIC_EXPORT = process.env.STALHUB_STATIC_EXPORT === '1'
+import { cn } from '@/lib/cn'
 import LocaleProvider from '@/providers/LocaleProvider'
-import StaticLocaleProvider from '@/providers/StaticLocaleProvider'
 import Providers from '@/providers/providers'
+import StaticLocaleProvider from '@/providers/StaticLocaleProvider'
 import { GridBackgroundWithBeams } from '@/shared/Background'
 import { AppMain } from '@/shared/layouts/AppMain'
 import AppSidebar from '@/shared/layouts/AppSidebar'
-import { cn } from '@/lib/cn'
 import DesktopChromeGate from '@/shared/layouts/DesktopChromeGate'
-import MobileNavbar from '@/shared/layouts/MobileNavbar'
-import GiveawayModal from '@/shared/layouts/GiveawayModal'
 import LoadingSplash from '@/shared/layouts/LoadingSplash'
+import MobileNavbar from '@/shared/layouts/MobileNavbar'
 import ThemeApplier from '@/shared/layouts/nav/components/theme/ThemeApplier'
 /* import PageTransitionEffect from '@/shared/transitionEffects/PageTransitionEffect' */
 
@@ -30,6 +25,8 @@ export const viewport: Viewport = {
 	initialScale: 1,
 	viewportFit: 'cover',
 }
+
+const IS_STATIC_EXPORT = process.env.STALHUB_STATIC_EXPORT === '1'
 
 export const generateMetadata = async () => {
 	if (IS_STATIC_EXPORT) return getMetadataByPath(undefined)
@@ -98,18 +95,28 @@ export default async function RootLayout({ children }: LayoutProps) {
 								initialLocale={locale as 'ru'}
 								initialMessages={messages}
 							>
-								<DesktopChromeGate>{children}</DesktopChromeGate>
+								<DesktopChromeGate>
+									{children}
+								</DesktopChromeGate>
 							</StaticLocaleProvider>
 						) : (
 							<>
 								{isTradingOverlay ? (
-									<LocaleProvider locale={locale} messages={messages}>
-										<main className="min-h-screen">{children}</main>
+									<LocaleProvider
+										locale={locale}
+										messages={messages}
+									>
+										<main className="min-h-screen">
+											{children}
+										</main>
 									</LocaleProvider>
 								) : (
 									<>
 										<ThemeApplier />
-										<LocaleProvider locale={locale} messages={messages}>
+										<LocaleProvider
+											locale={locale}
+											messages={messages}
+										>
 											<ThemeApplier />
 											<Providers>
 												<LoadingSplash />
@@ -118,8 +125,6 @@ export default async function RootLayout({ children }: LayoutProps) {
 												{/* <PageTransitionEffect> */}
 												<AppMain>{children}</AppMain>
 												{/* </PageTransitionEffect> */}
-												<CookieConsent />
-												<GiveawayModal />
 											</Providers>
 										</LocaleProvider>
 									</>

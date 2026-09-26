@@ -22,7 +22,7 @@ export default function ArticlesView() {
 	const totalPages = data ? Math.ceil(data.total_count / take) : 1
 
 	return (
-		<section className="mx-auto flex max-w-380 flex-col gap-8 px-4 pt-32 pb-12 md:px-8 xl:pt-36">
+		<section className="mx-auto flex max-w-380 flex-col gap-8 px-4 pt-12 pb-12 md:px-8 xl:pt-36">
 			<div className="flex flex-col gap-2">
 				<h1 className={`${unbounded.className} font-bold text-3xl`}>
 					{t('articles.title')}

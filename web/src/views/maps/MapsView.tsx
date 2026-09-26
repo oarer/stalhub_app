@@ -20,7 +20,7 @@ export default function MapsView() {
 	}, [error, t])
 
 	return (
-		<main className="mx-auto flex max-w-360 flex-col gap-12 px-4 pt-32 sm:px-6 md:px-8">
+		<main className="mx-auto flex max-w-360 flex-col gap-12 px-4 pt-12 sm:px-6 md:px-8">
 			<h1
 				className={`${unbounded.className} bg-linear-to-r from-sky-600 to-sky-400 bg-clip-text text-center font-bold text-2xl text-transparent tracking-tight sm:text-3xl md:text-5xl dark:from-sky-400 dark:to-sky-200`}
 			>

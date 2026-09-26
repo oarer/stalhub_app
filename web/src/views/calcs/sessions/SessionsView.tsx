@@ -73,7 +73,7 @@ export function SessionsView() {
 	const setIds = (ids: string[]) => setSelected(new Set(ids))
 
 	return (
-		<section className="mx-auto flex max-w-6xl flex-col gap-8 px-4 pt-32 pb-12 lg:pt-36">
+		<section className="mx-auto flex max-w-6xl flex-col gap-8 px-4 pt-12 pb-12 lg:pt-36">
 			<div className="text-center">
 				<h1
 					className={`${unbounded.className} mb-2 font-semibold text-3xl tracking-tight md:text-3xl xl:text-4xl`}

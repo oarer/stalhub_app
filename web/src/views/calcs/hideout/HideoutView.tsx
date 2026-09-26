@@ -222,7 +222,9 @@ export function HideoutView({ variant = 'page' }: HideoutViewProps) {
 	return (
 		<div
 			className={
-				variant === 'widget' ? 'h-full w-full' : 'h-screen w-full pt-24'
+				variant === 'widget'
+					? 'h-full w-full'
+					: 'hideout-root h-screen w-full pt-24'
 			}
 		>
 			<ReactFlow

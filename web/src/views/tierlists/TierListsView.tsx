@@ -8,9 +8,9 @@ import { montserrat, unbounded } from '@/app/fonts'
 import { Badge } from '@/components/ui/Badge'
 import { Button } from '@/components/ui/Button'
 import { CLink } from '@/components/ui/Link'
-import { tierlistHref } from '@/lib/desktop-href'
 import { Pagination } from '@/components/ui/Pagination'
 import { Skeleton } from '@/components/ui/Skeleton'
+import { tierlistHref } from '@/lib/desktop-href'
 import { tierListQueries } from '@/queries/tier-list/tier-list.queries'
 import { useAuthStore } from '@/stores/useAuth.store'
 import { TierItemKind, TierListKind } from '@/types/tier-list.type'
@@ -58,7 +58,7 @@ export default function TierListsView({ mine = false }: { mine?: boolean }) {
 			className={
 				mine
 					? 'flex flex-col gap-8'
-					: 'mx-auto flex max-w-380 flex-col gap-8 px-4 pt-32 pb-12 md:px-8 xl:pt-36'
+					: 'mx-auto flex max-w-380 flex-col gap-8 px-4 pt-12 pb-12 md:px-8 xl:pt-36'
 			}
 		>
 			<div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">

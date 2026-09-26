@@ -30,8 +30,7 @@ export default function ArtsView() {
 	// на ту же страницу/фильтры, позиция восстанавливается скроллом.
 	const page = Math.max(1, Number(searchParams.get('page')) || 1)
 	const typeParam = searchParams.get('type')
-	const type: ArtType | '' =
-		typeParam === ArtType.NSFW ? ArtType.NSFW : ''
+	const type: ArtType | '' = typeParam === ArtType.NSFW ? ArtType.NSFW : ''
 	const [search, setSearch] = useState(searchParams.get('q') ?? '')
 	const [nsfwGateOpen, setNsfwGateOpen] = useState(false)
 	const pendingNsfwId = useRef<string | null>(null)
@@ -126,7 +125,7 @@ export default function ArtsView() {
 	}
 
 	return (
-		<section className="mx-auto max-w-380 space-y-6 px-4 pt-32 pb-12 sm:px-6">
+		<section className="mx-auto max-w-380 space-y-6 px-4 pt-12 pb-12 sm:px-6">
 			<div className="flex items-center justify-between">
 				<h1 className={`${unbounded.className} font-bold text-3xl`}>
 					{t('arts.title')}

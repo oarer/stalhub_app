@@ -65,7 +65,7 @@ export default function ArticleView({ articleId }: ArticleViewProps) {
 	}, [article?.content])
 
 	return (
-		<section className="mx-auto flex max-w-380 flex-col gap-8 px-4 pt-32 pb-12 md:px-8 xl:pt-36">
+		<section className="mx-auto flex max-w-380 flex-col gap-8 px-4 pt-12 pb-12 md:px-8 xl:pt-36">
 			<header className="flex flex-col gap-4 border-primary border-b pb-6">
 				<Link
 					className="font-semibold text-sm text-text-accent transition-colors hover:text-primary"

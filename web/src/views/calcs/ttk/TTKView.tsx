@@ -62,7 +62,7 @@ export function TTKView({ variant = 'page' }: TTKViewProps) {
 			className={
 				variant === 'widget'
 					? 'flex flex-col gap-4'
-					: 'mx-auto flex max-w-7xl flex-col gap-10 px-4 pt-32 pb-12 lg:pt-36'
+					: 'mx-auto flex max-w-7xl flex-col gap-10 px-4 pt-12 pb-12 lg:pt-36'
 			}
 		>
 			<div className="grid grid-cols-1 gap-4 lg:grid-cols-3">

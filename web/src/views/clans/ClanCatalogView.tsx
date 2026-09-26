@@ -32,7 +32,7 @@ export default function ClanCatalogView() {
 	}, [clans, query, onlyRecruiting])
 
 	return (
-		<section className="mx-auto max-w-380 space-y-6 px-4 pt-32 pb-12 sm:px-6">
+		<section className="mx-auto max-w-380 space-y-6 px-4 pt-12 pb-12 sm:px-6">
 			<h1 className={`${unbounded.className} font-semibold text-2xl`}>
 				{t('clans.title')}
 			</h1>

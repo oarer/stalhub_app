@@ -123,7 +123,7 @@ export default function AdminSidebar() {
 		<>
 			<motion.button
 				aria-label="Open admin navigation"
-				className="fixed bottom-24 left-1/2 z-99999 flex -translate-x-1/2 cursor-pointer items-center justify-center gap-2 rounded-full border-2 border-primary/60 bg-card p-2 shadow-lg backdrop-blur-md sm:bottom-7 lg:hidden"
+				className="fixed bottom-[var(--mobile-nav-offset)] left-1/2 z-99999 flex -translate-x-1/2 cursor-pointer items-center justify-center gap-2 rounded-full border-2 border-primary/60 bg-card p-2 shadow-lg backdrop-blur-md sm:bottom-7 lg:hidden"
 				onClick={() => setIsOpen(true)}
 				type="button"
 				whileTap={{ scale: 0.9 }}
@@ -149,7 +149,7 @@ export default function AdminSidebar() {
 					>
 						<motion.aside
 							animate={{ x: isOpen ? 0 : '-100%' }}
-							className="absolute inset-y-0 left-0 z-10 flex w-72 flex-col gap-4 overflow-y-auto bg-card px-4 py-6 pt-32 shadow-xl"
+							className="absolute inset-y-0 left-0 z-10 flex w-72 flex-col gap-4 overflow-y-auto bg-card px-4 py-6 pt-12 shadow-xl"
 							initial={{ x: '-100%' }}
 							transition={{
 								type: 'spring',
@@ -177,7 +177,7 @@ export default function AdminSidebar() {
 					document.body
 				)}
 
-			<aside className="sticky top-0 hidden h-dvh w-64 shrink-0 overflow-y-auto border-primary/2 border-r-2 bg-background/80 px-4 pt-32 pb-6 lg:block">
+			<aside className="sticky top-0 hidden h-dvh w-64 shrink-0 overflow-y-auto border-primary/2 border-r-2 bg-background/80 px-4 pt-12 pb-6 lg:block">
 				<SidebarContent />
 			</aside>
 		</>

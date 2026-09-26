@@ -11,6 +11,12 @@
     }
 }
 
+/* Высота мобильного таббара (~74px кнопки + шторка) + пара px запаса.
+   Единая точка отсчёта для всех плавающих элементов и отступа контента. */
+:root {
+    --mobile-nav-offset: calc(5rem + env(safe-area-inset-bottom, 0px));
+}
+
 @layer base {
     @import './browser.css';
 
@@ -121,6 +127,14 @@ body.tauri-app main.app-main {
     overflow-y: auto;
     touch-action: pan-x pan-y;
     overscroll-behavior: none;
+}
+
+/* Hideout: корень — прямой потомок main, тянется ровно на контент-бокс
+   (без pt-24: верхней панели в аппке нет). Десктоп и мобильный сайт
+   не затрагиваются. */
+body.tauri-app main.app-main > .hideout-root {
+    height: 100%;
+    padding-top: 0;
 }
 
 html:has(body.tauri-app),

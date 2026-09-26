@@ -20,7 +20,7 @@ export default function GiveawayModal() {
 	return (
 		<>
 			<Button
-				className="fixed right-5 bottom-24 z-50 p-2 sm:bottom-5"
+				className="fixed right-5 bottom-[var(--mobile-nav-offset)] z-50 p-2 sm:bottom-5"
 				onClick={() => setOpenModal(true)}
 				variant={'primary'}
 			>

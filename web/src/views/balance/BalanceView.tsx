@@ -54,7 +54,7 @@ export default function BalanceView() {
 	})).filter((group) => group.items.length > 0)
 
 	return (
-		<section className="mx-auto max-w-380 space-y-8 px-4 pt-32 pb-12 sm:px-6">
+		<section className="mx-auto max-w-380 space-y-8 px-4 pt-12 pb-12 sm:px-6">
 			<h1
 				className={`${unbounded.className} font-semibold text-2xl sm:text-3xl`}
 			>

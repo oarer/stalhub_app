@@ -47,7 +47,16 @@ export const NAV_STRUCTURE: NavGroup[] = [
 				icon: 'lucide:repeat',
 				href: '/calcs/trading',
 				labelKey: 'nav.groups.calculators.items.trading.label',
-				descriptionKey: 'nav.groups.calculators.items.trading.description',
+				descriptionKey:
+					'nav.groups.calculators.items.trading.description',
+			},
+			{
+				key: 'buy',
+				icon: 'lucide:table',
+				href: '/calcs/buy',
+				labelKey: 'nav.groups.calculators.items.buy.label',
+				descriptionKey:
+					'nav.groups.calculators.items.buy.description',
 			},
 			{
 				key: 'art',
@@ -163,9 +172,9 @@ export const NAV_STRUCTURE: NavGroup[] = [
 					},
 				],
 			},
-		{
-			key: 'dashboard',
-			icon: 'lucide:layout-grid',
+			{
+				key: 'dashboard',
+				icon: 'lucide:layout-grid',
 				href: '/dashboard',
 				labelKey: 'nav.groups.other.items.dashboard.label',
 				descriptionKey: 'nav.groups.other.items.dashboard.description',
