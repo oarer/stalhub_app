@@ -13,7 +13,6 @@ struct InstallArgs {
     path: String,
 }
 
-/// Доступ к install-плагину из команд основного крейта.
 pub struct Installer<R: Runtime> {
     #[cfg(not(mobile))]
     _marker: std::marker::PhantomData<fn() -> R>,
@@ -22,8 +21,6 @@ pub struct Installer<R: Runtime> {
 }
 
 impl<R: Runtime> Installer<R> {
-    /// ACTION_VIEW-интент на APK через FileProvider (Android).
-    /// Открывает системный установщик; пользователь подтверждает там.
     pub fn install_apk(&self, path: String) -> Result<(), String> {
         #[cfg(target_os = "android")]
         {
