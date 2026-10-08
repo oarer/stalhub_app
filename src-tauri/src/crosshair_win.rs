@@ -6,7 +6,7 @@
 //! Окно живёт на собственном потоке с message loop; команды Tauri лишь
 //! обновляют конфиг и дёргают перерисовку. Никакого webview — показ
 //! мгновенный, в простое ноль нагрузки.
-use super::crosshair::{parse_hex_color, CrosshairConfig, CrosshairPreset, Stroke};
+use super::crosshair::{parse_hex_color, CrosshairConfig, CrosshairPreset};
 use std::sync::{mpsc::Sender, Mutex, OnceLock};
 use windows::core::PCWSTR;
 use windows::Win32::Foundation::{
@@ -14,17 +14,16 @@ use windows::Win32::Foundation::{
 };
 use windows::Win32::Graphics::Gdi::{
     BitBlt, CreateCompatibleBitmap, CreateCompatibleDC, CreatePen, CreateSolidBrush, DeleteDC,
-    DeleteObject, Ellipse, FillRect, GetDC, GetStockObject, Polyline, ReleaseDC, SelectObject,
-    HBITMAP, HBRUSH, HDC, HGDIOBJ, HOLLOW_BRUSH, HPEN, PS_SOLID, SRCCOPY,
+    DeleteObject, Ellipse, FillRect, GetDC, GetStockObject, InvalidateRect, Polyline, ReleaseDC,
+    SelectObject, HBITMAP, HDC, HGDIOBJ, HOLLOW_BRUSH, HPEN, PS_SOLID, SRCCOPY,
 };
 use windows::Win32::System::LibraryLoader::GetModuleHandleW;
 use windows::Win32::UI::WindowsAndMessaging::{
     CreateWindowExW, DefWindowProcW, DispatchMessageW, GetMessageW, GetSystemMetrics,
-    InvalidateRect, RegisterClassW, SetLayeredWindowAttributes, SetWindowPos, ShowWindow,
-    CS_HREDRAW, CS_VREDRAW, HWND_TOPMOST, LWA_ALPHA, LWA_COLORKEY, MSG, SM_CXSCREEN, SM_CYSCREEN,
-    SWP_NOACTIVATE, SWP_NOMOVE, SWP_NOSIZE, SWP_SHOWWINDOW, SW_HIDE, SW_SHOWNOACTIVATE,
-    WINDOW_EX_STYLE, WNDCLASSW, WS_EX_LAYERED, WS_EX_NOACTIVATE, WS_EX_TOOLWINDOW, WS_EX_TOPMOST,
-    WS_EX_TRANSPARENT, WS_POPUP,
+    RegisterClassW, SetLayeredWindowAttributes, SetWindowPos, ShowWindow, CS_HREDRAW, CS_VREDRAW,
+    HWND_TOPMOST, LWA_ALPHA, LWA_COLORKEY, MSG, SM_CXSCREEN, SM_CYSCREEN, SWP_NOACTIVATE,
+    SWP_NOMOVE, SWP_NOSIZE, SWP_SHOWWINDOW, SW_HIDE, SW_SHOWNOACTIVATE, WINDOW_EX_STYLE, WNDCLASSW,
+    WS_EX_LAYERED, WS_EX_NOACTIVATE, WS_EX_TOOLWINDOW, WS_EX_TOPMOST, WS_EX_TRANSPARENT, WS_POPUP,
 };
 
 /// Цвет color-key: этот цвет layered window вырезает полностью.
@@ -52,6 +51,10 @@ struct Manager {
     config: CrosshairConfig,
     thread_running: bool,
 }
+
+// HWND — просто числовый хендл, поля защищены Mutex: перенос Manager
+// между потоками безопасен, а windows-rs не даёт Send для сырых указателей.
+unsafe impl Send for Manager {}
 
 fn manager() -> &'static Mutex<Manager> {
     static MANAGER: OnceLock<Mutex<Manager>> = OnceLock::new();
@@ -215,7 +218,7 @@ pub fn show(config: CrosshairConfig) -> Result<bool, String> {
     unsafe {
         let _ = SetWindowPos(
             hwnd,
-            HWND_TOPMOST,
+            Some(HWND_TOPMOST),
             0,
             0,
             0,
@@ -370,7 +373,7 @@ fn overlay_thread_main(ready: Sender<Result<(), String>>) {
         let _ = ready.send(Ok(()));
         let mut msg = MSG::default();
         // GetMessageW возвращает BOOL (i32): >0 — сообщение, 0 — WM_QUIT.
-        while GetMessageW(&mut msg, None, 0, 0) > 0 {
+        while GetMessageW(&mut msg, None, 0, 0).0 > 0 {
             let _ = DispatchMessageW(&msg);
         }
     }
