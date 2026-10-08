@@ -6,7 +6,15 @@
 		"useIgnoreFile": true
 	},
 	"files": {
-		"ignoreUnknown": false
+		"ignoreUnknown": false,
+		"includes": [
+			"**",
+			"!web/public/ocr/**",
+			"!web/.next/**",
+			"!web/out/**",
+			"!web/node_modules/**",
+			"!src-tauri/target/**"
+		]
 	},
 	"formatter": {
 		"enabled": true,
