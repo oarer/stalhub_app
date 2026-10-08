@@ -1,8 +1,8 @@
+#[cfg(target_os = "windows")]
+use crate::crosshair_win;
 use serde::{Deserialize, Serialize};
 use tauri::AppHandle;
 use tauri_plugin_store::StoreExt;
-#[cfg(target_os = "windows")]
-use crate::crosshair_win;
 
 /// Нативный оверлей-прицел (HUD sight).
 /// Рендер — Win32 layered window + GDI, только Windows (STALCRAFT —

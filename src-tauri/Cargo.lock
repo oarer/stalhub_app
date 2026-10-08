@@ -4288,7 +4288,6 @@ dependencies = [
  "tauri-plugin-store",
  "tauri-plugin-updater",
  "url",
- "windows 0.61.3",
  "xcap",
 ]
 

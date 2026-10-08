@@ -3,46 +3,184 @@
 //! Отдельный layered window (`WS_EX_LAYERED | WS_EX_TRANSPARENT |
 //! WS_EX_TOPMOST | WS_EX_NOACTIVATE | WS_EX_TOOLWINDOW`) поверх игры.
 //! Невидимый фон вырезается color-key (magenta), сам прицел рисуется GDI.
+//!
+//! Окно НЕ на весь экран, а ровно под bounding box прицела (+запас):
+//! компоновщик смешивает только крошечную область, поэтому нагрузка
+//! около нуля и FPS игры не страдает. Перерисовка — только при смене
+//! конфига или показе.
+//!
 //! Окно живёт на собственном потоке с message loop; команды Tauri лишь
-//! обновляют конфиг и дёргают перерисовку. Никакого webview — показ
-//! мгновенный, в простое ноль нагрузки.
-use super::crosshair::{parse_hex_color, CrosshairConfig, CrosshairPreset};
+//! обновляют конфиг и дёргают перерисовку. Никакого webview и тяжёлых
+//! зависимостей — только ручные FFI-деклы к user32/gdi32/kernel32.
 use std::sync::{mpsc::Sender, Mutex, OnceLock};
-use windows::core::PCWSTR;
-use windows::Win32::Foundation::{
-    COLORREF, HINSTANCE, HMODULE, HWND, LPARAM, LRESULT, POINT, RECT, WPARAM,
-};
-use windows::Win32::Graphics::Gdi::{
-    BitBlt, CreateCompatibleBitmap, CreateCompatibleDC, CreatePen, CreateSolidBrush, DeleteDC,
-    DeleteObject, Ellipse, FillRect, GetDC, GetStockObject, InvalidateRect, Polyline, ReleaseDC,
-    SelectObject, HBITMAP, HDC, HGDIOBJ, HOLLOW_BRUSH, HPEN, PS_SOLID, SRCCOPY,
-};
-use windows::Win32::System::LibraryLoader::GetModuleHandleW;
-use windows::Win32::UI::WindowsAndMessaging::{
-    CreateWindowExW, DefWindowProcW, DispatchMessageW, GetMessageW, GetSystemMetrics,
-    RegisterClassW, SetLayeredWindowAttributes, SetWindowPos, ShowWindow, CS_HREDRAW, CS_VREDRAW,
-    HWND_TOPMOST, LWA_ALPHA, LWA_COLORKEY, MSG, SM_CXSCREEN, SM_CYSCREEN, SWP_NOACTIVATE,
-    SWP_NOMOVE, SWP_NOSIZE, SWP_SHOWWINDOW, SW_HIDE, SW_SHOWNOACTIVATE, WINDOW_EX_STYLE, WNDCLASSW,
-    WS_EX_LAYERED, WS_EX_NOACTIVATE, WS_EX_TOOLWINDOW, WS_EX_TOPMOST, WS_EX_TRANSPARENT, WS_POPUP,
-};
 
-/// Цвет color-key: этот цвет layered window вырезает полностью.
-const KEY_COLOR: COLORREF = COLORREF(0x00FF_00FF);
+use super::crosshair::{CrosshairConfig, CrosshairPreset};
+use win::*;
 
-/// UTF-16 с терминатором для Win32-вызовов.
-fn wide_null(value: &str) -> Vec<u16> {
-    value.encode_utf16().chain(std::iter::once(0)).collect()
+/// Ручные декларации Win32: нужен десяток функций из user32/gdi32,
+/// ради которых не тянем гигантский `windows`-крейт (он раздувал
+/// время и размер сборки на всех платформах).
+#[allow(non_snake_case, clippy::too_many_arguments)]
+mod win {
+    use std::ffi::c_void;
+
+    pub type HWND = isize;
+    pub type HDC = isize;
+    pub type HBRUSH = isize;
+    pub type HPEN = isize;
+    pub type HBITMAP = isize;
+    pub type HGDIOBJ = isize;
+    pub type HINSTANCE = isize;
+    pub type HMODULE = isize;
+    pub type WPARAM = usize;
+    pub type LPARAM = isize;
+    pub type LRESULT = isize;
+
+    pub type WNDPROC = Option<unsafe extern "system" fn(HWND, u32, WPARAM, LPARAM) -> LRESULT>;
+
+    #[repr(C)]
+    #[derive(Clone, Copy, Default)]
+    pub struct POINT {
+        pub x: i32,
+        pub y: i32,
+    }
+
+    #[repr(C)]
+    #[derive(Clone, Copy, Default)]
+    pub struct RECT {
+        pub left: i32,
+        pub top: i32,
+        pub right: i32,
+        pub bottom: i32,
+    }
+
+    #[repr(C)]
+    pub struct WNDCLASSW {
+        pub style: u32,
+        pub lpfnWndProc: WNDPROC,
+        pub cbClsExtra: i32,
+        pub cbWndExtra: i32,
+        pub hInstance: HINSTANCE,
+        pub hIcon: isize,
+        pub hCursor: isize,
+        pub hbrBackground: HBRUSH,
+        pub lpszMenuName: *const u16,
+        pub lpszClassName: *const u16,
+    }
+
+    #[repr(C)]
+    #[derive(Clone, Copy, Default)]
+    pub struct MSG {
+        pub hwnd: HWND,
+        pub message: u32,
+        pub wParam: WPARAM,
+        pub lParam: LPARAM,
+        pub time: u32,
+        pub pt: POINT,
+    }
+
+    pub const WS_EX_LAYERED: u32 = 0x0008_0000;
+    pub const WS_EX_TRANSPARENT: u32 = 0x0000_0020;
+    pub const WS_EX_TOPMOST: u32 = 0x0000_0008;
+    pub const WS_EX_NOACTIVATE: u32 = 0x0800_0000;
+    pub const WS_EX_TOOLWINDOW: u32 = 0x0000_0080;
+    pub const WS_POPUP: u32 = 0x8000_0000;
+    pub const HWND_TOPMOST: HWND = -1;
+    pub const SW_HIDE: i32 = 0;
+    pub const SW_SHOWNOACTIVATE: i32 = 4;
+    pub const SWP_NOMOVE: u32 = 0x0002;
+    pub const SWP_NOSIZE: u32 = 0x0001;
+    pub const SWP_NOACTIVATE: u32 = 0x0010;
+    pub const SWP_SHOWWINDOW: u32 = 0x0040;
+    pub const LWA_COLORKEY: u32 = 0x0001;
+    pub const LWA_ALPHA: u32 = 0x0002;
+    pub const SM_CXSCREEN: i32 = 0;
+    pub const SM_CYSCREEN: i32 = 1;
+    pub const WM_PAINT: u32 = 0x000F;
+    pub const PS_SOLID: i32 = 0;
+    pub const HOLLOW_BRUSH: i32 = 5;
+    pub const SRCCOPY: u32 = 0x00CC_0020;
+    /// COLORREF magenta для color-key: 0x00BBGGRR.
+    pub const KEY_COLOR: u32 = 0x00FF_00FF;
+
+    #[link(name = "user32")]
+    extern "system" {
+        pub fn RegisterClassW(lpWndClass: *const WNDCLASSW) -> u16;
+        pub fn CreateWindowExW(
+            dwExStyle: u32,
+            lpClassName: *const u16,
+            lpWindowName: *const u16,
+            dwStyle: u32,
+            x: i32,
+            y: i32,
+            nWidth: i32,
+            nHeight: i32,
+            hWndParent: HWND,
+            hMenu: isize,
+            hInstance: HINSTANCE,
+            lpParam: *const c_void,
+        ) -> HWND;
+        pub fn DefWindowProcW(hWnd: HWND, msg: u32, wParam: WPARAM, lParam: LPARAM) -> LRESULT;
+        pub fn ShowWindow(hWnd: HWND, nCmdShow: i32) -> bool;
+        pub fn SetWindowPos(
+            hWnd: HWND,
+            hWndInsertAfter: HWND,
+            x: i32,
+            y: i32,
+            cx: i32,
+            cy: i32,
+            uFlags: u32,
+        ) -> i32;
+        pub fn SetLayeredWindowAttributes(hwnd: HWND, crKey: u32, bAlpha: u8, dwFlags: u32) -> i32;
+        pub fn GetSystemMetrics(nIndex: i32) -> i32;
+        pub fn GetMessageW(
+            lpMsg: *mut MSG,
+            hWnd: HWND,
+            wMsgFilterMin: u32,
+            wMsgFilterMax: u32,
+        ) -> i32;
+        pub fn DispatchMessageW(lpmsg: *const MSG) -> LRESULT;
+        pub fn InvalidateRect(hWnd: HWND, lpRect: *const RECT, bErase: i32) -> i32;
+    }
+
+    #[link(name = "gdi32")]
+    extern "system" {
+        pub fn GetDC(hWnd: HWND) -> HDC;
+        pub fn ReleaseDC(hWnd: HWND, hDc: HDC) -> i32;
+        pub fn CreateCompatibleDC(hdc: HDC) -> HDC;
+        pub fn CreateCompatibleBitmap(hdc: HDC, cx: i32, cy: i32) -> HBITMAP;
+        pub fn SelectObject(hdc: HDC, h: HGDIOBJ) -> HGDIOBJ;
+        pub fn DeleteObject(ho: HGDIOBJ) -> i32;
+        pub fn DeleteDC(hdc: HDC) -> i32;
+        pub fn CreateSolidBrush(color: u32) -> HBRUSH;
+        pub fn CreatePen(iStyle: i32, cWidth: i32, color: u32) -> HPEN;
+        pub fn GetStockObject(i: i32) -> HGDIOBJ;
+        pub fn FillRect(hdc: HDC, lprc: *const RECT, hbr: HBRUSH) -> i32;
+        pub fn Ellipse(hdc: HDC, left: i32, top: i32, right: i32, bottom: i32) -> i32;
+        pub fn Polyline(hdc: HDC, apt: *const POINT, cpt: i32) -> i32;
+        pub fn BitBlt(
+            hdc: HDC,
+            x: i32,
+            y: i32,
+            cx: i32,
+            cy: i32,
+            hdcSrc: HDC,
+            x1: i32,
+            y1: i32,
+            rop: u32,
+        ) -> i32;
+    }
+
+    #[link(name = "kernel32")]
+    extern "system" {
+        pub fn GetModuleHandleW(lpModuleName: *const u16) -> HMODULE;
+    }
 }
 
-fn hinstance_of(module: HMODULE) -> HINSTANCE {
-    HINSTANCE(module.0)
-}
-
-fn gdiobj<T>(handle: T) -> HGDIOBJ
-where
-    HGDIOBJ: From<T>,
-{
-    HGDIOBJ::from(handle)
+fn colorref_of(cfg: &CrosshairConfig) -> u32 {
+    // sanitized() гарантирует валидный #rrggbb; COLORREF = 0x00BBGGRR.
+    let (r, g, b) = super::crosshair::parse_hex_color(&cfg.color).unwrap_or((0x4a, 0xde, 0x80));
+    u32::from(r) | (u32::from(g) << 8) | (u32::from(b) << 16)
 }
 
 struct Manager {
@@ -51,10 +189,6 @@ struct Manager {
     config: CrosshairConfig,
     thread_running: bool,
 }
-
-// HWND — просто числовый хендл, поля защищены Mutex: перенос Manager
-// между потоками безопасен, а windows-rs не даёт Send для сырых указателей.
-unsafe impl Send for Manager {}
 
 fn manager() -> &'static Mutex<Manager> {
     static MANAGER: OnceLock<Mutex<Manager>> = OnceLock::new();
@@ -188,46 +322,76 @@ fn push_dot(shapes: &mut Vec<Shape>, cx: i32, cy: i32, thickness: i32) {
     });
 }
 
-fn rgb(color: COLORREF) -> (u8, u8, u8) {
-    let v = color.0;
+/// Bounding box прицела в экранных координатах + запас под контур.
+/// Пустой рисунок (custom без штрихов) — маленькое окно по центру.
+pub fn content_box(cfg: &CrosshairConfig, sw: i32, sh: i32) -> (i32, i32, i32, i32) {
+    const PAD: i32 = 4;
+    let shapes = layout_shapes(sw, sh, cfg);
+    let (mut minx, mut miny) = (i32::MAX, i32::MAX);
+    let (mut maxx, mut maxy) = (i32::MIN, i32::MIN);
+    let mut grow = |x0: i32, y0: i32, x1: i32, y1: i32| {
+        minx = minx.min(x0);
+        miny = miny.min(y0);
+        maxx = maxx.max(x1);
+        maxy = maxy.max(y1);
+    };
+    for shape in &shapes {
+        match *shape {
+            Shape::Bar { x, y, w, h } => grow(x, y, x + w, y + h),
+            Shape::Ring { cx, cy, r, thick } => {
+                let e = r + thick + 2;
+                grow(cx - e, cy - e, cx + e, cy + e);
+            }
+            Shape::Stroke { ref points, thick } => {
+                let e = thick + 3;
+                for (x, y) in points {
+                    grow(x - e, y - e, x + e, y + e);
+                }
+            }
+        }
+    }
+    if minx > maxx {
+        let (cx, cy) = (sw / 2, sh / 2);
+        return (cx - 4, cy - 4, 8, 8);
+    }
     (
-        (v & 0xFF) as u8,
-        ((v >> 8) & 0xFF) as u8,
-        ((v >> 16) & 0xFF) as u8,
+        minx - PAD,
+        miny - PAD,
+        maxx - minx + PAD * 2,
+        maxy - miny + PAD * 2,
     )
-}
-
-fn colorref_of(cfg: &CrosshairConfig) -> COLORREF {
-    // sanitized() гарантирует валидный #rrggbb.
-    let (r, g, b) = parse_hex_color(&cfg.color).unwrap_or((0x4a, 0xde, 0x80));
-    COLORREF(u32::from(r) | (u32::from(g) << 8) | (u32::from(b) << 16))
 }
 
 /// Показать окно (создать при первом вызове) и нарисовать конфиг.
 pub fn show(config: CrosshairConfig) -> Result<bool, String> {
     ensure_thread()?;
-    let hwnd = {
+    let (hwnd, (x, y, w, h)) = {
         let mut m = manager()
             .lock()
             .map_err(|_| "crosshair lock poisoned".to_string())?;
         m.config = config;
         m.visible = true;
-        m.hwnd
-            .ok_or_else(|| "crosshair window unavailable".to_string())?
+        let (sw, sh) = screen_size();
+        let bounds = content_box(&m.config, sw, sh);
+        let hwnd = m
+            .hwnd
+            .ok_or_else(|| "crosshair window unavailable".to_string())?;
+        (hwnd, bounds)
     };
     unsafe {
-        let _ = SetWindowPos(
+        // Окно ровно под контент: компоновщик трогает только эти пиксели.
+        SetWindowPos(
             hwnd,
-            Some(HWND_TOPMOST),
-            0,
-            0,
-            0,
-            0,
-            SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE | SWP_SHOWWINDOW,
+            HWND_TOPMOST,
+            x,
+            y,
+            w,
+            h,
+            SWP_NOACTIVATE | SWP_SHOWWINDOW,
         );
-        let _ = ShowWindow(hwnd, SW_SHOWNOACTIVATE);
+        ShowWindow(hwnd, SW_SHOWNOACTIVATE);
         refresh_layer(hwnd);
-        let _ = InvalidateRect(Some(hwnd), None, true);
+        InvalidateRect(hwnd, std::ptr::null(), 1);
     }
     Ok(true)
 }
@@ -237,7 +401,7 @@ pub fn hide() -> bool {
     let hwnd = manager().lock().ok().and_then(|m| m.hwnd);
     if let Some(hwnd) = hwnd {
         unsafe {
-            let _ = ShowWindow(hwnd, SW_HIDE);
+            ShowWindow(hwnd, SW_HIDE);
         }
         if let Ok(mut m) = manager().lock() {
             m.visible = false;
@@ -249,10 +413,11 @@ pub fn hide() -> bool {
 
 /// Новый конфиг: сохранить и перерисовать, если окно видимо.
 pub fn apply(config: CrosshairConfig) -> bool {
-    let (hwnd, visible) = match manager().lock() {
+    let (hwnd, visible, bounds) = match manager().lock() {
         Ok(mut m) => {
             m.config = config;
-            (m.hwnd, m.visible)
+            let (sw, sh) = screen_size();
+            (m.hwnd, m.visible, content_box(&m.config, sw, sh))
         }
         Err(_) => return false,
     };
@@ -260,9 +425,19 @@ pub fn apply(config: CrosshairConfig) -> bool {
         return true;
     }
     if let Some(hwnd) = hwnd {
+        let (x, y, w, h) = bounds;
         unsafe {
+            SetWindowPos(
+                hwnd,
+                HWND_TOPMOST,
+                x,
+                y,
+                w,
+                h,
+                SWP_NOACTIVATE | SWP_SHOWWINDOW,
+            );
             refresh_layer(hwnd);
-            let _ = InvalidateRect(Some(hwnd), None, true);
+            InvalidateRect(hwnd, std::ptr::null(), 1);
         }
         return true;
     }
@@ -276,7 +451,7 @@ unsafe fn refresh_layer(hwnd: HWND) {
         .ok()
         .map(|m| m.config.opacity)
         .unwrap_or(255);
-    let _ = SetLayeredWindowAttributes(hwnd, KEY_COLOR, opacity, LWA_COLORKEY | LWA_ALPHA);
+    SetLayeredWindowAttributes(hwnd, KEY_COLOR, opacity, LWA_COLORKEY | LWA_ALPHA);
 }
 
 fn screen_size() -> (i32, i32) {
@@ -286,6 +461,11 @@ fn screen_size() -> (i32, i32) {
             GetSystemMetrics(SM_CYSCREEN).max(600),
         )
     }
+}
+
+/// UTF-16 с терминатором для Win32-вызовов.
+fn wide_null(value: &str) -> Vec<u16> {
+    value.encode_utf16().chain(std::iter::once(0)).collect()
 }
 
 fn ensure_thread() -> Result<(), String> {
@@ -312,59 +492,50 @@ fn ensure_thread() -> Result<(), String> {
 }
 
 fn overlay_thread_main(ready: Sender<Result<(), String>>) {
-    // Строки живут до конца message loop — все PCWSTR валидны всё время.
+    // Строки живут до конца message loop — все указатели валидны всё время.
     let class_name = wide_null("StalhubCrosshair");
+    let title = wide_null("Stalhub Crosshair");
     unsafe {
-        let instance = match GetModuleHandleW(None)
-            .map(hinstance_of)
-            .map_err(|e| format!("GetModuleHandleW: {e:?}"))
-        {
-            Ok(instance) => instance,
-            Err(error) => {
-                let _ = ready.send(Err(error));
-                return;
-            }
-        };
+        let instance = GetModuleHandleW(std::ptr::null());
+        if instance == 0 {
+            let _ = ready.send(Err("GetModuleHandleW failed".to_string()));
+            return;
+        }
         let wc = WNDCLASSW {
-            style: CS_HREDRAW | CS_VREDRAW,
+            style: 0x0003, // CS_HREDRAW | CS_VREDRAW
             lpfnWndProc: Some(wnd_proc),
+            cbClsExtra: 0,
+            cbWndExtra: 0,
             hInstance: instance,
-            lpszClassName: PCWSTR(class_name.as_ptr()),
-            ..Default::default()
+            hIcon: 0,
+            hCursor: 0,
+            hbrBackground: 0,
+            lpszMenuName: std::ptr::null(),
+            lpszClassName: class_name.as_ptr(),
         };
         if RegisterClassW(&wc) == 0 {
             let _ = ready.send(Err("RegisterClassW failed".to_string()));
             return;
         }
-        let (sw, sh) = screen_size();
-        let title = wide_null("Stalhub Crosshair");
-        let hwnd = match CreateWindowExW(
-            WINDOW_EX_STYLE(
-                WS_EX_LAYERED.0
-                    | WS_EX_TRANSPARENT.0
-                    | WS_EX_TOPMOST.0
-                    | WS_EX_NOACTIVATE.0
-                    | WS_EX_TOOLWINDOW.0,
-            ),
-            PCWSTR(class_name.as_ptr()),
-            PCWSTR(title.as_ptr()),
+        let hwnd = CreateWindowExW(
+            WS_EX_LAYERED | WS_EX_TRANSPARENT | WS_EX_TOPMOST | WS_EX_NOACTIVATE | WS_EX_TOOLWINDOW,
+            class_name.as_ptr(),
+            title.as_ptr(),
             WS_POPUP,
             0,
             0,
-            sw,
-            sh,
-            None,
-            None,
-            Some(instance),
-            None,
-        ) {
-            Ok(hwnd) => hwnd,
-            Err(error) => {
-                let _ = ready.send(Err(format!("CreateWindowExW: {error:?}")));
-                return;
-            }
-        };
-        let _ = SetLayeredWindowAttributes(hwnd, KEY_COLOR, 255, LWA_COLORKEY | LWA_ALPHA);
+            64,
+            64,
+            0,
+            0,
+            instance,
+            std::ptr::null(),
+        );
+        if hwnd == 0 {
+            let _ = ready.send(Err("CreateWindowExW failed".to_string()));
+            return;
+        }
+        SetLayeredWindowAttributes(hwnd, KEY_COLOR, 255, LWA_COLORKEY | LWA_ALPHA);
         if manager().lock().map(|mut m| m.hwnd = Some(hwnd)).is_err() {
             let _ = ready.send(Err("crosshair lock poisoned".to_string()));
             return;
@@ -373,8 +544,8 @@ fn overlay_thread_main(ready: Sender<Result<(), String>>) {
         let _ = ready.send(Ok(()));
         let mut msg = MSG::default();
         // GetMessageW возвращает BOOL (i32): >0 — сообщение, 0 — WM_QUIT.
-        while GetMessageW(&mut msg, None, 0, 0).0 > 0 {
-            let _ = DispatchMessageW(&msg);
+        while GetMessageW(&mut msg, 0, 0, 0) > 0 {
+            DispatchMessageW(&msg);
         }
     }
 }
@@ -385,66 +556,68 @@ unsafe extern "system" fn wnd_proc(
     wparam: WPARAM,
     lparam: LPARAM,
 ) -> LRESULT {
-    // 0x000F == WM_PAINT
-    if msg == 0x000F {
+    if msg == WM_PAINT {
         paint(hwnd);
-        return LRESULT(0);
+        return 0;
     }
     DefWindowProcW(hwnd, msg, wparam, lparam)
 }
 
 unsafe fn paint(hwnd: HWND) {
-    let (sw, sh) = screen_size();
-    let config = match manager().lock() {
-        Ok(m) => m.config.clone(),
+    let (config, bounds) = match manager().lock() {
+        Ok(m) => {
+            let (sw, sh) = screen_size();
+            let bounds = content_box(&m.config, sw, sh);
+            (m.config.clone(), bounds)
+        }
         Err(_) => return,
     };
-    let hdc = GetDC(Some(hwnd));
-    if hdc.is_invalid() {
+    let (ox, oy, w, h) = bounds;
+    let hdc = GetDC(hwnd);
+    if hdc == 0 || hdc == -1 {
         return;
     }
     // Двойная буферизация в memory DC: сначала key-фон, потом фигуры.
-    let mem = CreateCompatibleDC(Some(hdc));
-    let bmp = CreateCompatibleBitmap(hdc, sw, sh);
-    let old = SelectObject(mem, gdiobj(HBITMAP(bmp.0)));
-    let (kr, kg, kb) = rgb(KEY_COLOR);
-    let bg = CreateSolidBrush(COLORREF(
-        u32::from(kr) | (u32::from(kg) << 8) | (u32::from(kb) << 16),
-    ));
+    // Фигуры в экранных координатах — сдвигаем на origin окна.
+    let mem = CreateCompatibleDC(hdc);
+    let bmp = CreateCompatibleBitmap(hdc, w, h);
+    let old = SelectObject(mem, bmp);
+    let bg = CreateSolidBrush(KEY_COLOR);
     let full = RECT {
         left: 0,
         top: 0,
-        right: sw,
-        bottom: sh,
+        right: w,
+        bottom: h,
     };
-    let _ = FillRect(mem, &full, bg);
-    let _ = DeleteObject(gdiobj(bg));
+    FillRect(mem, &full, bg);
+    DeleteObject(bg);
 
-    for shape in layout_shapes(sw, sh, &config) {
-        draw_shape(mem, &shape, &config);
+    for shape in layout_shapes(screen_size().0, screen_size().1, &config) {
+        draw_shape(mem, &shape, &config, ox, oy);
     }
 
-    let _ = BitBlt(hdc, 0, 0, sw, sh, Some(mem), 0, 0, SRCCOPY);
-    let _ = SelectObject(mem, old);
-    let _ = DeleteObject(gdiobj(bmp));
-    let _ = DeleteDC(mem);
-    let _ = ReleaseDC(Some(hwnd), hdc);
+    BitBlt(hdc, 0, 0, w, h, mem, 0, 0, SRCCOPY);
+    SelectObject(mem, old);
+    DeleteObject(bmp);
+    DeleteDC(mem);
+    ReleaseDC(hwnd, hdc);
 }
 
-unsafe fn draw_shape(hdc: HDC, shape: &Shape, cfg: &CrosshairConfig) {
+unsafe fn draw_shape(hdc: HDC, shape: &Shape, cfg: &CrosshairConfig, ox: i32, oy: i32) {
     let ink = colorref_of(cfg);
     match *shape {
         Shape::Bar { x, y, w, h } => {
+            let (x, y) = (x - ox, y - oy);
             if cfg.outline {
-                let frame = CreateSolidBrush(COLORREF(0));
+                let frame = CreateSolidBrush(0);
                 let outer = RECT {
                     left: x - 1,
                     top: y - 1,
                     right: x + w + 1,
                     bottom: y + h + 1,
                 };
-                let _ = FillRect(hdc, &outer, frame);
-                let _ = DeleteObject(gdiobj(frame));
+                FillRect(hdc, &outer, frame);
+                DeleteObject(frame);
             }
             let brush = CreateSolidBrush(ink);
             let rect = RECT {
@@ -453,39 +626,46 @@ unsafe fn draw_shape(hdc: HDC, shape: &Shape, cfg: &CrosshairConfig) {
                 right: x + w,
                 bottom: y + h,
             };
-            let _ = FillRect(hdc, &rect, brush);
-            let _ = DeleteObject(gdiobj(brush));
+            FillRect(hdc, &rect, brush);
+            DeleteObject(brush);
         }
         Shape::Ring { cx, cy, r, thick } => {
+            let (cx, cy) = (cx - ox, cy - oy);
             // Кольцо: полой кистью + пером нужной толщины.
-            let draw_ring = |radius: i32, width: i32, color: COLORREF| {
-                let pen: HPEN = CreatePen(PS_SOLID, width, color);
-                let old_pen = SelectObject(hdc, gdiobj(pen));
+            let draw_ring = |radius: i32, width: i32, color: u32| {
+                let pen = CreatePen(PS_SOLID, width, color);
+                let old_pen = SelectObject(hdc, pen);
                 let hollow = GetStockObject(HOLLOW_BRUSH);
                 let old_brush = SelectObject(hdc, hollow);
-                let _ = Ellipse(hdc, cx - radius, cy - radius, cx + radius, cy + radius);
-                let _ = SelectObject(hdc, old_pen);
-                let _ = SelectObject(hdc, old_brush);
-                let _ = DeleteObject(gdiobj(pen));
+                Ellipse(hdc, cx - radius, cy - radius, cx + radius, cy + radius);
+                SelectObject(hdc, old_pen);
+                SelectObject(hdc, old_brush);
+                DeleteObject(pen);
             };
             if cfg.outline {
-                draw_ring(r + 1, thick + 2, COLORREF(0));
+                draw_ring(r + 1, thick + 2, 0);
             }
             draw_ring(r, thick, ink);
         }
         Shape::Stroke { ref points, thick } => {
             // Ломаная тем же приёмом, что кольцо: сначала чёрная
             // утолщённая, поверх цветная.
-            let draw_stroke = |width: i32, color: COLORREF| {
-                let pen: HPEN = CreatePen(PS_SOLID, width, color);
-                let old_pen = SelectObject(hdc, gdiobj(pen));
-                let apt: Vec<POINT> = points.iter().map(|(x, y)| POINT { x: *x, y: *y }).collect();
-                let _ = Polyline(hdc, &apt);
-                let _ = SelectObject(hdc, old_pen);
-                let _ = DeleteObject(gdiobj(pen));
+            let draw_stroke = |width: i32, color: u32| {
+                let pen = CreatePen(PS_SOLID, width, color);
+                let old_pen = SelectObject(hdc, pen);
+                let apt: Vec<POINT> = points
+                    .iter()
+                    .map(|(x, y)| POINT {
+                        x: x - ox,
+                        y: y - oy,
+                    })
+                    .collect();
+                Polyline(hdc, apt.as_ptr(), apt.len() as i32);
+                SelectObject(hdc, old_pen);
+                DeleteObject(pen);
             };
             if cfg.outline {
-                draw_stroke(thick + 2, COLORREF(0));
+                draw_stroke(thick + 2, 0);
             }
             draw_stroke(thick, ink);
         }
@@ -495,6 +675,7 @@ unsafe fn draw_shape(hdc: HDC, shape: &Shape, cfg: &CrosshairConfig) {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::crosshair::Stroke;
 
     fn cfg() -> CrosshairConfig {
         CrosshairConfig {
@@ -575,7 +756,6 @@ mod tests {
 
     #[test]
     fn custom_layout_offsets_strokes_to_center() {
-        use crate::crosshair::Stroke;
         let mut c = cfg();
         c.preset = CrosshairPreset::Custom;
         c.thickness = 3;
@@ -604,5 +784,21 @@ mod tests {
                 },
             ]
         );
+    }
+
+    #[test]
+    fn content_box_fits_cross_tightly() {
+        // Крест 12/4/2 на 1920×1080: линии x 944..976, y 524..556.
+        let (x, y, w, h) = content_box(&cfg(), 1920, 1080);
+        assert_eq!((x, y, w, h), (940, 520, 40, 40));
+    }
+
+    #[test]
+    fn content_box_falls_back_when_empty() {
+        let mut c = cfg();
+        c.preset = CrosshairPreset::Custom;
+        c.strokes = vec![];
+        let (x, y, w, h) = content_box(&c, 1920, 1080);
+        assert_eq!((x, y, w, h), (956, 536, 8, 8));
     }
 }
