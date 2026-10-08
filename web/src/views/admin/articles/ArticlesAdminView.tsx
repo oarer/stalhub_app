@@ -3,17 +3,19 @@
 import { Icon } from '@iconify/react'
 import { useMutation, useSuspenseQuery } from '@tanstack/react-query'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { useTranslations } from 'next-intl'
 import { useState } from 'react'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
 import { Modal } from '@/components/ui/Modal'
-import { articleHref } from '@/lib/desktop-href'
 import { Table } from '@/components/ui/Table'
 import { toast } from '@/components/ui/Toast'
 import { getQueryClient } from '@/providers/QueryProvider'
 import { articleService } from '@/services/article/article.service'
 import { ARTICLE_STATUS_META, ArticleStatus } from '@/types/article.type'
+import PublishBlogButton from './PublishBlogButton'
+import { articleHref } from '@/lib/desktop-href'
 
 const STATUS_OPTIONS = [
 	ArticleStatus.PENDING,
@@ -25,6 +27,7 @@ const STATUS_OPTIONS = [
 
 export default function ArticlesAdminView() {
 	const t = useTranslations()
+	const router = useRouter()
 	const queryClient = getQueryClient()
 	const [page, setPage] = useState(1)
 	const [statusFilter, setStatusFilter] = useState<ArticleStatus | ''>('')
@@ -74,9 +77,19 @@ export default function ArticlesAdminView() {
 				<h1 className="font-semibold text-2xl">
 					{t('admin.articles.title')}
 				</h1>
-				<span className="text-neutral-400 text-sm">
-					{data?.total_count ?? 0} {t('admin.permissions.total')}
-				</span>
+				<div className="flex items-center gap-2">
+					<span className="text-neutral-400 text-sm">
+						{data?.total_count ?? 0} {t('admin.permissions.total')}
+					</span>
+					<Button
+						onClick={() => router.push('/admin/articles/new')}
+						size="sm"
+						variant="primary"
+					>
+						<Icon icon="lucide:plus" />
+						{t('blog.createTitle')}
+					</Button>
+				</div>
 			</div>
 
 			<div className="flex flex-wrap items-center gap-2">
@@ -137,6 +150,7 @@ export default function ArticlesAdminView() {
 										<Link
 											className="font-semibold text-sky-400 hover:underline"
 											href={articleHref(article.id)}
+											target="_blank"
 										>
 											{article.title}
 										</Link>
@@ -169,6 +183,20 @@ export default function ArticlesAdminView() {
 									</Table.Cell>
 									<Table.Cell>
 										<div className="flex items-center gap-1">
+											<PublishBlogButton
+												articleId={article.id}
+											/>
+											<Button
+												onClick={() =>
+													router.push(
+														`/admin/articles/${article.id}/edit`
+													)
+												}
+												title={t('blog.editor.edit')}
+												variant="ghost"
+											>
+												<Icon icon="lucide:pencil" />
+											</Button>
 											<Modal.Root>
 												<Modal.Trigger variant="ghost">
 													<Icon icon="lucide:settings" />

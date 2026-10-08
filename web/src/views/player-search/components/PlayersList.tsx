@@ -7,8 +7,8 @@ import { unbounded } from '@/app/fonts'
 import { Badge } from '@/components/ui/Badge'
 import { Divider } from '@/components/ui/Divider'
 import type { PlayerStatsResponse } from '@/types/player.type'
-import { playerHref } from '@/lib/desktop-href'
 import { ROLE_META } from '@/types/playerNote.type'
+import { playerHref } from '@/lib/desktop-href'
 
 export function PlayersList({ data }: { data: PlayerStatsResponse[] }) {
 	const t = useTranslations()

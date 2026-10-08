@@ -11,9 +11,11 @@ import SidebarHeader from '@/components/ui/sideBar/SidebarHeader'
 import ClusterItem from '@/components/ui/sideBar/СlusterItem'
 import { useAtlasMarkers } from '@/hooks/useAtlasMarkers'
 import { useMarkersFile } from '@/hooks/useMarkersFile'
+import { filteredNameKey, filteredTypeKey } from '../lib/filteredMarkers'
 import CalibrationTool from './CalibrationTool'
 import CanvasLayer from './CanvasLayer'
 import ConvertOverlay from './ConvertOverlay'
+import FilteredWorldMarkers, { type SourceMarker } from './FilteredWorldMarkers'
 import type { MapMode } from './MapModeTabs'
 import MapModeTabs from './MapModeTabs'
 import MarkerEditor from './MarkerEditor'
@@ -23,7 +25,6 @@ import { serverMarkersToGeoJSON } from './serverToGeoJSON'
 import WorldMarkerEditor from './WorldMarkerEditor'
 import WorldMarkerFilter from './WorldMarkerFilter'
 import WorldMarkers from './WorldMarkers'
-import FilteredWorldMarkers, { type SourceMarker } from './FilteredWorldMarkers'
 import ZoomControl from './ZoomControl'
 
 import 'leaflet-draw/dist/leaflet.draw.css'
@@ -84,19 +85,54 @@ export default function MapTile({
 	const [markerSearch, setMarkerSearch] = useState('')
 	const [selectedUuid, setSelectedUuid] = useState<string | null>(null)
 	const [filteredMarkers, setFilteredMarkers] = useState<SourceMarker[]>([])
-	const [hiddenFilteredGroups, setHiddenFilteredGroups] = useState<Set<string>>(new Set())
+	const [hiddenFilteredTypes, setHiddenFilteredTypes] = useState<Set<string>>(
+		new Set()
+	)
+	const [hiddenFilteredNames, setHiddenFilteredNames] = useState<Set<string>>(
+		new Set()
+	)
 
 	useEffect(() => {
-		void fetch('/05.09_filtered.json')
+		void fetch('/markers/filtered.json')
 			.then((response) => response.json())
 			.then((data: unknown) => {
 				if (Array.isArray(data)) {
 					setFilteredMarkers(data)
-					setHiddenFilteredGroups(new Set(data.map((item) => String((item as SourceMarker).g ?? (item as SourceMarker).n ?? 'unknown'))))
+					setHiddenFilteredTypes(
+						new Set(
+							data.map((item) =>
+								filteredTypeKey(item as SourceMarker)
+							)
+						)
+					)
 				}
 			})
 			.catch((error) => console.error('Filtered map markers:', error))
 	}, [])
+
+	const filteredTypeGroups = useMemo(() => {
+		const groups = new Map<string, Map<string, number>>()
+		for (const marker of filteredMarkers) {
+			const group = marker.g ?? 'unknown'
+			const type = filteredTypeKey(marker)
+			let types = groups.get(group)
+			if (!types) {
+				types = new Map()
+				groups.set(group, types)
+			}
+			types.set(type, (types.get(type) ?? 0) + 1)
+		}
+		return [...groups.entries()]
+			.map(([group, types]) => ({
+				group,
+				types: [...types.entries()].sort((a, b) => b[1] - a[1]),
+				count: [...types.values()].reduce(
+					(sum, value) => sum + value,
+					0
+				),
+			}))
+			.sort((a, b) => b.count - a.count)
+	}, [filteredMarkers])
 
 	const allowedModes: MapMode[] = ['view', 'convert', 'edit']
 
@@ -209,19 +245,17 @@ export default function MapTile({
 
 				{atlasMarkers && worldSpots && mode !== 'convert' && (
 					<WorldMarkerFilter
+						filteredMarkers={filteredMarkers}
+						filteredTypeGroups={filteredTypeGroups}
+						hiddenFilteredNames={hiddenFilteredNames}
+						hiddenFilteredTypes={hiddenFilteredTypes}
 						hiddenIcons={hiddenIcons}
+						onHiddenFilteredNamesChange={setHiddenFilteredNames}
+						onHiddenFilteredTypesChange={setHiddenFilteredTypes}
 						onHiddenIconsChange={setHiddenIcons}
 						onSearchChange={setMarkerSearch}
 						search={markerSearch}
 						spots={worldSpots}
-						filteredGroups={[...new Set(filteredMarkers.map((marker) => marker.g ?? marker.n ?? 'unknown'))].sort()}
-						hiddenFilteredGroups={hiddenFilteredGroups}
-						toggleFilteredGroup={(group) => setHiddenFilteredGroups((current) => {
-							const next = new Set(current)
-							if (next.has(group)) next.delete(group)
-							else next.add(group)
-							return next
-						})}
 					/>
 				)}
 			</Sidebar>
@@ -258,10 +292,22 @@ export default function MapTile({
 					}}
 				/>
 
-				{mode !== 'convert' &&
+				{mode !== 'convert' && (
 					<FilteredWorldMarkers
-						markers={filteredMarkers.filter((marker) => !hiddenFilteredGroups.has(marker.g ?? marker.n ?? 'unknown') && `${marker.g ?? ''} ${marker.n ?? ''}`.toLowerCase().includes(markerSearch.trim().toLowerCase()))}
-					/>}
+						markers={filteredMarkers.filter(
+							(marker) =>
+								!hiddenFilteredTypes.has(
+									filteredTypeKey(marker)
+								) &&
+								!hiddenFilteredNames.has(
+									filteredNameKey(marker)
+								) &&
+								`${marker.g ?? ''} ${marker.b ?? ''} ${marker.n ?? ''}`
+									.toLowerCase()
+									.includes(markerSearch.trim().toLowerCase())
+						)}
+					/>
+				)}
 
 				{mode !== 'convert' &&
 					(atlasMarkers && markersUrl && worldSpots ? (

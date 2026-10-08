@@ -13,13 +13,13 @@ import { useDebounce } from '@/hooks/useDebounce'
 import { usePreparedSearch } from '@/hooks/usePreparedSearch'
 import type { SitePage } from '@/hooks/useSearchSitePages'
 import { formatDate } from '@/lib/date'
-import { articleHref } from '@/lib/desktop-href'
 import { getLocale } from '@/lib/getLocale'
 import type { ItemListing } from '@/types/api.type'
 import type { Article } from '@/types/article.type'
 import { infoColorMap } from '@/types/item.type'
 import { Divider } from '../ui/Divider'
 import { Skeleton } from '../ui/Skeleton'
+import { articleHref } from '@/lib/desktop-href'
 
 const PAGE_STEP = 15
 
@@ -92,7 +92,7 @@ const PageCard = React.memo(function PageCard({
 		>
 			<Card.Header className="flex flex-row items-center gap-4">
 				<Icon
-					className="shrink-0 text-text-accent text-xl"
+					className="shrink-0 text-foreground text-xl"
 					icon={page.icon}
 				/>
 				<div className="flex min-w-0 flex-col gap-1">
@@ -127,14 +127,14 @@ const ArticleCard = React.memo(function ArticleCard({
 		>
 			<Card.Header className="flex flex-row items-center gap-4">
 				<Icon
-					className="shrink-0 text-text-accent text-xl"
+					className="shrink-0 text-foreground text-xl"
 					icon="lucide:file-text"
 				/>
 				<div className="flex min-w-0 flex-col gap-1">
 					<p className="truncate font-semibold text-lg">
 						{article.title}
 					</p>
-					<p className="line-clamp-1 text-sm text-text-accent">
+					<p className="line-clamp-1 text-foreground text-sm">
 						{article.author?.username}
 						{article.created_at && (
 							<>
@@ -205,8 +205,6 @@ export default function ItemSearchModal({
 		displayedArticles.length === 0 &&
 		query.trim().length > 0
 
-	if (loading) return <Skeleton className="size-8" />
-
 	return (
 		<Modal.Root onOpenChange={setOpen} open={open}>
 			{trigger ? (
@@ -237,11 +235,18 @@ export default function ItemSearchModal({
 						value={query}
 					/>
 
+					{loading && (
+						<div className="flex h-24 items-center justify-center gap-2 font-semibold text-foreground">
+							<Skeleton className="size-5" />
+							<p>{t('modals.search.loading')}</p>
+						</div>
+					)}
+
 					<AnimatePresence>
 						{isEmpty && (
 							<motion.p
 								animate="animate"
-								className="text-center font-semibold text-text-accent"
+								className="text-center font-semibold text-foreground"
 								exit="exit"
 								initial="initial"
 								transition={{ duration: 0.18, ease: 'easeOut' }}
@@ -264,7 +269,7 @@ export default function ItemSearchModal({
 							>
 								<section className="flex flex-col gap-2">
 									<h3
-										className={`${unbounded.className} font-semibold text-sm text-text-accent uppercase tracking-widest`}
+										className={`${unbounded.className} font-semibold text-foreground text-sm uppercase tracking-widest`}
 									>
 										{t('modals.search.pages')}
 									</h3>
@@ -331,7 +336,7 @@ export default function ItemSearchModal({
 								}}
 								variants={sectionVariants}
 							>
-								<h3 className="font-semibold text-sm text-text-accent uppercase">
+								<h3 className="font-semibold text-foreground text-sm uppercase">
 									{t('modals.search.articles')}
 								</h3>
 								<ul className="flex flex-col gap-3">

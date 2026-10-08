@@ -9,22 +9,14 @@ const intlMiddleware = createMiddleware({
 
 export function proxy(req: NextRequest) {
 	const { pathname } = req.nextUrl
-	// The bundled server is private to this machine, including SSR and assets.
-	// Reject DNS rebinding and cross-origin browser requests before routing.
-	const host = req.headers.get('host') || ''
-	if (!/^(127\.0\.0\.1|localhost):\d+$/.test(host)) {
-		return new NextResponse('Forbidden host', { status: 403 })
-	}
-	const origin = req.headers.get('origin')
-	if ((origin && origin !== `http://${host}`) || req.headers.get('sec-fetch-site') === 'cross-site') {
-		return new NextResponse('Forbidden origin', { status: 403 })
-	}
-	if (pathname.startsWith('/api/') || pathname.startsWith('/uploads/') || pathname.startsWith('/_next/')) {
-		return NextResponse.next()
-	}
 
 	const requestHeaders = new Headers(req.headers)
 	requestHeaders.set('X-Path', pathname)
+
+	const cookieLocale = req.cookies.get('lang')?.value
+	if (cookieLocale && (LOCALE as readonly string[]).includes(cookieLocale)) {
+		requestHeaders.set('X-Locale', cookieLocale)
+	}
 
 	const intlResponse = intlMiddleware(req)
 

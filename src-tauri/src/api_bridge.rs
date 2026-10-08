@@ -112,8 +112,45 @@ fn bad_request(message: &str) -> String {
     format!("bad request: {message}")
 }
 
+fn hex_val(b: u8) -> Option<u8> {
+    match b {
+        b'0'..=b'9' => Some(b - b'0'),
+        b'a'..=b'f' => Some(b - b'a' + 10),
+        b'A'..=b'F' => Some(b - b'A' + 10),
+        _ => None,
+    }
+}
+
+/// Декодирует один path-сегмент (%HH → байты).
+/// Русские ники приходят из webview процент-энкодедом
+/// (`/api/v1/player/ru/%D0%90%D0%BB...`), поэтому голый `%`
+/// в пути — легитимен. Ошибка только на битых последовательностях
+/// и не-UTF-8.
+fn percent_decode_segment(segment: &str) -> Result<String, String> {
+    let bytes = segment.as_bytes();
+    let mut out: Vec<u8> = Vec::with_capacity(bytes.len());
+    let mut i = 0;
+    while i < bytes.len() {
+        if bytes[i] == b'%' {
+            if i + 2 >= bytes.len() {
+                return Err(bad_request("invalid path encoding"));
+            }
+            let hi = hex_val(bytes[i + 1]).ok_or_else(|| bad_request("invalid path encoding"))?;
+            let lo = hex_val(bytes[i + 2]).ok_or_else(|| bad_request("invalid path encoding"))?;
+            out.push(hi * 16 + lo);
+            i += 3;
+        } else {
+            out.push(bytes[i]);
+            i += 1;
+        }
+    }
+    String::from_utf8(out).map_err(|_| bad_request("invalid path encoding"))
+}
+
 fn validate_path(path: &str, method: &Method) -> Result<(), String> {
-    if !path.starts_with('/') || path.contains(['\\', '%', '?', '#', '\r', '\n', '\0']) {
+    // Сырые разделители/управляющие запрещены; `%` разрешён как
+    // процент-энкодинг (кириллица в никах) и проверяется ниже.
+    if !path.starts_with('/') || path.contains(['\\', '?', '#', '\r', '\n', '\0']) {
         return Err(bad_request("invalid path"));
     }
     let is_api = path == "/api/v1" || path.starts_with("/api/v1/");
@@ -135,7 +172,14 @@ fn validate_path(path: &str, method: &Method) -> Result<(), String> {
             }
             continue;
         }
-        if *segment == "." || *segment == ".." {
+        // `%HH` декодируем и валидируем декодед: закодированные `/`, `\`,
+        // `?`, `#`, `.`/`..` (обход пути вида `%2e%2e`, `%2F`) отвергаются.
+        let decoded = percent_decode_segment(segment)?;
+        if decoded.is_empty()
+            || decoded == "."
+            || decoded == ".."
+            || decoded.contains(['/', '\\', '?', '#', '\r', '\n', '\0'])
+        {
             return Err(bad_request("invalid path segment"));
         }
     }
@@ -407,6 +451,28 @@ mod tests {
         assert!(validate_path("/api/status", &Method::GET).is_ok());
         assert!(validate_path("/api/error-report", &Method::POST).is_ok());
         assert!(validate_path("/uploads/abc123.png", &Method::GET).is_ok());
+    }
+
+    #[test]
+    fn allows_percent_encoded_unicode() {
+        // Русский ник из webview: axios/URL энкодит кириллицу в %D0..%D1...
+        assert!(validate_path(
+            "/api/v1/player/ru/%D0%90%D0%BB%D0%B5%D0%BA%D1%81",
+            &Method::GET
+        )
+        .is_ok());
+        // Сырая (неэнкодед) кириллица тоже допустима — reqwest::Url заэнкодит сам.
+        assert!(validate_path("/api/v1/player/ru/Алекс", &Method::GET).is_ok());
+        // Ник с пробелом.
+        assert!(validate_path("/api/v1/player/ru/%20", &Method::GET).is_ok());
+        // Битые последовательности — reject.
+        assert!(validate_path("/api/v1/player/ru/%ZZ", &Method::GET).is_err());
+        assert!(validate_path("/api/v1/player/ru/%2", &Method::GET).is_err());
+        assert!(validate_path("/api/v1/player/ru/%FF%FE", &Method::GET).is_err());
+        // Закодированные разделители/обход — reject.
+        assert!(validate_path("/api/v1/a%2Fb", &Method::GET).is_err());
+        assert!(validate_path("/api/v1/a%5Cb", &Method::GET).is_err());
+        assert!(validate_path("/api/v1/%2e/x", &Method::GET).is_err());
     }
 
     #[test]

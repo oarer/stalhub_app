@@ -1,16 +1,20 @@
-import { Suspense } from "react";
-import MeLayout from "@/views/me/MeLayout";
-import SessionGate from "@/views/me/SessionGate";
+import type { Metadata } from 'next'
+import { Suspense } from 'react'
+import MeLayout from '@/views/me/MeLayout'
+
+export const metadata: Metadata = {
+	robots: { index: false, follow: false },
+}
 
 export default function RootLayout({
 	children,
 }: {
-	children: React.ReactNode;
+	children: React.ReactNode
 }) {
 	return (
 		<Suspense
 			fallback={
-				<section className="mx-auto grid max-w-285 grid-cols-1 gap-8 pb-0 lg:grid-cols-[27%_70%] lg:pb-12 xl:pt-36">
+				<section className="mx-auto grid max-w-285 grid-cols-1 gap-8 pt-28 pb-0 lg:grid-cols-[27%_70%] lg:pb-12 xl:pt-36">
 					<div className="hidden animate-pulse flex-col gap-4 lg:flex">
 						<div className="h-32 rounded-xl bg-card" />
 						<div className="flex flex-col gap-4 rounded-lg bg-card px-4 py-6">
@@ -26,9 +30,7 @@ export default function RootLayout({
 				</section>
 			}
 		>
-			<SessionGate>
-				<MeLayout>{children}</MeLayout>
-			</SessionGate>
+			<MeLayout>{children}</MeLayout>
 		</Suspense>
-	);
+	)
 }

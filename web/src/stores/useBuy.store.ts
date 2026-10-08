@@ -6,6 +6,7 @@ import type { ItemListing } from '@/types/api.type'
 export interface BuyListItem {
 	key: string
 	item: ItemListing
+	price: number
 }
 
 export const buyItemKey = (item: ItemListing): string =>
@@ -18,6 +19,7 @@ interface BuyState {
 
 	setTitle: (title: string) => void
 	setDiscord: (discord: string) => void
+	setPrice: (key: string, price: number) => void
 	addItem: (item: ItemListing) => void
 	removeItem: (key: string) => void
 	clearItems: () => void
@@ -32,6 +34,12 @@ export const useBuyStore = create<BuyState>()(
 
 			setTitle: (title) => set({ title }),
 			setDiscord: (discord) => set({ discord }),
+			setPrice: (key, price) =>
+				set((state) => ({
+					items: state.items.map((entry) =>
+						entry.key === key ? { ...entry, price } : entry
+					),
+				})),
 			addItem: (item) =>
 				set((state) => {
 					const key = buyItemKey(item)
@@ -39,7 +47,7 @@ export const useBuyStore = create<BuyState>()(
 						return state
 					}
 					return {
-						items: [...state.items, { key, item }],
+						items: [...state.items, { key, item, price: 0 }],
 					}
 				}),
 			removeItem: (key) =>

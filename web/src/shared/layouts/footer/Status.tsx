@@ -1,0 +1,107 @@
+'use client'
+
+import { useQuery } from '@tanstack/react-query'
+import { useTranslations } from 'next-intl'
+import { useEffect, useRef } from 'react'
+import { toast } from '@/components/ui/Toast'
+import { Tooltip } from '@/components/ui/Tooltip'
+import { statusQueries } from '@/queries/status/status.queries'
+import type { Service } from '@/types/status.type'
+import { mtsWide } from '@/app/fonts'
+
+export const StatusWidget = () => {
+	const { data, isError } = useQuery(statusQueries.get())
+	const t = useTranslations()
+
+	const services: Service[] = data?.data ? Object.values(data.data) : []
+	const problemServices = services.filter((s) => s.currentStatus !== 'UP')
+
+	const lastGoodProblemsRef = useRef<string[]>([])
+	const prevProblemsRef = useRef<string[]>([])
+
+	const currentProblems = problemServices.map((s) => s.name)
+	const displayedProblems =
+		isError && lastGoodProblemsRef.current.length > 0
+			? lastGoodProblemsRef.current
+			: currentProblems
+
+	let indicatorColor = 'bg-success'
+
+	if (isError || !data?.data) {
+		indicatorColor = 'bg-destructive'
+	} else if (problemServices.some((s) => s.currentStatus === 'DEGRADED')) {
+		indicatorColor = 'bg-warning'
+	} else if (problemServices.length > 0) {
+		indicatorColor = 'bg-destructive'
+	}
+
+	useEffect(() => {
+		if (isError) {
+			toast.error(t('status_widget.services_down'))
+			return
+		}
+
+		const newProblems = currentProblems.filter(
+			(name) => !prevProblemsRef.current.includes(name)
+		)
+
+		if (newProblems.length > 0) {
+			toast.error(
+				`${t('status_widget.services_down')} ${newProblems.join(', ')}`
+			)
+		}
+
+		const recovered = prevProblemsRef.current.filter(
+			(name) => !currentProblems.includes(name)
+		)
+
+		if (recovered.length > 0) {
+			toast.success(
+				`${t('status_widget.services_up')} ${recovered.join(', ')}`
+			)
+		}
+
+		prevProblemsRef.current = currentProblems
+		lastGoodProblemsRef.current = currentProblems
+	}, [currentProblems, isError, t])
+
+	return (
+		<div className="flex items-center gap-2 py-0.5">
+			<div className="relative flex size-3 shrink-0">
+				<div
+					className={`absolute h-full w-full animate-ping rounded-full ${indicatorColor}`}
+				/>
+				<div
+					className={`relative size-3 rounded-full ${indicatorColor}`}
+				/>
+			</div>
+
+			<div className={`${mtsWide.className} font-semibold text-[13px]`}>
+				{isError || !data?.data ? (
+					<p className="text-destructive">
+						{t('status_widget.services_error')}
+					</p>
+				) : displayedProblems.length === 0 ? (
+					<p className="text-muted-foreground">
+						{t('status_widget.services_ok')}
+					</p>
+				) : (
+					<Tooltip.Root>
+						<Tooltip.Trigger>
+							<span className="text-warning">
+								{t('status_widget.services_problem')}
+							</span>
+						</Tooltip.Trigger>
+						<Tooltip.Content>
+							{displayedProblems.map((name) => (
+								<span className="text-xs" key={name}>
+									{name}
+								</span>
+							))}
+						</Tooltip.Content>
+					</Tooltip.Root>
+				)}
+			</div>
+		</div>
+	)
+}

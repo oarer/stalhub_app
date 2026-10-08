@@ -7,15 +7,13 @@ import Image from 'next/image'
 import { useParams, useRouter } from 'next/navigation'
 import { useLocale, useTranslations } from 'next-intl'
 import { useCallback, useMemo, useState } from 'react'
-import { montserrat, unbounded } from '@/app/fonts'
+import { mtsExtended } from '@/app/fonts'
 import { Button } from '@/components/ui/Button'
-
 import { Combobox } from '@/components/ui/Combobox'
 import Input from '@/components/ui/Input'
 import { Skeleton } from '@/components/ui/Skeleton'
 import { toast } from '@/components/ui/Toast'
 import { GITHUB_RAW_BASE } from '@/constants/github.const'
-import { tierlistEditHref } from '@/lib/desktop-href'
 import { tierListQueries } from '@/queries/tier-list/tier-list.queries'
 import { tierListService } from '@/services/tier-list/tier-list.service'
 import {
@@ -41,6 +39,7 @@ import {
 import { ItemHoverCard } from './components/ItemHoverCard'
 import { getItemIconUrl, getItemName } from './components/ItemPicker'
 import { useTierTtk } from './hooks/useTierTtk'
+import { tierlistEditHref } from '@/lib/desktop-href'
 
 function TierRow({
 	rank,
@@ -70,7 +69,7 @@ function TierRow({
 	return (
 		<div className="flex gap-2">
 			<div
-				className={`flex size-17 shrink-0 items-center justify-center rounded-lg font-bold text-xl ring-2 ${colors.bg} ${colors.text} ${colors.ring}`}
+				className={`flex size-17 shrink-0 items-center justify-center rounded-lg font-semibold text-xl ring-2 ${colors.bg} ${colors.text} ${colors.ring}`}
 			>
 				{rank}
 			</div>
@@ -131,7 +130,7 @@ function DraggableEntry({
 			}`}
 		>
 			<Icon
-				className="size-4 cursor-grab text-text-accent/50"
+				className="size-4 cursor-grab text-foreground/50"
 				icon="lucide:grip-vertical"
 			/>
 			{item && (
@@ -144,7 +143,7 @@ function DraggableEntry({
 				/>
 			)}
 			<span
-				className={`${montserrat.className} truncate font-semibold`}
+				className={`truncate font-mono font-semibold`}
 				style={{ color: infoColorMap[item?.color as InfoColor] }}
 			>
 				{name}
@@ -351,7 +350,9 @@ export default function TierListEditorView({
 		<TierDndProvider>
 			<div className="flex flex-col gap-5">
 				<div className="flex items-center justify-between">
-					<h1 className={`${unbounded.className} font-bold text-3xl`}>
+					<h1
+						className={`${mtsExtended.className} font-semibold text-[28px] leading-none`}
+					>
 						{isEditing
 							? t('tierlists.editor.edit')
 							: t('tierlists.editor.create')}
@@ -387,7 +388,7 @@ export default function TierListEditorView({
 					/>
 					<div>
 						<p
-							className={`${montserrat.className} mb-1 font-bold text-muted-foreground text-sm`}
+							className={`mb-1 font-mono font-semibold text-muted-foreground text-sm`}
 						>
 							{t('tierlists.editor.category')}
 						</p>

@@ -8,7 +8,6 @@ import { useTranslations } from 'next-intl'
 import { useState } from 'react'
 import { Badge } from '@/components/ui/Badge'
 import { Button } from '@/components/ui/Button'
-import { adminUserHref } from '@/lib/desktop-href'
 import { Card } from '@/components/ui/Card'
 import { Combobox } from '@/components/ui/Combobox'
 import Input from '@/components/ui/Input'
@@ -22,6 +21,7 @@ import { adminClanQueries } from '@/queries/admin/clan.queries'
 import { adminClanService } from '@/services/admin/clan.service'
 import type { SundayActivity } from '@/types/clan/clan.type'
 import ClanAdminStagesView from './ClanAdminStagesView'
+import { adminUserHref } from '@/lib/desktop-href'
 
 interface Props {
 	clanId: string

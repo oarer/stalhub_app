@@ -1,7 +1,6 @@
 'use client'
 
 import { useTranslations } from 'next-intl'
-import { montserrat } from '@/app/fonts'
 import { Card } from '@/components/ui/Card'
 import { useAuctionControls } from '@/hooks/useAuctionControls'
 import { cn } from '@/lib/cn'
@@ -34,7 +33,7 @@ export default function AuctionHistoryCards({
 		return (
 			<Card.Root className="py-2">
 				<Card.Header>
-					<Card.Title className="justify-center text-md text-text-accent">
+					<Card.Title className="justify-center text-foreground text-md">
 						{t('modals.builds.no_data')}
 					</Card.Title>
 				</Card.Header>
@@ -62,41 +61,28 @@ export default function AuctionHistoryCards({
 				renderItem={(lot) => (
 					<LotCardShell additional={lot.additional}>
 						<div className="flex justify-between gap-2 text-sm">
-							<span className="font-semibold text-text-accent">
+							<span className="font-semibold text-foreground">
 								{t('items.auction.date')}
 							</span>
-							<span
-								className={cn(
-									'font-semibold',
-									montserrat.className
-								)}
-							>
+							<span className={cn('font-semibold', 'font-mono')}>
 								{formatDate(lot.time, 'datetime')}
 							</span>
 						</div>
 						<div className="flex justify-between gap-2 text-sm">
-							<span className="font-semibold text-text-accent">
+							<span className="font-semibold text-foreground">
 								{t('arsenal.table.currentPrice')}
 							</span>
-							<span
-								className={cn(
-									'font-semibold',
-									montserrat.className
-								)}
-							>
+							<span className={cn('font-semibold', 'font-mono')}>
 								{formatPrice(lot.price)}
 							</span>
 						</div>
 						{lot.amount > 1 && (
 							<div className="flex justify-between gap-2 text-sm">
-								<span className="font-semibold text-text-accent">
+								<span className="font-semibold text-foreground">
 									{t('items.auction.amount')}
 								</span>
 								<span
-									className={cn(
-										'font-semibold',
-										montserrat.className
-									)}
+									className={cn('font-semibold', 'font-mono')}
 								>
 									{lot.amount}
 								</span>

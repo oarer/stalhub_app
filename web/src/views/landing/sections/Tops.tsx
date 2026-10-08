@@ -7,10 +7,10 @@ import { useTranslations } from 'next-intl'
 import { unbounded } from '@/app/fonts'
 import GradientText from '@/components/ui/GradientText'
 import Avatar from '@/components/ui/user/Avatar'
-import { userHref } from '@/lib/desktop-href'
 
 import { tierListQueries } from '@/queries/tier-list/tier-list.queries'
 import type { WeeklyTopAuthor, WeeklyTopWork } from '@/types/tier-list.type'
+import { userHref } from '@/lib/desktop-href'
 
 const workHref = (work: WeeklyTopWork) =>
 	work.kind === 'tier_list'

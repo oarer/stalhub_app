@@ -1,4 +1,5 @@
 import axios from 'axios'
+import { useAuthStore } from '@/stores/useAuth.store'
 import { useBanStore } from '@/stores/useBan.store'
 import { tauriApiAdapter } from '@/lib/tauri-api-adapter'
 import { isTauri } from '@/lib/tauri-bridge'
@@ -6,6 +7,7 @@ import { isTauri } from '@/lib/tauri-bridge'
 declare module 'axios' {
 	interface AxiosRequestConfig {
 		skipAuthRefresh?: boolean
+		allowAuthRefresh?: boolean
 	}
 }
 
@@ -89,12 +91,20 @@ apiClient.interceptors.response.use(
 			return Promise.reject(error)
 		}
 
+		// На сервере (SSR-префетчи) браузерные HttpOnly-куки недоступны,
+		// поэтому refresh заведомо не может успеть: отдаём исходный 401,
+		// а не сбивающий с толку 422 от /refresh без кук.
+		if (isServerRequest()) {
+			return Promise.reject(error)
+		}
+
 		// Some /me probes are intentionally unauthenticated. They must not start
 		// refresh: the refresh token is HttpOnly and cannot be checked in JS.
+		// Requests from /auth never refresh either, except ones that opt in via
+		// allowAuthRefresh (e.g. desktop/issue needs a live session to hand off).
 		if (
 			originalRequest.skipAuthRefresh ||
-			isAuthRoute() ||
-			isServerRequest()
+			(isAuthRoute() && !originalRequest.allowAuthRefresh)
 		) {
 			return Promise.reject(error)
 		}
@@ -114,23 +124,20 @@ apiClient.interceptors.response.use(
 		isRefreshing = true
 
 		try {
-			await apiClient.post('/api/v1/auth/refresh')
+			await apiClient.post('/api/v1/auth/refresh', undefined, {
+				skipAuthRefresh: true,
+			})
 			processQueue()
 
 			return apiClient(originalRequest)
 		} catch (refreshError) {
-			// Older backends validate the required HttpOnly cookie before entering
-			// refresh. Preserve the original 401 only for that exact missing-cookie case.
-			const missingRefreshCookie =
-				axios.isAxiosError(refreshError) &&
-				refreshError.response?.status === 422 &&
-				refreshError.response.data?.type === 'validation' &&
-				refreshError.response.data?.on === 'cookie' &&
-				!refreshError.response.data?.found?.refresh_token
-			const sessionError = missingRefreshCookie ? error : refreshError
-			processQueue(sessionError)
+			processQueue(refreshError)
 
-			return Promise.reject(sessionError)
+			// Сессию восстановить не удалось — больше не считаем
+			// пользователя залогиненным, чтобы UI не врал.
+			useAuthStore.getState().setUser(null)
+
+			return Promise.reject(refreshError)
 		} finally {
 			isRefreshing = false
 		}

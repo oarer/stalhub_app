@@ -10,7 +10,6 @@ import {
 	STAGE_SCHEDULE,
 } from '@/constants/stageSchedule'
 import { getQueryClient } from '@/providers/QueryProvider'
-import { apiClient } from '@/app/api/interceptors/root.interceptor'
 import { clanService } from '@/services/clan/clan.service'
 import type { UserClanProfile } from '@/types/clan/clan.type'
 
@@ -72,16 +71,13 @@ export function useScreenshotUpload(profile: UserClanProfile) {
 				type: uploadType,
 				started_at: startedAt,
 			})
+			const { default: axios } = await import('axios')
 			const formData = new FormData()
 			formData.append('file', file)
-			await apiClient.post(
-				`/api/v1/clan/analytics/sessions/${session.id}/screenshots`,
+			await axios.post(
+				`${process.env.NEXT_PUBLIC_API}/api/v1/clan/analytics/sessions/${session.id}/screenshots`,
 				formData,
-				{
-					headers: { 'Content-Type': 'multipart/form-data' },
-					// Скриншоты грузятся дольше глобальных 10с apiClient.
-					timeout: 0,
-				}
+				{ withCredentials: true }
 			)
 		},
 		onMutate: () => setUploading(true),

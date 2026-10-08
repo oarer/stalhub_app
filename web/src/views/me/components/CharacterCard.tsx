@@ -6,8 +6,9 @@ import Link from 'next/link'
 import { useTranslations } from 'next-intl'
 import type { Regions } from '@/types/api.type'
 import type { PlayerResponse } from '@/types/player.type'
-import { playerHref } from '@/lib/desktop-href'
 import { allianceBackground } from '@/types/user.type'
+import { mtsWide } from '@/app/fonts'
+import { playerHref } from '@/lib/desktop-href'
 
 interface Props {
 	character: PlayerResponse
@@ -36,12 +37,12 @@ export function CharacterCard({ character, region }: Props) {
 			</div>
 
 			<div className="flex flex-col gap-0.5">
-				<h3 className="truncate font-semibold text-md">
+				<h3 className={`${mtsWide.className} truncate font-medium text-md`}>
 					{character.username}
 				</h3>
 
 				{character.clan && (
-					<span className="font-bold text-muted-foreground text-xs">
+					<span className="font-semibold text-muted-foreground text-xs">
 						{character.clan.info.name} ·{' '}
 						{t(`player.rank.${character.clan.member.rank}`)}
 					</span>

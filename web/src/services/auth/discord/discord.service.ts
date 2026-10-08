@@ -3,8 +3,7 @@ import { apiClient } from '@/app/api/interceptors/root.interceptor'
 class DiscordAuthService {
 	async getLoginUrl(): Promise<string> {
 		const { data } = await apiClient.get<{ url: string }>(
-			'/api/v1/auth/discord/login',
-			{ skipAuthRefresh: true }
+			'/api/v1/auth/discord/login'
 		)
 		return data.url
 	}

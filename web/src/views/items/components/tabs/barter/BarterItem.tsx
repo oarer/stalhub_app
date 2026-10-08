@@ -1,11 +1,11 @@
 import Image from 'next/image'
 import Link from 'next/link'
 import { Divider } from '@/components/ui/Divider'
-import { itemHref } from '@/lib/desktop-href'
 import type { BarterItemResult } from '@/types/barter.type'
 import { InfoColor, infoColorMap, type Locale } from '@/types/item.type'
 import { formatBarterAmount } from '@/utils/barterUtils'
 import { messageToString } from '@/utils/itemUtils'
+import { itemHref } from '@/lib/desktop-href'
 
 type Props = {
 	item: BarterItemResult

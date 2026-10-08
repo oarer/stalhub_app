@@ -303,28 +303,30 @@ mod tests {
         };
         assert_eq!(
             pick(false).as_deref(),
-            Some("https://github.com/oarer/stalhub_app/releases/download/v0.0.1/android-update.json")
+            Some(
+                "https://github.com/oarer/stalhub_app/releases/download/v0.0.1/android-update.json"
+            )
         );
         assert_eq!(
             pick(true).as_deref(),
-            Some("https://github.com/oarer/stalhub_app/releases/download/v0.0.1/android-update.json")
+            Some(
+                "https://github.com/oarer/stalhub_app/releases/download/v0.0.1/android-update.json"
+            )
         );
-        let empty: Vec<GithubRelease> = serde_json::from_str(
-            r#"[{"tag_name":"v0.0.2","prerelease":true,"assets":[]}]"#,
-        )
-        .expect("releases");
-        assert!(
-            empty
-                .iter()
-                .filter(|release| !release.prerelease)
-                .flat_map(|release| release.assets.iter())
-                .find(|asset| asset.name == MANIFEST_ASSET_NAME)
-                .is_none()
-        );
+        let empty: Vec<GithubRelease> =
+            serde_json::from_str(r#"[{"tag_name":"v0.0.2","prerelease":true,"assets":[]}]"#)
+                .expect("releases");
+        assert!(empty
+            .iter()
+            .filter(|release| !release.prerelease)
+            .flat_map(|release| release.assets.iter())
+            .find(|asset| asset.name == MANIFEST_ASSET_NAME)
+            .is_none());
     }
 
     #[test]
-    fn parses_manifest() {        let manifest: AndroidUpdateManifest = serde_json::from_str(
+    fn parses_manifest() {
+        let manifest: AndroidUpdateManifest = serde_json::from_str(
 			r#"{"version":"1.2.0","url":"https://github.com/oarer/stalhub_app/releases/download/v1.2.0/app.apk","notes":"fix"}"#,
 		)
 		.expect("manifest");

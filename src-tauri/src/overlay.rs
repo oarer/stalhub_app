@@ -21,8 +21,7 @@ pub fn trading_overlay_open(app: AppHandle) -> bool {
         .decorations(false)
         .always_on_top(true)
         .skip_taskbar(true);
-    match builder.build()
-    {
+    match builder.build() {
         Ok(window) => window.set_focus().is_ok(),
         Err(error) => {
             log::warn!("trading overlay open failed: {error}");

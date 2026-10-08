@@ -1,6 +1,5 @@
 import Image, { type ImageProps } from 'next/image'
 import { cn } from '@/lib/cn'
-import { avatarImageUrl } from '@/lib/imageUrl'
 
 interface AvatarCardProps extends Omit<ImageProps, 'src' | 'alt' | 'id'> {
 	username: string
@@ -18,7 +17,7 @@ export default function Avatar({
 			{...props}
 			alt={`${username}'s avatar`}
 			className={cn('rounded-full object-contain', className)}
-			src={avatarImageUrl(id)}
+			src={`${process.env.NEXT_PUBLIC_API}/api/v1/users/avatar/${id}`}
 			unoptimized
 		/>
 	)

@@ -8,7 +8,6 @@ import { useState } from 'react'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
 import Input from '@/components/ui/Input'
-import { adminUserHref } from '@/lib/desktop-href'
 import { Modal } from '@/components/ui/Modal'
 import { Table } from '@/components/ui/Table'
 import { toast } from '@/components/ui/Toast'
@@ -16,6 +15,7 @@ import { useDebounce } from '@/hooks/useDebounce'
 import { getQueryClient } from '@/providers/QueryProvider'
 import { adminUserQueries } from '@/queries/admin/user.queries'
 import { adminUserService } from '@/services/admin/user.service'
+import { adminUserHref } from '@/lib/desktop-href'
 
 export default function UsersAdminView() {
 	const t = useTranslations()
@@ -102,7 +102,7 @@ export default function UsersAdminView() {
 									<Table.Cell>
 										<Link
 											className="font-semibold text-sky-400 hover:underline"
-												href={adminUserHref(user.id)}
+											href={adminUserHref(user.id)}
 										>
 											{user.username}
 										</Link>
@@ -134,7 +134,7 @@ export default function UsersAdminView() {
 									<Table.Cell>
 										<div className="flex items-center gap-1">
 											<Link
-											href={adminUserHref(user.id)}
+												href={adminUserHref(user.id)}
 											>
 												<Button
 													size="sm"

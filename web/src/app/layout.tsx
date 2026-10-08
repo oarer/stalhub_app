@@ -5,7 +5,7 @@ import '@/shared/styles/index.css'
 import Script from 'next/script'
 import { getLocale, getMessages } from 'next-intl/server'
 import { ThemeProvider } from 'next-themes'
-import { raleway } from '@/app/fonts'
+import { montserrat, unbounded } from '@/app/fonts'
 import { getMetadataByPath } from '@/constants/meta'
 import { cn } from '@/lib/cn'
 import LocaleProvider from '@/providers/LocaleProvider'
@@ -56,14 +56,14 @@ export default async function RootLayout({ children }: LayoutProps) {
 
 	return (
 		<html
-			className="dark"
+			className={`${unbounded.className} ${montserrat.variable} dark`}
 			data-scroll-behavior="smooth"
 			lang={locale}
 			suppressHydrationWarning
 		>
 			<body
 				className={cn(
-					`${raleway.className} bg-background text-foreground transition-colors duration-500 ease-in-out`,
+					`bg-background text-foreground transition-colors duration-500 ease-in-out`,
 					IS_STATIC_EXPORT && 'tauri-app'
 				)}
 			>

@@ -2,10 +2,13 @@
 
 import type { MeLayoutProps } from '@/types/me.types'
 import MeBanner from '@/views/me/components/MeBanner'
+import NavTabs from '@/views/me/components/NavTabs'
 import UserCard from '@/views/me/components/UserCard'
 
 export default function MeSidebar({
 	user,
+	unreadCount,
+	pathname,
 	onCardChange,
 	showBanner,
 }: Omit<MeLayoutProps, 'children'> & { showBanner: boolean }) {
@@ -27,6 +30,11 @@ export default function MeSidebar({
 					cardColor={customization.card_color ?? '#000000'}
 					onCardChange={onCardChange}
 					user={user}
+				/>
+				<NavTabs
+					pathname={pathname}
+					roles={user.roles}
+					unreadCount={unreadCount}
 				/>
 			</div>
 		</div>

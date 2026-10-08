@@ -28,7 +28,10 @@ export default function Providers({ children }: Props) {
 		// не ставится поверх Electron-preload. Идемпотентен.
 		initTauriBridge()
 
-		if (pathname.startsWith('/auth')) return
+		if (pathname.startsWith('/auth')) {
+			setUser(null)
+			return
+		}
 
 		const controller = new AbortController()
 		let active = true

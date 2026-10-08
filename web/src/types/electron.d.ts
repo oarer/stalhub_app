@@ -34,6 +34,33 @@ export type DesktopUpdatesApi = {
 	onStatus(callback: (state: DesktopUpdateState) => void): () => void
 }
 
+export type CrosshairPreset = 'cross' | 'dot' | 'ring' | 'custom'
+
+export type CrosshairStroke = {
+	points: Array<[number, number]>
+}
+
+export type CrosshairConfig = {
+	preset: CrosshairPreset
+	size: number
+	gap: number
+	thickness: number
+	color: string
+	opacity: number
+	dot: boolean
+	outline: boolean
+	enabled: boolean
+	strokes: CrosshairStroke[]
+}
+
+export type DesktopCrosshairApi = {
+	supported: boolean
+	get(): Promise<CrosshairConfig>
+	show(): Promise<boolean>
+	hide(): Promise<boolean>
+	set(config: CrosshairConfig): Promise<boolean>
+}
+
 declare global {
 	interface Window {
 		stalhubDesktop?: {
@@ -53,6 +80,7 @@ declare global {
 				): () => void
 				onComplete(callback: () => void): () => void
 			}
+			crosshair?: DesktopCrosshairApi
 		}
 	}
 }

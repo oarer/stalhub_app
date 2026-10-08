@@ -4,11 +4,9 @@ import { useQuery, useSuspenseQuery } from '@tanstack/react-query'
 import Link from 'next/link'
 import { useTranslations } from 'next-intl'
 import { useMemo } from 'react'
-import { montserrat } from '@/app/fonts'
 import { Badge } from '@/components/ui/Badge'
 import { Skeleton } from '@/components/ui/Skeleton'
 import Avatar from '@/components/ui/user/Avatar'
-import { userHref } from '@/lib/desktop-href'
 import HoverUserCard from '@/components/ui/user/HoverUserCard'
 import { clanQueries } from '@/queries/clan/clan.queries'
 import type { ClanMemberNoteWithMember } from '@/types/clan/clan.type'
@@ -18,6 +16,7 @@ import { MemberActions } from './components/members/MemberActions'
 import { MemberNotesButton } from './components/members/MemberNotesButton'
 import { useClanMemberMutations } from './hooks/useClanMemberMutations'
 import { useClanRoles } from './hooks/useClanRoles'
+import { userHref } from '@/lib/desktop-href'
 
 export default function ClanMembersView() {
 	const { data: profile } = useSuspenseQuery(clanQueries.getMe())
@@ -105,7 +104,7 @@ function ClanMembersContent({ clanId }: { clanId: string }) {
 										{member.user && (
 											<HoverUserCard id={member.user.id}>
 												<Link
-													className={`${montserrat.className} font-semibold text-text-accent text-xs`}
+													className={`font-mono font-semibold text-foreground text-xs`}
 													href={userHref(member.user.id)}
 												>
 													{member.user.name}
@@ -126,7 +125,7 @@ function ClanMembersContent({ clanId }: { clanId: string }) {
 							<div className="flex items-center gap-2">
 								{squadByMemberId.has(member.id) && (
 									<Badge
-										className={montserrat.className}
+										className="font-mono"
 										title={t('clan.members.squad')}
 										variant="secondary"
 									>

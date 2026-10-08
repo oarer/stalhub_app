@@ -3,11 +3,10 @@
 import { Icon } from '@iconify/react'
 import Image from 'next/image'
 import { forwardRef } from 'react'
-import { montserrat, unbounded } from '@/app/fonts'
+import { mtsExtended } from '@/app/fonts'
 import { Tooltip } from '@/components/ui/Tooltip'
 import Avatar from '@/components/ui/user/Avatar'
 import { cn } from '@/lib/cn'
-import { avatarImageUrl } from '@/lib/imageUrl'
 import type { UserCardProps } from '@/types/me.types'
 import type { UserBadge } from '@/types/user.type'
 import { BgVariantSelector } from '@/views/me/components/BgSelector'
@@ -40,7 +39,7 @@ export default forwardRef<HTMLDivElement, UserCardProps>(function UserCard(
 						alt={user.name ?? ''}
 						className="absolute inset-0 scale-105 object-cover blur-sm"
 						fill
-						src={avatarImageUrl(user.id)}
+						src={`${process.env.NEXT_PUBLIC_API}/api/v1/users/avatar/${user.id}`}
 						unoptimized
 					/>
 					<div className="absolute inset-0 bg-black/40" />
@@ -60,13 +59,13 @@ export default forwardRef<HTMLDivElement, UserCardProps>(function UserCard(
 					</div>
 
 					<h2
-						className={`${unbounded.className} truncate font-semibold text-xl leading-none`}
+						className={`${mtsExtended.className} truncate font-medium text-xl leading-none`}
 					>
 						{user.name}
 					</h2>
 
 					{user.name && (
-						<span className="font-semibold text-text-accent leading-none">
+						<span className="font-semibold text-foreground leading-none">
 							{user.username}
 						</span>
 					)}
@@ -106,7 +105,7 @@ export default forwardRef<HTMLDivElement, UserCardProps>(function UserCard(
 						</div>
 					)}
 					<p
-						className={`${montserrat.className} rounded-lg bg-card px-2 py-2 font-semibold text-card-foreground text-sm leading-none`}
+						className={`rounded-lg bg-card px-2 py-2 font-mono font-semibold text-card-foreground text-sm leading-none`}
 					>
 						ID: {user.id}
 					</p>

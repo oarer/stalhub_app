@@ -499,12 +499,6 @@ export default function AppSidebar() {
 							}
 						/>
 					</motion.span>
-					<SlideLabel
-						className="truncate font-semibold text-sm"
-						collapsed={isCollapsed}
-					>
-						{t(isCollapsed ? 'nav.expand' : 'nav.collapse')}
-					</SlideLabel>
 				</Button>
 			</div>
 		</aside>

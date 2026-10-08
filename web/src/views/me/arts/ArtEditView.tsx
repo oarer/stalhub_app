@@ -12,8 +12,8 @@ import { toast } from '@/components/ui/Toast'
 import { getQueryClient } from '@/providers/QueryProvider'
 import { artQueries } from '@/queries/art/art.queries'
 import { artService } from '@/services/art/art.service'
-import { ArtType, type ArtUpdate } from '@/types/art.type'
-import { ArtImageField } from '@/views/me/components/ArtImageField'
+import { ArtType, type ArtUpdate, getArtImages } from '@/types/art.type'
+import { ArtImagesField } from '@/views/me/components/ArtImagesField'
 import { parseTags } from '@/views/me/components/article/editor-utils'
 import { Section } from '../components/Section'
 
@@ -35,7 +35,9 @@ export default function ArtEditView({ artId }: ArtEditViewProps) {
 
 	const [title, setTitle] = useState(art.title)
 	const [type, setType] = useState<ArtType>(art.type)
-	const [imageUrl, setImageUrl] = useState(art.image_url ?? '')
+	const [imageUrls, setImageUrls] = useState<string[]>(() =>
+		getArtImages(art)
+	)
 	const [tags, setTags] = useState(art.tags.join(', '))
 	const [description, setDescription] = useState(art.description ?? '')
 
@@ -56,7 +58,8 @@ export default function ArtEditView({ artId }: ArtEditViewProps) {
 		updateMutation.mutate({
 			title: title.trim(),
 			type,
-			image_url: imageUrl.trim() || null,
+			image_url: imageUrls[0] ?? null,
+			image_urls: imageUrls,
 			tags: parseTags(tags),
 			description: description.trim() || undefined,
 		})
@@ -82,7 +85,7 @@ export default function ArtEditView({ artId }: ArtEditViewProps) {
 					<div className="flex flex-col gap-2">
 						<div className="flex flex-col gap-2">
 							<label
-								className="font-semibold text-md text-text-accent"
+								className="font-semibold text-foreground text-md"
 								htmlFor="art-title"
 							>
 								{t('me.newArt.name')}
@@ -97,7 +100,7 @@ export default function ArtEditView({ artId }: ArtEditViewProps) {
 						</div>
 
 						<div className="flex flex-col gap-2">
-							<span className="font-semibold text-md text-text-accent">
+							<span className="font-semibold text-foreground text-md">
 								{t('me.newArt.type')}
 							</span>
 							<div className="grid grid-cols-2 gap-2">
@@ -121,7 +124,7 @@ export default function ArtEditView({ artId }: ArtEditViewProps) {
 
 						<div className="flex flex-col gap-2">
 							<label
-								className="font-semibold text-md text-text-accent"
+								className="font-semibold text-foreground text-md"
 								htmlFor="art-description"
 							>
 								{t('me.newArt.description')}
@@ -139,7 +142,7 @@ export default function ArtEditView({ artId }: ArtEditViewProps) {
 
 						<div className="flex flex-col gap-2">
 							<label
-								className="font-semibold text-md text-text-accent"
+								className="font-semibold text-foreground text-md"
 								htmlFor="art-tags"
 							>
 								{t('me.newArt.tags')}
@@ -161,14 +164,14 @@ export default function ArtEditView({ artId }: ArtEditViewProps) {
 							</Alert.Description>
 						</Alert.Root>
 						<label
-							className="font-semibold text-md text-text-accent"
+							className="font-semibold text-foreground text-md"
 							htmlFor="art-image"
 						>
 							{t('me.newArt.image')}
 						</label>
-						<ArtImageField
-							onChange={setImageUrl}
-							value={imageUrl}
+						<ArtImagesField
+							onChange={setImageUrls}
+							value={imageUrls}
 						/>
 					</div>
 				</Section>

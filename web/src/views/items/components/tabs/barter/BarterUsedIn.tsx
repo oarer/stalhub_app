@@ -2,10 +2,10 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { useTranslations } from 'next-intl'
 import { Divider } from '@/components/ui/Divider'
-import { itemHref } from '@/lib/desktop-href'
 import type { UsedInItem } from '@/types/barter.type'
 import { InfoColor, infoColorMap, type Locale } from '@/types/item.type'
 import { messageToString } from '@/utils/itemUtils'
+import { itemHref } from '@/lib/desktop-href'
 
 type Props = {
 	items: UsedInItem[]

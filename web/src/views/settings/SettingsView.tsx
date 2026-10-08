@@ -6,6 +6,7 @@ import ChangeTheme from '@/shared/layouts/nav/components/ChangeTheme'
 import { Section } from '@/views/me/components/Section'
 import { SettingRow } from '@/views/me/components/settings/SettingRow'
 import DataSettings from '@/views/settings/DataSettings'
+import CrosshairSection from '@/views/settings/CrosshairSection'
 import UpdatesSection from '@/views/settings/UpdatesSection'
 
 export default function SettingsView() {
@@ -33,6 +34,7 @@ export default function SettingsView() {
 				</div>
 			</Section>
 			<UpdatesSection />
+			<CrosshairSection />
 			<DataSettings />
 		</div>
 	)

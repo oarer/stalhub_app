@@ -1,5 +1,6 @@
 mod api_bridge;
 mod capture;
+mod crosshair;
 mod deeplink;
 mod overlay;
 mod update_android;
@@ -13,6 +14,10 @@ pub fn run() {
             capture::capture_list_windows,
             capture::capture_find_game,
             capture::capture_frame,
+            crosshair::crosshair_get,
+            crosshair::crosshair_show,
+            crosshair::crosshair_hide,
+            crosshair::crosshair_set,
             deeplink::renderer_ready,
             deeplink::renderer_not_ready,
             overlay::trading_overlay_open,

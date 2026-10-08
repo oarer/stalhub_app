@@ -5,13 +5,11 @@ import { useMutation, useSuspenseQuery } from '@tanstack/react-query'
 import Image from 'next/image'
 import { useTranslations } from 'next-intl'
 import { useRef, useState } from 'react'
-import { montserrat } from '@/app/fonts'
 import { Button } from '@/components/ui/Button'
 import { Modal } from '@/components/ui/Modal'
 import { toast } from '@/components/ui/Toast'
 import HoverUserCard from '@/components/ui/user/HoverUserCard'
 import { formatDate } from '@/lib/date'
-import { avatarImageUrl } from '@/lib/imageUrl'
 import { getQueryClient } from '@/providers/QueryProvider'
 import { userCommentQueries } from '@/queries/user/comment.queries'
 import { userCommentService } from '@/services/user/comment.service'
@@ -29,9 +27,7 @@ function renderContent(text: string) {
 		if (part.match(mentionRegex)) {
 			return (
 				<HoverUserCard key={i} username={part.slice(1)}>
-					<span
-						className={`${montserrat.className} font-semibold text-primary`}
-					>
+					<span className={`font-mono font-semibold text-primary`}>
 						{part}
 					</span>
 				</HoverUserCard>
@@ -156,7 +152,7 @@ export default function UserComments({ userId }: UserCommentsProps) {
 				))}
 
 				{topLevel.length === 0 && (
-					<p className="py-4 text-center font-semibold text-sm text-text-accent">
+					<p className="py-4 text-center font-semibold text-foreground text-sm">
 						{t('users.comments.empty')}
 					</p>
 				)}
@@ -192,19 +188,17 @@ function CommentItem({
 							alt={comment.author.name}
 							className="rounded-full"
 							height={42}
-							src={avatarImageUrl(comment.author.id)}
+							src={`${process.env.NEXT_PUBLIC_API}/api/v1/users/avatar/${comment.author.id}`}
 							unoptimized
 							width={42}
 						/>
 						<HoverUserCard id={comment.author.id}>
-							<span
-								className={`${montserrat.className} font-semibold text-xs`}
-							>
+							<span className={`font-mono font-semibold text-xs`}>
 								{comment.author.name}
 							</span>
 						</HoverUserCard>
 						<span
-							className={`${montserrat.className} font-semibold text-text-accent text-xs`}
+							className={`font-mono font-semibold text-foreground text-xs`}
 						>
 							{formatDate(comment.created_at)}
 						</span>

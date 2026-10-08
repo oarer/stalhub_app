@@ -8,7 +8,6 @@ import { useState } from 'react'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
 import { Modal } from '@/components/ui/Modal'
-import { artHref } from '@/lib/desktop-href'
 import { Table } from '@/components/ui/Table'
 import { toast } from '@/components/ui/Toast'
 import { cn } from '@/lib/cn'
@@ -18,6 +17,7 @@ import { adminArtService } from '@/services/admin/art.service'
 import type { Art } from '@/types/art.type'
 import { ArtType } from '@/types/art.type'
 import { AdminArtForm } from './AdminArtForm'
+import { artHref } from '@/lib/desktop-href'
 
 export default function ArtsAdminView() {
 	const t = useTranslations()
@@ -119,6 +119,7 @@ export default function ArtsAdminView() {
 										<Link
 											className="font-semibold text-sky-400 hover:underline"
 											href={artHref(art.id)}
+											target="_blank"
 										>
 											{art.title}
 										</Link>

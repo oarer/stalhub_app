@@ -7,13 +7,13 @@ import Link from 'next/link'
 import { useTranslations } from 'next-intl'
 import { MDXRemote } from 'next-mdx-remote'
 import { useEffect, useState } from 'react'
-import { montserrat, unbounded } from '@/app/fonts'
+import { mtsExtended } from '@/app/fonts'
+import BlogCover from '@/components/blog/BlogCover'
 import { Button } from '@/components/ui/Button'
 import HoverUserCard from '@/components/ui/user/HoverUserCard'
 import { useMDXComponents } from '@/components/wiki/mdx-components'
 import { compileMdx } from '@/lib/actions/mdx'
 import { formatDate } from '@/lib/date'
-import { avatarImageUrl } from '@/lib/imageUrl'
 import { getQueryClient } from '@/providers/QueryProvider'
 import { articleQueries } from '@/queries/article/article.queries'
 import { articleService } from '@/services/article/article.service'
@@ -26,9 +26,15 @@ const EMPTY_FRONTMATTER = {}
 
 interface ArticleViewProps {
 	articleId: string
+	backHref?: string
+	backLabelKey?: string
 }
 
-export default function ArticleView({ articleId }: ArticleViewProps) {
+export default function ArticleView({
+	articleId,
+	backHref = '/articles',
+	backLabelKey = 'articles.allArticles',
+}: ArticleViewProps) {
 	const t = useTranslations()
 	const { data: article } = useSuspenseQuery(articleQueries.get(articleId))
 	const components = useMDXComponents()
@@ -65,20 +71,22 @@ export default function ArticleView({ articleId }: ArticleViewProps) {
 	}, [article?.content])
 
 	return (
-		<section className="mx-auto flex max-w-380 flex-col gap-8 px-4 pt-12 pb-12 md:px-8 xl:pt-36">
+		<section className="mx-auto flex max-w-380 flex-col gap-8 px-4 pt-32 pb-12 md:px-8 xl:pt-36">
 			<header className="flex flex-col gap-4 border-primary border-b pb-6">
 				<Link
-					className="font-semibold text-sm text-text-accent transition-colors hover:text-primary"
-					href="/articles"
+					className="font-medium text-foreground text-sm transition-colors hover:text-primary"
+					href={backHref}
 				>
-					{t('articles.allArticles')}
+					{t(backLabelKey)}
 				</Link>
 
-				<h1 className={`${unbounded.className} font-bold text-3xl`}>
+				<h1
+					className={`${mtsExtended.className} font-semibold text-3xl text-primary`}
+				>
 					{article.title}
 				</h1>
 
-				{article.image_url && (
+				{article.image_url ? (
 					<div className="relative aspect-video w-full overflow-hidden rounded-lg">
 						<Image
 							alt={article.title}
@@ -88,48 +96,52 @@ export default function ArticleView({ articleId }: ArticleViewProps) {
 							src={article.image_url}
 						/>
 					</div>
+				) : (
+					<BlogCover
+						content={article.content}
+						icon={article.cover_config?.icon ?? null}
+						mode={article.cover_config?.mode ?? null}
+						panel={article.cover_config?.panel ?? null}
+						seed={article.id}
+						tags={article.tags}
+						title={article.title}
+					/>
 				)}
 
-				<div className="flex flex-wrap items-center gap-4 font-semibold text-sm">
+				<div className="flex flex-wrap items-center gap-4 font-medium text-sm">
 					<div className="flex items-center gap-2">
 						<Image
 							alt={article.author.username}
 							className="rounded-full"
 							height={42}
-							src={avatarImageUrl(article.author.id)}
+							src={`${process.env.NEXT_PUBLIC_API}/api/v1/users/avatar/${article.author.id}`}
 							unoptimized
 							width={42}
 						/>
 						<HoverUserCard id={article.author.id}>
-							<span
-								className={`${montserrat.className} font-semibold text-xs`}
-							>
+							<span className={`font-medium font-mono text-xs`}>
 								{article.author.username}
 							</span>
 						</HoverUserCard>
 					</div>
 
-					<div className="flex items-center gap-1 text-text-accent">
+					<div className="flex items-center gap-1 text-foreground">
 						<Icon icon="lucide:eye" />
-						<span
-							className={`${montserrat.className} font-semibold text-xs`}
-						>
+						<span className={`font-medium font-mono text-xs`}>
 							{article.views}
 						</span>
 					</div>
 
-					<div className="flex items-center gap-1 text-text-accent">
+					<div className="flex items-center gap-1 text-foreground">
 						<Icon icon="lucide:calendar" />
-						<span
-							className={`${montserrat.className} font-semibold text-xs`}
-						>
+						<span className={`font-medium font-mono text-xs`}>
 							{formatDate(article.created_at, 'datetime')}
 						</span>
 					</div>
 
 					{article.faction && (
 						<span
-							className={`rounded-md px-2 py-0.5 font-semibold text-xs ${FACTION_META[article.faction as Faction]?.color ?? ''}`}
+							className={`rounded-md px-2 py-0.5 font-medium text-xs ${FACTION_META[article.faction as Faction]?.color ?? ''}`}
 						>
 							{FACTION_META[article.faction as Faction]?.label ??
 								article.faction}
@@ -138,10 +150,10 @@ export default function ArticleView({ articleId }: ArticleViewProps) {
 
 					{user && (
 						<Button
-							className={`p-2 ${
+							className={`gap-1 p-2 ${
 								article.is_starred
 									? 'text-yellow-400'
-									: 'text-text-accent hover:text-yellow-400'
+									: 'text-foreground hover:text-yellow-400'
 							}`}
 							onClick={() =>
 								article.is_starred
@@ -156,12 +168,12 @@ export default function ArticleView({ articleId }: ArticleViewProps) {
 								}
 								icon="lucide:star"
 							/>
-							<span>{article.stars_count}</span>
+							<span className='font-mono font-semibold'>{article.stars_count}</span>
 						</Button>
 					)}
 
 					{!user && article.stars_count > 0 && (
-						<div className="flex items-center gap-1 text-text-accent">
+						<div className="flex items-center gap-1 text-foreground">
 							<Icon icon="lucide:star" />
 							<span>{article.stars_count}</span>
 						</div>
@@ -172,7 +184,7 @@ export default function ArticleView({ articleId }: ArticleViewProps) {
 					<div className="flex flex-wrap gap-1.5">
 						{article.tags.map((tag) => (
 							<span
-								className="rounded-md bg-border-secondary px-2 py-0.5 font-semibold text-text-accent text-xs"
+								className="rounded-md bg-border-secondary px-2 py-0.5 font-medium text-foreground text-xs"
 								key={tag}
 							>
 								{tag}
@@ -185,17 +197,17 @@ export default function ArticleView({ articleId }: ArticleViewProps) {
 			{article.type === ArticleType.QUEST && (
 				<section className="grid gap-4 rounded-xl border-2 border-primary/20 bg-card p-5 md:grid-cols-2">
 					<div className="flex flex-col gap-2">
-						<h2 className="font-bold text-xl">
+						<h2 className="font-semibold text-xl">
 							{article.quest_name ?? t('articles.quest.details')}
 						</h2>
-						<span className="text-text-accent">
+						<span className="text-foreground">
 							{t(
 								`articles.quest.${article.quest_type === 'SIDE' ? 'side' : 'story'}`
 							)}
 						</span>
 						{article.reward_text && <p>{article.reward_text}</p>}
 						{article.reward_money != null && (
-							<p className="font-semibold">
+							<p className="font-medium">
 								{t('articles.quest.money')}:{' '}
 								{article.reward_money.toLocaleString()}
 							</p>
@@ -217,17 +229,17 @@ export default function ArticleView({ articleId }: ArticleViewProps) {
 				) : compileError ? (
 					<div className="flex items-center gap-2 rounded-lg border border-red-500/20 bg-red-500/5 px-4 py-3 text-red-400 text-sm">
 						<Icon className="size-4" icon="lucide:alert-triangle" />
-						<span className="font-semibold">
+						<span className="font-medium">
 							{t('articles.loadError')}
 						</span>
 					</div>
 				) : (
 					<div className="flex items-center justify-center gap-2 py-16">
 						<Icon
-							className="size-5 animate-spin text-text-accent"
+							className="size-5 animate-spin text-foreground"
 							icon="lucide:loader-circle"
 						/>
-						<span className="font-semibold text-sm text-text-accent">
+						<span className="font-medium text-foreground text-sm">
 							{t('articles.loading')}
 						</span>
 					</div>

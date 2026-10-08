@@ -15,6 +15,8 @@
 //   рапортует supported:false; setAutoUpdate персистится через plugin-store.
 // - platform маппится к Node-стилю Electron (darwin/win32), который ждёт бэкенд.
 import type {
+	CrosshairConfig,
+	DesktopCrosshairApi,
 	DesktopUpdatesApi,
 	DesktopUpdateState,
 	UpdateChannel,
@@ -467,6 +469,29 @@ async function install(): Promise<void> {
 			overlayCompleteChannel.subscribe(callback),
 	}
 
+	// --- crosshair (нативный Win32-оверлей, см. crosshair.rs) ---
+	// Окна нет в DOM: рендер на стороне Rust, отсюда только команды.
+	// Поддерживается только Windows (STALCRAFT — Windows-only).
+	const crosshair: DesktopCrosshairApi = {
+		supported: rawPlatform === 'windows',
+		get: async (): Promise<CrosshairConfig> => {
+			const { invoke } = await import('@tauri-apps/api/core')
+			return await invoke<CrosshairConfig>('crosshair_get')
+		},
+		show: async (): Promise<boolean> => {
+			const { invoke } = await import('@tauri-apps/api/core')
+			return await invoke<boolean>('crosshair_show')
+		},
+		hide: async (): Promise<boolean> => {
+			const { invoke } = await import('@tauri-apps/api/core')
+			return await invoke<boolean>('crosshair_hide')
+		},
+		set: async (config: CrosshairConfig): Promise<boolean> => {
+			const { invoke } = await import('@tauri-apps/api/core')
+			return await invoke<boolean>('crosshair_set', { config })
+		},
+	}
+
 	window.stalhubDesktop = {
 		platform: nodePlatform,
 		beginAuth: async (url: string) => {
@@ -513,5 +538,6 @@ async function install(): Promise<void> {
 			}
 		},
 		tradingOverlay,
+		crosshair,
 	}
 }

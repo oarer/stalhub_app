@@ -33,8 +33,7 @@ function decodeBase64Url(value: string): Uint8Array {
 	const padded = b64 + '='.repeat((4 - (b64.length % 4)) % 4)
 	const binary = atob(padded)
 	const bytes = new Uint8Array(binary.length)
-	for (let i = 0; i < binary.length; i++)
-		bytes[i] = binary.charCodeAt(i)
+	for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i)
 	return bytes
 }
 
@@ -126,9 +125,7 @@ export type DecodeResult =
 	| { ok: true; data: Record<string, string> }
 	| { ok: false; reason: 'invalid' | 'unsupported' | 'empty' }
 
-export async function decodeImportToken(
-	token: string
-): Promise<DecodeResult> {
+export async function decodeImportToken(token: string): Promise<DecodeResult> {
 	const dot = token.indexOf('.')
 	if (dot <= 0) return { ok: false, reason: 'invalid' }
 
@@ -193,11 +190,7 @@ export function applyLocalData(data: Record<string, string>): number {
 	return applied
 }
 
-// Подписка на приход deeplink'а внутрь приложения (Electron). Работает и через
-// preload-мост, и через DOM-событие (fallback).
-export function onLocalDataImport(
-	callback: (url: string) => void
-): () => void {
+export function onLocalDataImport(callback: (url: string) => void): () => void {
 	const desktop = (
 		window as Window & {
 			stalhubDesktop?: {

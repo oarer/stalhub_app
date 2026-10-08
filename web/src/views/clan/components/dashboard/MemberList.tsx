@@ -2,15 +2,14 @@
 
 import Link from 'next/link'
 import { useTranslations } from 'next-intl'
-import { montserrat } from '@/app/fonts'
 import { Badge } from '@/components/ui/Badge'
 import { Skeleton } from '@/components/ui/Skeleton'
 import Avatar from '@/components/ui/user/Avatar'
-import { userHref } from '@/lib/desktop-href'
 import HoverUserCard from '@/components/ui/user/HoverUserCard'
 import type { ClanMember } from '@/types/clan/clan.type'
 import { Section } from '../../../me/components/Section'
 import { RANK_COLORS } from '../../clan.const'
+import { userHref } from '@/lib/desktop-href'
 
 interface MemberListProps {
 	members: ClanMember[]
@@ -55,7 +54,7 @@ export function MemberList({ members, isLoading }: MemberListProps) {
 									{member.user && (
 										<HoverUserCard id={member.user.id}>
 											<Link
-												className={`${montserrat.className} font-semibold text-text-accent text-xs`}
+												className={`font-mono font-semibold text-foreground text-xs`}
 												href={userHref(member.user.id)}
 											>
 												{member.user.name}
@@ -74,7 +73,7 @@ export function MemberList({ members, isLoading }: MemberListProps) {
 					))}
 					{members.length > 10 && (
 						<p
-							className={`${montserrat.className} mt-2 text-center font-semibold text-text-accent text-xs`}
+							className={`mt-2 text-center font-mono font-semibold text-foreground text-xs`}
 						>
 							{t('clan.members.more', {
 								count: members.length - 10,

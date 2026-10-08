@@ -8,11 +8,11 @@ import { useState } from 'react'
 import { Badge } from '@/components/ui/Badge'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
-import { adminClanHref } from '@/lib/desktop-href'
 import Input from '@/components/ui/Input'
 import { Table } from '@/components/ui/Table'
 import { useDebounce } from '@/hooks/useDebounce'
 import { adminClanQueries } from '@/queries/admin/clan.queries'
+import { adminClanHref } from '@/lib/desktop-href'
 
 export default function ClansAdminView() {
 	const t = useTranslations()

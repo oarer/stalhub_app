@@ -3,8 +3,7 @@ import { apiClient } from '@/app/api/interceptors/root.interceptor'
 class TelegramAuthService {
 	async getLoginUrl(): Promise<string> {
 		const { data } = await apiClient.get<{ url: string }>(
-			'/api/v1/auth/telegram/login',
-			{ skipAuthRefresh: true }
+			'/api/v1/auth/telegram/login'
 		)
 		return data.url
 	}

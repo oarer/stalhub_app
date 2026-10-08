@@ -16,7 +16,6 @@ import { useTranslations } from 'next-intl'
 import { useTheme } from 'next-themes'
 import { useMemo } from 'react'
 import { Line } from 'react-chartjs-2'
-
 import { montserrat } from '@/app/fonts'
 
 ChartJS.register(
@@ -101,7 +100,7 @@ export function TTKChart({
 }) {
 	const { resolvedTheme } = useTheme()
 	const isDark = resolvedTheme === 'dark'
-	const _t = useTranslations()
+	const t = useTranslations()
 
 	const chartData = useMemo((): ChartData<'line'> => {
 		if (!series.length) return { datasets: [] }
@@ -191,14 +190,14 @@ export function TTKChart({
 						title: (items: TooltipItem<'line'>[]) => {
 							if (!items.length) return ''
 							const x = items[0].parsed.x ?? 0
-							return `${Math.round(x)} ${_t('unit.meter')}`
+							return `${Math.round(x)} ${t('unit.meter')}`
 						},
 						label: (ctx: TooltipItem<'line'>) => {
 							const value = ctx.parsed.y ?? 0
 							const shots =
 								(ctx.raw as { shots?: number }).shots ?? 0
 							return [
-								` ${ctx.dataset.label} : ${shots} • ${value.toFixed(2)}${_t('unit.second')}`,
+								` ${ctx.dataset.label} : ${shots} • ${value.toFixed(2)}${t('unit.second')}`,
 							]
 						},
 					},
@@ -237,7 +236,7 @@ export function TTKChart({
 				},
 			},
 		}),
-		[isDark, maxDist, _t]
+		[isDark, maxDist, t]
 	)
 
 	return (
