@@ -173,8 +173,9 @@ fn build_menu<R: Runtime>(app: &AppHandle<R>) -> Result<tauri::menu::Menu<R>, St
     {
         use tauri::menu::CheckMenuItem;
         let checked = super::crosshair::is_visible();
-        let item = CheckMenuItem::new(app, "tray-crosshair", "Прицел", true, checked, None::<&str>)
-            .map_err(|e| format!("tray crosshair item: {e}"))?;
+        let item =
+            CheckMenuItem::with_id(app, "tray-crosshair", "Прицел", true, checked, None::<&str>)
+                .map_err(|e| format!("tray crosshair item: {e}"))?;
         menu.append(&item)
             .map_err(|e| format!("tray menu append: {e}"))?;
     }
