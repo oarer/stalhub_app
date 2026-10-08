@@ -1,6 +1,8 @@
 mod api_bridge;
 mod capture;
 mod crosshair;
+#[cfg(target_os = "windows")]
+mod crosshair_win;
 mod deeplink;
 mod overlay;
 mod update_android;

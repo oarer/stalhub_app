@@ -1,12 +1,16 @@
+#[cfg(target_os = "android")]
 use serde::{Deserialize, Serialize};
 use tauri::{
-    plugin::{Builder, PluginApi, PluginHandle, TauriPlugin},
+    plugin::{Builder, PluginApi, TauriPlugin},
     Manager, Runtime,
 };
+#[cfg(mobile)]
+use tauri::plugin::PluginHandle;
 
 #[cfg(target_os = "android")]
 const PLUGIN_IDENTIFIER: &str = "dev.stalhub.installer";
 
+#[cfg(target_os = "android")]
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 struct InstallArgs {
@@ -53,11 +57,11 @@ impl<R: Runtime, T: Manager<R>> InstallerExt<R> for T {
 /// Initializes the plugin.
 pub fn init<R: Runtime>() -> TauriPlugin<R> {
     Builder::new("installer")
-        .setup(|app, api: PluginApi<R, ()>| {
+        .setup(|app, _api: PluginApi<R, ()>| {
             // Кривой install-плагин не должен ронять старт приложения:
             // без handle команда честно отвечает "unavailable".
             #[cfg(target_os = "android")]
-            let handle = match api
+            let handle = match _api
                 .register_android_plugin(PLUGIN_IDENTIFIER, "InstallPlugin")
             {
                 Ok(handle) => Some(handle),
