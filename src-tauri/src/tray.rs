@@ -6,9 +6,9 @@
 //!   store (`ask` — спросить модалкой во фронтенде, `tray` — скрыть,
 //!   `close` — выйти).
 use serde::{Deserialize, Serialize};
-use tauri::{AppHandle, Emitter};
 #[cfg(desktop)]
-use tauri::{Manager, Runtime};
+use tauri::Runtime;
+use tauri::{AppHandle, Emitter, Manager};
 use tauri_plugin_store::StoreExt;
 
 const SETTINGS_STORE: &str = "stalhub-settings.dat";
