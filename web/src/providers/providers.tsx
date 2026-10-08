@@ -25,7 +25,7 @@ export default function Providers({ children }: Props) {
 	useEffect(() => {
 		setMounted(true)
 		// Tauri-шим window.stalhubDesktop: no-op вне Tauri-webview (сайт),
-		// не ставится поверх Electron-preload. Идемпотентен.
+		// не ставится поверх существующего моста. Идемпотентен.
 		initTauriBridge()
 
 		if (pathname.startsWith('/auth')) {

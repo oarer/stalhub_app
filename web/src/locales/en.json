@@ -3828,6 +3828,15 @@
       "custom_desc": "Draw the crosshair with the mouse right here",
       "draw_undo": "Undo",
       "draw_clear": "Clear"
+    },
+    "window": {
+      "title": "Window",
+      "behavior": "On window close",
+      "behavior_desc": "Ask, quit or minimize to tray",
+      "ask": "Ask",
+      "close": "Quit",
+      "tray": "To tray",
+      "save_error": "Failed to save setting"
     }
   },
   "splash": {
@@ -3846,5 +3855,13 @@
     "unsupported": "This link format is not supported by this version of the app",
     "error": "Could not apply the data",
     "success": "Imported entries: {count}"
+  },
+  "closeAsk": {
+    "title": "Close Stalhub?",
+    "description": "You can quit the app completely or minimize it to the tray — it will keep running in the background.",
+    "remember": "Remember choice",
+    "tray": "To tray",
+    "close": "Quit",
+    "error": "Action failed"
   }
 }

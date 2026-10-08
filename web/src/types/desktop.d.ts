@@ -59,6 +59,20 @@ export type DesktopCrosshairApi = {
 	show(): Promise<boolean>
 	hide(): Promise<boolean>
 	set(config: CrosshairConfig): Promise<boolean>
+	onVisibility(callback: (visible: boolean) => void): () => void
+}
+
+export type CloseBehavior = 'ask' | 'close' | 'tray'
+export type CloseAction = 'close' | 'tray'
+
+export type DesktopWindowCtlApi = {
+	hideMain(): Promise<boolean>
+	showMain(): Promise<boolean>
+	quit(): Promise<void>
+	answerClose(action: CloseAction, remember: boolean): Promise<boolean>
+	getCloseBehavior(): Promise<CloseBehavior>
+	setCloseBehavior(behavior: CloseBehavior): Promise<boolean>
+	onAskClose(callback: () => void): () => void
 }
 
 declare global {
@@ -81,6 +95,7 @@ declare global {
 				onComplete(callback: () => void): () => void
 			}
 			crosshair?: DesktopCrosshairApi
+			windowCtl?: DesktopWindowCtlApi
 		}
 	}
 }

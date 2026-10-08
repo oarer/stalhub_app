@@ -2,6 +2,7 @@
 
 import { usePathname } from 'next/navigation'
 import type { ReactNode } from 'react'
+import CloseAskModal from '@/components/closeAsk/CloseAskModal'
 import Providers from '@/providers/providers'
 import { AppMain } from '@/shared/layouts/AppMain'
 import AppSidebar from '@/shared/layouts/AppSidebar'
@@ -36,6 +37,7 @@ export default function DesktopChromeGate({
 				<AppMain>{children}</AppMain>
 				{/* CookieConsent только на сайте: в нативной аппке баннеру не место. */}
 				<GiveawayModal />
+				<CloseAskModal />
 			</Providers>
 		</>
 	)

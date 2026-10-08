@@ -3825,6 +3825,15 @@
       "custom_desc": "Dibuja la mira con el ratón aquí mismo",
       "draw_undo": "Deshacer",
       "draw_clear": "Borrar"
+    },
+    "window": {
+      "title": "Ventana",
+      "behavior": "Al cerrar la ventana",
+      "behavior_desc": "Preguntar, cerrar o minimizar a la bandeja",
+      "ask": "Preguntar",
+      "close": "Cerrar",
+      "tray": "A la bandeja",
+      "save_error": "No se pudo guardar"
     }
   },
   "splash": {
@@ -3843,5 +3852,13 @@
     "unsupported": "Este formato de enlace no es compatible con esta versión de la aplicación",
     "error": "No se pudieron aplicar los datos",
     "success": "Entradas importadas: {count}"
+  },
+  "closeAsk": {
+    "title": "¿Cerrar Stalhub?",
+    "description": "Puedes cerrar la app por completo o minimizarla a la bandeja — seguirá en segundo plano.",
+    "remember": "Recordar elección",
+    "tray": "A la bandeja",
+    "close": "Cerrar",
+    "error": "Acción fallida"
   }
 }

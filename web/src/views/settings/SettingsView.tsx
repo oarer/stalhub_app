@@ -8,6 +8,7 @@ import { SettingRow } from '@/views/me/components/settings/SettingRow'
 import DataSettings from '@/views/settings/DataSettings'
 import CrosshairSection from '@/views/settings/CrosshairSection'
 import UpdatesSection from '@/views/settings/UpdatesSection'
+import WindowSection from '@/views/settings/WindowSection'
 
 export default function SettingsView() {
 	const t = useTranslations()
@@ -35,6 +36,7 @@ export default function SettingsView() {
 			</Section>
 			<UpdatesSection />
 			<CrosshairSection />
+			<WindowSection />
 			<DataSettings />
 		</div>
 	)

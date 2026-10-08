@@ -5,7 +5,12 @@ mod crosshair;
 mod crosshair_win;
 mod deeplink;
 mod overlay;
+#[cfg(desktop)]
+mod tray;
 mod update_android;
+
+#[cfg(desktop)]
+use tauri::Manager;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
@@ -24,6 +29,12 @@ pub fn run() {
             deeplink::renderer_not_ready,
             overlay::trading_overlay_open,
             overlay::trading_overlay_close,
+            tray::window_close_behavior_get,
+            tray::window_close_behavior_set,
+            tray::window_close_answer,
+            tray::window_show_main,
+            tray::window_hide_main,
+            tray::app_quit,
             update_android::android_check_update,
             update_android::android_download_update,
             update_android::android_install_update
@@ -43,6 +54,18 @@ pub fn run() {
             deeplink::handle_open(app, urls);
         }
     }));
+    // Перехват закрытия главного окна — только desktop (там есть трей).
+    // Mobile закрывается как обычно.
+    #[cfg(desktop)]
+    let builder = builder.on_window_event(|window, event| {
+        if window.label() != "main" {
+            return;
+        }
+        if let tauri::WindowEvent::CloseRequested { api, .. } = event {
+            api.prevent_close();
+            crate::tray::handle_main_close(window.app_handle());
+        }
+    });
     builder
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_store::Builder::default().build())
@@ -59,6 +82,10 @@ pub fn run() {
             #[cfg(desktop)]
             {
                 let _ = app.deep_link().register_all();
+                // Трей не должен ронять старт: только warn.
+                if let Err(error) = crate::tray::build_tray(app.handle()) {
+                    log::warn!("tray build failed: {error}");
+                }
             }
             // Рантайм-ссылки (включая second-instance через single-instance),
             // аналог process.argv.forEach(acceptDeeplink) из Electron.

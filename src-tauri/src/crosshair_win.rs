@@ -362,6 +362,14 @@ pub fn content_box(cfg: &CrosshairConfig, sw: i32, sh: i32) -> (i32, i32, i32, i
     )
 }
 
+/// Видим ли оверлей прямо сейчас.
+pub fn is_visible() -> bool {
+    manager()
+        .lock()
+        .map(|m| m.visible && m.hwnd.is_some())
+        .unwrap_or(false)
+}
+
 /// Показать окно (создать при первом вызове) и нарисовать конфиг.
 pub fn show(config: CrosshairConfig) -> Result<bool, String> {
     ensure_thread()?;

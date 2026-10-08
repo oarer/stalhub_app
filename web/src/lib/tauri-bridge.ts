@@ -1,26 +1,29 @@
-// Шим window.stalhubDesktop поверх Tauri (Фаза 2).
-// Сохраняет JS-контракт Electron-preload (см. web/src/types/electron.d.ts),
-// чтобы views/services не менялись: desktop-auth, localData, TradingView,
-// TradingOverlay, UpdatesSection работают как раньше.
+// Шим window.stalhubDesktop поверх Tauri.
+// Контракт описан в @/types/desktop.d.ts (исторически файл звался
+// electron.d.ts — от Electron-preload, сейчас это просто интерфейс
+// десктоп-моста): views/services не меняются, desktop-auth, localData,
+// TradingView, TradingOverlay, UpdatesSection работают как раньше.
 //
 // Правила:
-// - Не ставится поверх существующего window.stalhubDesktop (Electron) и вне
+// - Не ставится поверх существующего window.stalhubDesktop и вне
 //   Tauri-webview (сайт) — там мост отсутствует, как и раньше.
 // - Все Tauri-модули грузятся динамически, чтобы не раздувать бандл сайта.
-// - tradingOverlay управляет окном overlay (Фаза 4): open/close через
+// - tradingOverlay управляет окном overlay: open/close через
 //   WebviewWindow, update/complete через emitTo, onState/onComplete —
-//   локальные refcounted-подписки. Направление complete — overlay→main,
-//   как в main.ts Electron.
-// - updates работает уже сейчас, но без Rust-бэкенда апдейтера (Фаза 6)
+//   локальные refcounted-подписки. Направление complete — overlay→main.
+// - updates работает уже сейчас, но без Rust-бэкенда апдейтера
 //   рапортует supported:false; setAutoUpdate персистится через plugin-store.
-// - platform маппится к Node-стилю Electron (darwin/win32), который ждёт бэкенд.
+// - platform маппится к Node-стилю (darwin/win32), который ждёт бэкенд.
 import type {
+	CloseAction,
+	CloseBehavior,
 	CrosshairConfig,
 	DesktopCrosshairApi,
 	DesktopUpdatesApi,
 	DesktopUpdateState,
+	DesktopWindowCtlApi,
 	UpdateChannel,
-} from '@/types/electron'
+} from '@/types/desktop'
 import type { TauriInboundEvent } from '@/types/tauri'
 import type { TradingOverlayState } from '@/views/calcs/trading/trading'
 
@@ -490,6 +493,86 @@ async function install(): Promise<void> {
 			const { invoke } = await import('@tauri-apps/api/core')
 			return await invoke<boolean>('crosshair_set', { config })
 		},
+		onVisibility: (callback: (visible: boolean) => void) => {
+			if (typeof callback !== 'function')
+				throw new TypeError('Expected callback')
+			let unlisten: (() => void) | null = null
+			void import('@tauri-apps/api/event')
+				.then(({ listen }) =>
+					listen<boolean>('stalhub:crosshair-visible', (event) => {
+						try {
+							callback(event.payload)
+						} catch {
+							/* Один подписчик не должен ломать остальных. */
+						}
+					})
+				)
+				.then((u) => {
+					unlisten = u
+				})
+				.catch(() => undefined)
+			return () => {
+				unlisten?.()
+			}
+		},
+	}
+
+	// --- windowCtl: трей и поведение закрытия (см. tray.rs) ---
+	const windowCtl: DesktopWindowCtlApi = {
+		hideMain: async (): Promise<boolean> => {
+			const { invoke } = await import('@tauri-apps/api/core')
+			return await invoke<boolean>('window_hide_main')
+		},
+		showMain: async (): Promise<boolean> => {
+			const { invoke } = await import('@tauri-apps/api/core')
+			return await invoke<boolean>('window_show_main')
+		},
+		quit: async (): Promise<void> => {
+			const { invoke } = await import('@tauri-apps/api/core')
+			await invoke('app_quit')
+		},
+		answerClose: async (
+			action: CloseAction,
+			remember: boolean
+		): Promise<boolean> => {
+			const { invoke } = await import('@tauri-apps/api/core')
+			return await invoke<boolean>('window_close_answer', {
+				action,
+				remember,
+			})
+		},
+		getCloseBehavior: async (): Promise<CloseBehavior> => {
+			const { invoke } = await import('@tauri-apps/api/core')
+			return await invoke<CloseBehavior>('window_close_behavior_get')
+		},
+		setCloseBehavior: async (behavior: CloseBehavior): Promise<boolean> => {
+			const { invoke } = await import('@tauri-apps/api/core')
+			return await invoke<boolean>('window_close_behavior_set', {
+				behavior,
+			})
+		},
+		onAskClose: (callback: () => void) => {
+			if (typeof callback !== 'function')
+				throw new TypeError('Expected callback')
+			let unlisten: (() => void) | null = null
+			void import('@tauri-apps/api/event')
+				.then(({ listen }) =>
+					listen('stalhub:ask-close', () => {
+						try {
+							callback()
+						} catch {
+							/* Один подписчик не должен ломать остальных. */
+						}
+					})
+				)
+				.then((u) => {
+					unlisten = u
+				})
+				.catch(() => undefined)
+			return () => {
+				unlisten?.()
+			}
+		},
 	}
 
 	window.stalhubDesktop = {
@@ -539,5 +622,6 @@ async function install(): Promise<void> {
 		},
 		tradingOverlay,
 		crosshair,
+		windowCtl,
 	}
 }

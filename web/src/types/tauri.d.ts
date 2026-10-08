@@ -1,13 +1,14 @@
 // Контракт Tauri-стороны моста window.stalhubDesktop.
-// JS-контракт самого моста описан в ./electron.d.ts (имя window.stalhubDesktop
-// и форма API сохранены от Electron-preload, чтобы не трогать views/).
+// JS-контракт самого моста описан в ./desktop.d.ts.
 // Здесь — типы Rust-команд/событий и персистентных данных, используемых шимом
-// (web/src/lib/tauri-bridge.ts). Расширяется по ходу Фаз 3–6.
+// (web/src/lib/tauri-bridge.ts).
 
 /** События Rust → webview (deep-link, см. Фазу 4). */
 export type TauriInboundEvent =
 	| 'stalhub:auth-callback'
 	| 'stalhub:import'
+	| 'stalhub:ask-close'
+	| 'stalhub:crosshair-visible'
 
 /** Методы Rust API-бриджа (Фаза 3, api_bridge.rs). */
 export type TauriApiMethod = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE'

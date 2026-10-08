@@ -203,6 +203,26 @@ fn persist_config(app: &AppHandle, config: &CrosshairConfig) {
     }
 }
 
+/// Видим ли оверлей прямо сейчас (для тоггла из трея).
+/// Вне Windows оверлея нет — всегда false.
+#[cfg(target_os = "windows")]
+pub fn is_visible() -> bool {
+    crosshair_win::is_visible()
+}
+
+/// Синхронные версии для вызова из не-async контекстов (трей).
+#[cfg(target_os = "windows")]
+pub fn show_sync(app: &AppHandle) -> bool {
+    let config = load_config(app).sanitized();
+    crosshair_win::show(config).unwrap_or(false)
+}
+
+/// Синхронные версии для вызова из не-async контекстов (трей).
+#[cfg(target_os = "windows")]
+pub fn hide_sync() -> bool {
+    crosshair_win::hide()
+}
+
 fn unsupported() -> String {
     "crosshair unsupported on this platform".to_string()
 }

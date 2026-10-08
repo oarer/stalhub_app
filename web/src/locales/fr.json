@@ -3825,6 +3825,15 @@
       "custom_desc": "Dessine le viseur à la souris juste ici",
       "draw_undo": "Annuler",
       "draw_clear": "Effacer"
+    },
+    "window": {
+      "title": "Fenêtre",
+      "behavior": "À la fermeture",
+      "behavior_desc": "Demander, quitter ou réduire dans la barre d'état",
+      "ask": "Demander",
+      "close": "Quitter",
+      "tray": "Barre d'état",
+      "save_error": "Échec de la sauvegarde"
     }
   },
   "splash": {
@@ -3843,5 +3852,13 @@
     "unsupported": "Ce format de lien n'est pas pris en charge par cette version de l'application",
     "error": "Impossible d'appliquer les données",
     "success": "Entrées importées : {count}"
+  },
+  "closeAsk": {
+    "title": "Fermer Stalhub ?",
+    "description": "Vous pouvez quitter l'app ou la réduire dans la barre d'état — elle continuera en arrière-plan.",
+    "remember": "Mémoriser le choix",
+    "tray": "Barre d'état",
+    "close": "Quitter",
+    "error": "Échec de l'action"
   }
 }

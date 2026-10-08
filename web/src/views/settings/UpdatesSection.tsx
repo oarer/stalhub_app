@@ -11,7 +11,7 @@ import type {
 	DesktopUpdateState,
 	DesktopUpdatesApi,
 	UpdateChannel,
-} from '@/types/electron'
+} from '@/types/desktop'
 import { Section } from '@/views/me/components/Section'
 import { SettingRow } from '@/views/me/components/settings/SettingRow'
 

@@ -3825,6 +3825,15 @@
       "custom_desc": "여기에 마우스로 조준선을 그리세요",
       "draw_undo": "되돌리기",
       "draw_clear": "지우기"
+    },
+    "window": {
+      "title": "창",
+      "behavior": "창을 닫을 때",
+      "behavior_desc": "묻기, 종료 또는 트레이로 최소화",
+      "ask": "묻기",
+      "close": "종료",
+      "tray": "트레이로",
+      "save_error": "설정 저장 실패"
     }
   },
   "splash": {
@@ -3843,5 +3852,13 @@
     "unsupported": "이 링크 형식은 이 앱 버전에서 지원되지 않습니다",
     "error": "데이터를 적용할 수 없습니다",
     "success": "가져온 항목: {count}개"
+  },
+  "closeAsk": {
+    "title": "Stalhub를 종료할까요?",
+    "description": "앱을 완전히 종료하거나 트레이로 최소화할 수 있습니다 — 백그라운드에서 계속 실행됩니다.",
+    "remember": "선택 기억하기",
+    "tray": "트레이로",
+    "close": "종료",
+    "error": "작업 실패"
   }
 }

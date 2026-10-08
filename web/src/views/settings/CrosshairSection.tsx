@@ -11,7 +11,7 @@ import type {
 	CrosshairPreset,
 	CrosshairStroke,
 	DesktopCrosshairApi,
-} from '@/types/electron'
+} from '@/types/desktop'
 import { Section } from '@/views/me/components/Section'
 import { SettingRow } from '@/views/me/components/settings/SettingRow'
 
@@ -279,8 +279,13 @@ export default function CrosshairSection() {
 				console.error('[crosshair] get failed', error)
 				if (mounted) setConfig(null)
 			})
+		// Тоггл из трея: синкаем кнопку показа.
+		const unsubscribe = bridge.onVisibility((next) => {
+			if (mounted) setVisible(next)
+		})
 		return () => {
 			mounted = false
+			unsubscribe()
 			if (timer.current) clearTimeout(timer.current)
 		}
 	}, [])
