@@ -5,7 +5,6 @@ mod crosshair;
 mod crosshair_win;
 mod deeplink;
 mod overlay;
-#[cfg(desktop)]
 mod tray;
 mod update_android;
 
