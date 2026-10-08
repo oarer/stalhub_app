@@ -3824,7 +3824,8 @@
       "custom": "Dibujo",
       "custom_desc": "Dibuja la mira con el ratón aquí mismo",
       "draw_undo": "Deshacer",
-      "draw_clear": "Borrar"
+      "draw_clear": "Borrar",
+      "borderless_warn": "Para ver la mira sobre el juego, pon el modo de pantalla en «Pantalla completa en ventana (modo compatibilidad)»"
     },
     "window": {
       "title": "Ventana",

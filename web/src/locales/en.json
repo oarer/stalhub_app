@@ -3827,7 +3827,8 @@
       "custom": "Drawing",
       "custom_desc": "Draw the crosshair with the mouse right here",
       "draw_undo": "Undo",
-      "draw_clear": "Clear"
+      "draw_clear": "Clear",
+      "borderless_warn": "For the crosshair to show over the game, set the in-game display mode to “Fullscreen windowed (compatibility mode)”"
     },
     "window": {
       "title": "Window",

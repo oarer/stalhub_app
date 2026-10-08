@@ -3824,7 +3824,8 @@
       "custom": "Dessin",
       "custom_desc": "Dessine le viseur à la souris juste ici",
       "draw_undo": "Annuler",
-      "draw_clear": "Effacer"
+      "draw_clear": "Effacer",
+      "borderless_warn": "Pour voir le viseur par-dessus le jeu, mets le mode d’affichage sur «Plein écran fenêtré (mode compatibilité)»"
     },
     "window": {
       "title": "Fenêtre",

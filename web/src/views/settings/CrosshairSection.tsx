@@ -1,7 +1,8 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
 import { useTranslations } from 'next-intl'
+import { useEffect, useRef, useState } from 'react'
+import { Alert } from '@/components/ui/Alert'
 import { Button } from '@/components/ui/Button'
 import Slider from '@/components/ui/Slider'
 import { Switch } from '@/components/ui/Switch'
@@ -26,8 +27,6 @@ const COLORS = [
 	'#e879f9',
 ]
 
-/// SVG-превью: та же математика, что layout_shapes в crosshair_win.rs.
-/// Работает на любой платформе — видно, что получится на оверлее.
 function CrosshairPreview({ config }: { config: CrosshairConfig }) {
 	const t = config.thickness
 	const half = t / 2
@@ -125,9 +124,11 @@ function CrosshairPreview({ config }: { config: CrosshairConfig }) {
 				)}
 				{polylines.map((line, index) => (
 					<polyline
-						key={`p-${index}`}
 						fill="none"
-						points={line.points.map(([x, y]) => `${x},${y}`).join(' ')}
+						key={`p-${index}`}
+						points={line.points
+							.map(([x, y]) => `${x},${y}`)
+							.join(' ')}
 						stroke={config.outline ? frame : ink}
 						strokeLinecap="round"
 						strokeLinejoin="round"
@@ -137,9 +138,11 @@ function CrosshairPreview({ config }: { config: CrosshairConfig }) {
 				{config.outline &&
 					polylines.map((line, index) => (
 						<polyline
-							key={`pi-${index}`}
 							fill="none"
-							points={line.points.map(([x, y]) => `${x},${y}`).join(' ')}
+							key={`pi-${index}`}
+							points={line.points
+								.map(([x, y]) => `${x},${y}`)
+								.join(' ')}
 							stroke={ink}
 							strokeLinecap="round"
 							strokeLinejoin="round"
@@ -151,8 +154,6 @@ function CrosshairPreview({ config }: { config: CrosshairConfig }) {
 	)
 }
 
-/// Ручной редактор: штрихи в координатах ±64 от центра.
-/// Точки прореживаются (мин. дистанция 2px), чтобы конфиг не пух.
 function CrosshairEditor({
 	config,
 	onStrokes,
@@ -164,7 +165,10 @@ function CrosshairEditor({
 	const [draft, setDraft] = useState<Array<[number, number]> | null>(null)
 	const ref = useRef<SVGSVGElement | null>(null)
 
-	const toLocal = (clientX: number, clientY: number): [number, number] | null => {
+	const toLocal = (
+		clientX: number,
+		clientY: number
+	): [number, number] | null => {
 		const el = ref.current
 		if (!el) return null
 		const rect = el.getBoundingClientRect()
@@ -200,7 +204,10 @@ function CrosshairEditor({
 				}}
 				onPointerUp={() => {
 					if (draft && draft.length > 0) {
-						onStrokes([...(config.strokes ?? []), { points: draft }])
+						onStrokes([
+							...(config.strokes ?? []),
+							{ points: draft },
+						])
 					}
 					setDraft(null)
 				}}
@@ -208,13 +215,29 @@ function CrosshairEditor({
 				viewBox="-64 -64 128 128"
 				width={160}
 			>
-				<line stroke="#ffffff" strokeOpacity={0.15} x1={-64} x2={64} y1={0} y2={0} />
-				<line stroke="#ffffff" strokeOpacity={0.15} x1={0} x2={0} y1={-64} y2={64} />
+				<line
+					stroke="#ffffff"
+					strokeOpacity={0.15}
+					x1={-64}
+					x2={64}
+					y1={0}
+					y2={0}
+				/>
+				<line
+					stroke="#ffffff"
+					strokeOpacity={0.15}
+					x1={0}
+					x2={0}
+					y1={-64}
+					y2={64}
+				/>
 				{(config.strokes ?? []).map((stroke, index) => (
 					<polyline
 						fill="none"
 						key={`s-${index}`}
-						points={(stroke.points ?? []).map(([x, y]) => `${x},${y}`).join(' ')}
+						points={(stroke.points ?? [])
+							.map(([x, y]) => `${x},${y}`)
+							.join(' ')}
 						stroke={config.color}
 						strokeLinecap="round"
 						strokeLinejoin="round"
@@ -235,7 +258,9 @@ function CrosshairEditor({
 			<div className="flex gap-2">
 				<Button
 					disabled={(config.strokes ?? []).length === 0}
-					onClick={() => onStrokes((config.strokes ?? []).slice(0, -1))}
+					onClick={() =>
+						onStrokes((config.strokes ?? []).slice(0, -1))
+					}
 					size="sm"
 					variant="ghost"
 				>
@@ -300,9 +325,7 @@ export default function CrosshairSection() {
 		setConfig(next)
 		if (timer.current) clearTimeout(timer.current)
 		timer.current = setTimeout(() => {
-			void api
-				.set(next)
-				.catch(() => toast.error(t('save_error')))
+			void api.set(next).catch(() => toast.error(t('save_error')))
 		}, 150)
 	}
 
@@ -332,6 +355,9 @@ export default function CrosshairSection() {
 	return (
 		<Section icon="lucide:crosshair" title={t('title')}>
 			<div className="flex flex-col gap-2">
+				<Alert.Root variant="warning">
+					<Alert.Description>{t('borderless_warn')}</Alert.Description>
+				</Alert.Root>
 				<SettingRow
 					description={canShow ? t('enable_desc') : t('windows_only')}
 					title={t('enable')}
@@ -381,16 +407,16 @@ export default function CrosshairSection() {
 								description={t('size_desc')}
 								title={`${t('size')}: ${config.size}`}
 							>
-							<div className="w-40">
-								<Slider
-									max={64}
-									min={2}
-									onValueChange={(v) =>
-										patch({ size: Math.round(v) })
-									}
-									value={config.size}
-								/>
-							</div>
+								<div className="w-40">
+									<Slider
+										max={64}
+										min={2}
+										onValueChange={(v) =>
+											patch({ size: Math.round(v) })
+										}
+										value={config.size}
+									/>
+								</div>
 							</SettingRow>
 						)}
 						{config.preset === 'cross' && (
@@ -440,30 +466,38 @@ export default function CrosshairSection() {
 								/>
 							</div>
 						</SettingRow>
-						<SettingRow description={t('color_desc')} title={t('color')}>
+						<SettingRow
+							description={t('color_desc')}
+							title={t('color')}
+						>
 							<div className="flex items-center gap-3">
 								<CrosshairPreview config={config} />
 								<div className="flex items-center gap-2">
-								{COLORS.map((color) => (
-									<button
-										aria-label={color}
-										className={`h-7 w-7 cursor-pointer rounded-full ring-2 ring-offset-2 ring-offset-background transition-transform hover:scale-110 ${config.color.toLowerCase() === color ? 'ring-primary' : 'ring-transparent'}`}
-										key={color}
-										onClick={() => patch({ color })}
-										style={{ backgroundColor: color }}
-										type="button"
+									{COLORS.map((color) => (
+										<button
+											aria-label={color}
+											className={`h-7 w-7 cursor-pointer rounded-full ring-2 ring-offset-2 ring-offset-background transition-transform hover:scale-110 ${config.color.toLowerCase() === color ? 'ring-primary' : 'ring-transparent'}`}
+											key={color}
+											onClick={() => patch({ color })}
+											style={{ backgroundColor: color }}
+											type="button"
+										/>
+									))}
+									<input
+										className="h-7 w-10 cursor-pointer rounded"
+										onChange={(e) =>
+											patch({ color: e.target.value })
+										}
+										type="color"
+										value={config.color}
 									/>
-								))}
-								<input
-									className="h-7 w-10 cursor-pointer rounded"
-									onChange={(e) => patch({ color: e.target.value })}
-									type="color"
-									value={config.color}
-								/>
+								</div>
 							</div>
-						</div>
-					</SettingRow>
-						<SettingRow description={t('dot_desc')} title={t('dot')}>
+						</SettingRow>
+						<SettingRow
+							description={t('dot_desc')}
+							title={t('dot')}
+						>
 							<Switch
 								checked={config.dot}
 								onCheckedChange={(checked) =>
@@ -493,7 +527,9 @@ export default function CrosshairSection() {
 											if (ok) setVisible(true)
 											else toast.error(t('toggle_error'))
 										})
-										.catch(() => toast.error(t('toggle_error')))
+										.catch(() =>
+											toast.error(t('toggle_error'))
+										)
 										.finally(() => setBusy(false))
 								}}
 								size="sm"
@@ -511,7 +547,9 @@ export default function CrosshairSection() {
 											if (ok) setVisible(false)
 											else toast.error(t('toggle_error'))
 										})
-										.catch(() => toast.error(t('toggle_error')))
+										.catch(() =>
+											toast.error(t('toggle_error'))
+										)
 										.finally(() => setBusy(false))
 								}}
 								size="sm"
