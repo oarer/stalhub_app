@@ -10,6 +10,7 @@ import { initTauriBridge } from '@/lib/tauri-bridge'
 import { useAuthStore } from '@/stores/useAuth.store'
 import { useBanStore } from '@/stores/useBan.store'
 import BannedView from '@/views/errors/banned/BannedView'
+import WindowVisibilityGuard from '@/shared/layouts/WindowVisibilityGuard'
 import QueryProvider from './QueryProvider'
 
 interface Props {
@@ -73,6 +74,7 @@ export default function Providers({ children }: Props) {
 	return (
 		<QueryProvider>
 			<UwuProvider>
+				<WindowVisibilityGuard />
 				<Toaster position="bottom-right" />
 				<ImportDeeplinkHandler />
 				{children}

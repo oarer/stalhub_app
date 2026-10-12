@@ -150,6 +150,7 @@ export function GridBackgroundWithBeams({
 	glowIntensity = 1,
 }: GridBackgroundWithBeamsProps) {
 	const [beams, setBeams] = useState<Beam[]>([])
+	const [windowVisible, setWindowVisible] = useState(true)
 	const idRef = useRef(1)
 	const intervalRef = useRef<number | null>(null)
 
@@ -185,7 +186,7 @@ export function GridBackgroundWithBeams({
 	}, [cols, rows, cellSize, maxBeams, totalVerticalSpan, totalHorizontalSpan])
 
 	useEffect(() => {
-		if (prefersReducedMotion) return
+		if (prefersReducedMotion || !windowVisible) return
 		function spawnIfVisible() {
 			if (typeof document !== 'undefined' && document.hidden) return
 			addOneBeam()
@@ -195,7 +196,20 @@ export function GridBackgroundWithBeams({
 			if (intervalRef.current !== null) clearInterval(intervalRef.current)
 			intervalRef.current = null
 		}
-	}, [addOneBeam, beamInterval, prefersReducedMotion])
+	}, [addOneBeam, beamInterval, prefersReducedMotion, windowVisible])
+
+	useEffect(() => {
+		if (typeof window === 'undefined') return
+		const onVisibility = (event: Event) => {
+			const visible = (event as CustomEvent<boolean>).detail
+			if (typeof visible !== 'boolean') return
+			setWindowVisible(visible)
+			if (!visible) setBeams([])
+		}
+		document.addEventListener('stalhub:window-visibility', onVisibility)
+		return () =>
+			document.removeEventListener('stalhub:window-visibility', onVisibility)
+	}, [])
 
 	const handleDone = useCallback((id: number) => {
 		setBeams((prev) => prev.filter((b) => b.id !== id))

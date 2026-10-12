@@ -169,3 +169,10 @@ body.tauri-app img {
     -webkit-user-drag: none;
     user-select: none;
 }
+
+html[data-stalhub-window-visible='false'] *,
+html[data-stalhub-window-visible='false'] *::before,
+html[data-stalhub-window-visible='false'] *::after {
+    animation-play-state: paused !important;
+    transition: none !important;
+}

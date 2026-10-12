@@ -81,6 +81,21 @@ async function install(): Promise<void> {
 			import('@tauri-apps/api/app'),
 			import('@tauri-apps/plugin-store'),
 		])
+	const closeListeners = new Set<() => void>()
+	let pendingCloseRequests = 0
+	await listen('stalhub:ask-close', () => {
+		if (closeListeners.size === 0) {
+			pendingCloseRequests += 1
+			return
+		}
+		for (const callback of closeListeners) {
+			try {
+				callback()
+			} catch {
+				/* Один подписчик не должен ломать остальных. */
+			}
+		}
+	})
 
 	const rawPlatform = platform()
 	const nodePlatform = toNodePlatform(rawPlatform)
@@ -554,23 +569,13 @@ async function install(): Promise<void> {
 		onAskClose: (callback: () => void) => {
 			if (typeof callback !== 'function')
 				throw new TypeError('Expected callback')
-			let unlisten: (() => void) | null = null
-			void import('@tauri-apps/api/event')
-				.then(({ listen }) =>
-					listen('stalhub:ask-close', () => {
-						try {
-							callback()
-						} catch {
-							/* Один подписчик не должен ломать остальных. */
-						}
-					})
-				)
-				.then((u) => {
-					unlisten = u
-				})
-				.catch(() => undefined)
+			closeListeners.add(callback)
+			if (pendingCloseRequests > 0) {
+				pendingCloseRequests -= 1
+				queueMicrotask(callback)
+			}
 			return () => {
-				unlisten?.()
+				closeListeners.delete(callback)
 			}
 		},
 	}
@@ -624,4 +629,5 @@ async function install(): Promise<void> {
 		crosshair,
 		windowCtl,
 	}
+	window.dispatchEvent(new Event('stalhub:bridge-ready'))
 }

@@ -74,14 +74,22 @@ fn main_window(app: &AppHandle) -> Option<tauri::WebviewWindow> {
 
 fn show_main(app: &AppHandle) -> bool {
     if let Some(window) = main_window(app) {
-        return window.show().and_then(|_| window.set_focus()).is_ok();
+        let result = window.show().and_then(|_| window.set_focus()).is_ok();
+        if result {
+            let _ = window.emit("stalhub:window-visibility", true);
+        }
+        return result;
     }
     false
 }
 
 fn hide_main(app: &AppHandle) -> bool {
     if let Some(window) = main_window(app) {
-        return window.hide().is_ok();
+        let result = window.hide().is_ok();
+        if result {
+            let _ = window.emit("stalhub:window-visibility", false);
+        }
+        return result;
     }
     false
 }

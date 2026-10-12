@@ -27,7 +27,7 @@ class ArsenalQueries {
 			queryFn: () => arsenalService.get(),
 			staleTime: 1000 * 60 * 10,
 			refetchInterval: () => msUntilNextMskBoundary(),
-			refetchIntervalInBackground: true,
+			refetchIntervalInBackground: false,
 		})
 	}
 }

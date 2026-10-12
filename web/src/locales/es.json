@@ -3793,6 +3793,8 @@
     },
     "crosshair": {
       "title": "Punto de mira",
+      "page_desc": "Configura la superposición del punto de mira",
+      "open": "Abrir configuración",
       "enable": "Activar punto de mira",
       "enable_desc": "Mostrar la superposición nativa sobre el juego (solo Windows)",
       "preset": "Forma",

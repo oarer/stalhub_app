@@ -176,6 +176,19 @@ export function useTradingCapture() {
 
 	useEffect(() => () => disconnect(), [disconnect])
 
+	useEffect(() => {
+		const onWindowVisibility = (event: Event) => {
+			const visible = (event as CustomEvent<boolean>).detail
+			if (visible === false) disconnect()
+		}
+		document.addEventListener('stalhub:window-visibility', onWindowVisibility)
+		return () =>
+			document.removeEventListener(
+				'stalhub:window-visibility',
+				onWindowVisibility
+			)
+	}, [disconnect])
+
 	const resetSnapshot = useCallback(
 		() =>
 			setSnapshot((previous) => ({

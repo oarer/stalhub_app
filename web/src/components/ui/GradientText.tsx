@@ -5,6 +5,7 @@ import {
 	useTransform,
 } from 'motion/react'
 import { type ReactNode, useCallback, useEffect, useRef, useState } from 'react'
+import { useWindowVisible } from '@/hooks/useWindowVisible'
 
 interface GradientTextProps {
 	children: ReactNode
@@ -28,6 +29,7 @@ export default function GradientText({
 	yoyo = true,
 }: GradientTextProps) {
 	const [isPaused, setIsPaused] = useState(false)
+	const windowVisible = useWindowVisible()
 	const progress = useMotionValue(0)
 	const elapsedRef = useRef(0)
 	const lastTimeRef = useRef<number | null>(null)
@@ -35,7 +37,7 @@ export default function GradientText({
 	const animationDuration = animationSpeed * 1000
 
 	useAnimationFrame((time) => {
-		if (isPaused) {
+		if (isPaused || !windowVisible) {
 			lastTimeRef.current = null
 			return
 		}

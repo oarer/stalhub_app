@@ -7,6 +7,7 @@ import { Suspense, useEffect, useRef, useState } from 'react'
 import * as THREE from 'three'
 import type { OrbitControls as OrbitControlsImpl } from 'three-stdlib'
 import { Skeleton } from '@/components/ui/Skeleton'
+import { useWindowVisible } from '@/hooks/useWindowVisible'
 import { BaseModel } from './Base'
 import { BindModel } from './BindModel'
 
@@ -80,13 +81,18 @@ function AutoCenter({
 }
 
 export default function Scene({ armor, cont }: SceneProps) {
+	const windowVisible = useWindowVisible()
 	const armorRef = useRef<THREE.Group | null>(null)
 	const controlsRef = useRef<OrbitControlsImpl | null>(null)
 	const [animations, setAnimations] = useState<THREE.AnimationClip[]>([])
 	const [contObjects, setContObjects] = useState<THREE.Object3D[]>([])
 
 	return (
-		<Canvas camera={{ fov: 50 }} style={{ overflow: 'visible' }}>
+		<Canvas
+			camera={{ fov: 50 }}
+			frameloop={windowVisible ? 'always' : 'never'}
+			style={{ overflow: 'visible' }}
+		>
 			<ambientLight intensity={2} />
 
 			<PerspectiveCamera makeDefault position={[0, 2, 3]} />

@@ -3793,6 +3793,8 @@
     },
     "crosshair": {
       "title": "Viseur",
+      "page_desc": "Configurer l’overlay du viseur dans le jeu",
+      "open": "Ouvrir les réglages",
       "enable": "Activer le viseur",
       "enable_desc": "Afficher l'overlay natif par-dessus le jeu (Windows uniquement)",
       "preset": "Forme",

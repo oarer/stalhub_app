@@ -3796,6 +3796,8 @@
     },
     "crosshair": {
       "title": "Crosshair",
+      "page_desc": "Configure the in-game crosshair overlay",
+      "open": "Open settings",
       "enable": "Enable crosshair",
       "enable_desc": "Show the native crosshair overlay on top of the game (Windows only)",
       "preset": "Shape",

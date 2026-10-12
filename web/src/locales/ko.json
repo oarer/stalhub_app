@@ -3793,6 +3793,8 @@
     },
     "crosshair": {
       "title": "조준선",
+      "page_desc": "게임 조준선 오버레이 설정",
+      "open": "설정 열기",
       "enable": "조준선 켜기",
       "enable_desc": "게임 위에 네이티브 조준선 오버레이 표시 (Windows 전용)",
       "preset": "모양",

@@ -1,12 +1,12 @@
 'use client'
 
 import { useTranslations } from 'next-intl'
+import { CLink } from '@/components/ui/Link'
 import ChangeLang from '@/shared/layouts/nav/components/ChangeLang'
 import ChangeTheme from '@/shared/layouts/nav/components/ChangeTheme'
 import { Section } from '@/views/me/components/Section'
 import { SettingRow } from '@/views/me/components/settings/SettingRow'
 import DataSettings from '@/views/settings/DataSettings'
-import CrosshairSection from '@/views/settings/CrosshairSection'
 import UpdatesSection from '@/views/settings/UpdatesSection'
 import WindowSection from '@/views/settings/WindowSection'
 
@@ -35,7 +35,16 @@ export default function SettingsView() {
 				</div>
 			</Section>
 			<UpdatesSection />
-			<CrosshairSection />
+			<Section icon="lucide:crosshair" title={t('settings.crosshair.title')}>
+				<SettingRow
+					description={t('settings.crosshair.page_desc')}
+					title={t('settings.crosshair.title')}
+				>
+					<CLink href="/settings/crosshair" size="sm" variant="bordered">
+						{t('settings.crosshair.open')}
+					</CLink>
+				</SettingRow>
+			</Section>
 			<WindowSection />
 			<DataSettings />
 		</div>

@@ -6,6 +6,7 @@ import { Suspense, useCallback, useEffect, useRef, useState } from 'react'
 import * as THREE from 'three'
 import { BaseModel } from '@/app/calcs/builds/model/Base'
 import type { PaintMaskMode } from '@/app/calcs/builds/model/paint'
+import { useWindowVisible } from '@/hooks/useWindowVisible'
 
 function hexToRgb01(hex?: string): [number, number, number] | undefined {
 	if (!hex) return undefined
@@ -55,6 +56,7 @@ export default function ModelViewer({
 	onLoad?: () => void
 }) {
 	const [scene, setScene] = useState<THREE.Group | null>(null)
+	const windowVisible = useWindowVisible()
 
 	const handleSceneReady = useCallback(
 		(group: THREE.Group) => {
@@ -65,7 +67,10 @@ export default function ModelViewer({
 	)
 
 	return (
-		<Canvas camera={{ fov: 45, position: [0, 1.1, 3.8] }}>
+		<Canvas
+			camera={{ fov: 45, position: [0, 1.1, 3.8] }}
+			frameloop={windowVisible ? 'always' : 'never'}
+		>
 			<PerspectiveCamera makeDefault />
 			<ambientLight intensity={8} />
 			{scene && <FrameModel scene={scene} />}

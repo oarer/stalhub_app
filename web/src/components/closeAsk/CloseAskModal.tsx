@@ -8,9 +8,6 @@ import { Modal } from '@/components/ui/Modal'
 import { toast } from '@/components/ui/Toast'
 import type { CloseAction } from '@/types/desktop'
 
-/// Модалка выбора при закрытии главного окна: выйти или свернуть в трей.
-/// Открывается по событию stalhub:ask-close из Rust (см. tray.rs).
-/// Монтируется в DesktopChromeGate — видна только в десктопе.
 export default function CloseAskModal() {
 	const t = useTranslations('closeAsk')
 	const [open, setOpen] = useState(false)
@@ -18,13 +15,27 @@ export default function CloseAskModal() {
 	const [busy, setBusy] = useState(false)
 
 	useEffect(() => {
-		const ctl = window.stalhubDesktop?.windowCtl
-		if (!ctl) return
-		return ctl.onAskClose(() => {
+		let unsubscribe: (() => void) | null = null
+		let disposed = false
+
+		const attach = () => {
+			if (disposed || unsubscribe) return
+			const ctl = window.stalhubDesktop?.windowCtl
+			if (!ctl) return
+			unsubscribe = ctl.onAskClose(() => {
 			setRemember(false)
 			setBusy(false)
 			setOpen(true)
-		})
+			})
+		}
+
+		window.addEventListener('stalhub:bridge-ready', attach)
+		attach()
+		return () => {
+			disposed = true
+			window.removeEventListener('stalhub:bridge-ready', attach)
+			unsubscribe?.()
+		}
 	}, [])
 
 	const answer = useCallback(
@@ -35,8 +46,6 @@ export default function CloseAskModal() {
 			void ctl
 				.answerClose(action, remember)
 				.then(() => {
-					// close завершает процесс, tray прячет окно:
-					// в обоих случаях модалка больше не нужна.
 					setOpen(false)
 				})
 				.catch(() => toast.error(t('error')))
