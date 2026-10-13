@@ -74,6 +74,9 @@ fn main_window(app: &AppHandle) -> Option<tauri::WebviewWindow> {
 
 fn show_main(app: &AppHandle) -> bool {
     if let Some(window) = main_window(app) {
+        // `unminimize` существует только на desktop (#[cfg(desktop)]),
+        // на Android/iOS его нет — поэтому вызываем только там.
+        #[cfg(desktop)]
         let _ = window.unminimize();
         let result = window.show().and_then(|_| window.set_focus()).is_ok();
         if result {
