@@ -3783,6 +3783,7 @@
       "status_unsupported": "Les mises à jour ne sont pas disponibles sur cette plateforme",
       "status_up_to_date": "Vous avez la dernière version",
       "title": "Mises à jour de l’application",
+      "startup_title": "Lancer avec le système",
       "toggle_error": "Impossible de modifier les paramètres de mise à jour",
       "version": "Version de l’application",
       "version_desc": "Build actuel installé sur cet appareil",
@@ -3828,6 +3829,12 @@
       "draw_undo": "Annuler",
       "draw_clear": "Effacer",
       "borderless_warn": "Pour voir le viseur par-dessus le jeu, mets le mode d’affichage sur «Plein écran fenêtré (mode compatibilité)»"
+    },
+    "startup": {
+      "title": "Lancer avec le système",
+      "enabled": "Lancer Stalhub à la connexion",
+      "description": "Lancer automatiquement l’application à l’ouverture de session",
+      "error": "Impossible de modifier le démarrage automatique"
     },
     "window": {
       "title": "Fenêtre",

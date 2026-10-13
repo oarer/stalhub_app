@@ -217,6 +217,17 @@ pub fn show_sync(app: &AppHandle) -> bool {
     crosshair_win::show(config).unwrap_or(false)
 }
 
+/// Restore the persisted overlay when the native application starts.
+#[cfg(target_os = "windows")]
+pub fn show_if_enabled(app: &AppHandle) -> Result<(), String> {
+    let config = load_config(app).sanitized();
+    if config.enabled {
+        crosshair_win::show(config).map(|_| ())
+    } else {
+        Ok(())
+    }
+}
+
 /// Синхронные версии для вызова из не-async контекстов (трей).
 #[cfg(target_os = "windows")]
 pub fn hide_sync() -> bool {

@@ -65,7 +65,7 @@ pub fn run() {
             crate::tray::handle_main_close(window.app_handle());
         }
     });
-    builder
+    let builder = builder
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_store::Builder::default().build())
         .plugin(tauri_plugin_dialog::init())
@@ -75,7 +75,13 @@ pub fn run() {
         .plugin(tauri_plugin_os::init())
         .plugin(tauri_plugin_deep_link::init())
         .plugin(tauri_plugin_updater::Builder::new().build())
-        .plugin(stalhub_installer::init())
+        .plugin(stalhub_installer::init());
+    #[cfg(desktop)]
+    let builder = builder.plugin(tauri_plugin_autostart::init(
+        tauri_plugin_autostart::MacosLauncher::LaunchAgent,
+        None,
+    ));
+    builder
         .setup(|app| {
             use tauri_plugin_deep_link::DeepLinkExt;
             #[cfg(desktop)]
@@ -84,6 +90,10 @@ pub fn run() {
                 // Трей не должен ронять старт: только warn.
                 if let Err(error) = crate::tray::build_tray(app.handle()) {
                     log::warn!("tray build failed: {error}");
+                }
+                #[cfg(target_os = "windows")]
+                if let Err(error) = crate::crosshair::show_if_enabled(app.handle()) {
+                    log::warn!("crosshair startup failed: {error}");
                 }
             }
             // Рантайм-ссылки (включая second-instance через single-instance),

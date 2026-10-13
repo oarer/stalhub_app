@@ -11,16 +11,16 @@
 // - tradingOverlay управляет окном overlay: open/close через
 //   WebviewWindow, update/complete через emitTo, onState/onComplete —
 //   локальные refcounted-подписки. Направление complete — overlay→main.
-// - updates работает уже сейчас, но без Rust-бэкенда апдейтера
-//   рапортует supported:false; setAutoUpdate персистится через plugin-store.
+// - updates используют Tauri updater на desktop и Android manifest на Android.
 // - platform маппится к Node-стилю (darwin/win32), который ждёт бэкенд.
 import type {
 	CloseAction,
 	CloseBehavior,
 	CrosshairConfig,
+	DesktopAutostartApi,
 	DesktopCrosshairApi,
-	DesktopUpdatesApi,
 	DesktopUpdateState,
+	DesktopUpdatesApi,
 	DesktopWindowCtlApi,
 	UpdateChannel,
 } from '@/types/desktop'
@@ -111,7 +111,8 @@ async function install(): Promise<void> {
 		.catch(() => null)
 	let initialChannel: UpdateChannel | null = null
 	if (isAndroid) {
-		initialChannel = storedChannel === 'prerelease' ? 'prerelease' : 'stable'
+		initialChannel =
+			storedChannel === 'prerelease' ? 'prerelease' : 'stable'
 	}
 
 	// --- deep-link подписки (ленивые, как в preload) ---
@@ -125,7 +126,9 @@ async function install(): Promise<void> {
 	const notifyRenderer = (channel: 'auth' | 'import', ready: boolean) => {
 		void import('@tauri-apps/api/core')
 			.then(({ invoke }) =>
-				invoke(ready ? 'renderer_ready' : 'renderer_not_ready', { channel })
+				invoke(ready ? 'renderer_ready' : 'renderer_not_ready', {
+					channel,
+				})
 			)
 			.catch(() => {
 				/* Rust-очередь подождёт следующего handshake. */
@@ -159,7 +162,8 @@ async function install(): Promise<void> {
 	const ensureAuthSubscription = (): Promise<void> => {
 		if (authUnlisten || authListeners.size === 0) return Promise.resolve()
 		authSubscribing ??= listen<string>(AUTH_EVENT, (event) => {
-			if (typeof event.payload === 'string') handleAuthEvent(event.payload)
+			if (typeof event.payload === 'string')
+				handleAuthEvent(event.payload)
 		})
 			.then((unlisten) => {
 				authSubscribing = null
@@ -176,9 +180,11 @@ async function install(): Promise<void> {
 	}
 
 	const ensureImportSubscription = (): Promise<void> => {
-		if (importUnlisten || importListeners.size === 0) return Promise.resolve()
+		if (importUnlisten || importListeners.size === 0)
+			return Promise.resolve()
 		importSubscribing ??= listen<string>(IMPORT_EVENT, (event) => {
-			if (typeof event.payload === 'string') handleImportEvent(event.payload)
+			if (typeof event.payload === 'string')
+				handleImportEvent(event.payload)
 		})
 			.then((unlisten) => {
 				importSubscribing = null
@@ -194,13 +200,13 @@ async function install(): Promise<void> {
 		return importSubscribing
 	}
 
-	// --- updates (полный цикл — в Фазе 6, пока честный unsupported) ---
+	// --- updates ---
 	const updateListeners = new Set<(state: DesktopUpdateState) => void>()
 	let updateState: DesktopUpdateState = {
-		supported: isAndroid,
+		supported: true,
 		currentVersion,
 		autoUpdate,
-		status: isAndroid ? 'idle' : 'unsupported',
+		status: 'idle',
 		newVersion: null,
 		percent: null,
 		error: null,
@@ -337,20 +343,19 @@ async function install(): Promise<void> {
 						emitUpdate({
 							status: 'error',
 							error:
-								error instanceof Error ? error.message : String(error),
+								error instanceof Error
+									? error.message
+									: String(error),
 						})
 					})
 				return { ...updateState }
 			} catch (error: unknown) {
-				const message = error instanceof Error ? error.message : String(error)
-				const missingBackend = /not found|not registered|unsupported/i.test(
-					message
-				)
-				// Rust-бэкенд апдейтера появится в Фазе 6 (ключи/endpoints).
+				const message =
+					error instanceof Error ? error.message : String(error)
 				emitUpdate({
-					supported: missingBackend ? false : updateState.supported,
-					status: missingBackend ? 'unsupported' : 'error',
-					error: missingBackend ? null : message,
+					supported: true,
+					status: 'error',
+					error: message,
 					lastCheckedAt: Date.now(),
 				})
 				return { ...updateState }
@@ -398,10 +403,23 @@ async function install(): Promise<void> {
 		},
 	}
 
+	const autostart: DesktopAutostartApi = {
+		info: async () => {
+			const { isEnabled } = await import('@tauri-apps/plugin-autostart')
+			return await isEnabled()
+		},
+		setEnabled: async (enabled) => {
+			const api = await import('@tauri-apps/plugin-autostart')
+			if (enabled) await api.enable()
+			else await api.disable()
+			return enabled
+		},
+	}
+
 	// --- trading overlay (окно overlay, см. tauri.conf.json) ---
 	// Один Tauri-listen на канал с refcount: переподписки views не плодят
 	// дубликаты (TradingView переподписывает onComplete при смене running).
-	const createLocalChannel = <T,>(event: string) => {
+	const createLocalChannel = <T>(event: string) => {
 		const listeners = new Set<(payload: T) => void>()
 		let unlisten: (() => void) | null = null
 		let subscribing: Promise<void> | null = null
@@ -446,8 +464,11 @@ async function install(): Promise<void> {
 		}
 	}
 
-	const overlayStateChannel = createLocalChannel<TradingOverlayState>(OVERLAY_STATE_EVENT)
-	const overlayCompleteChannel = createLocalChannel<void>(OVERLAY_COMPLETE_EVENT)
+	const overlayStateChannel =
+		createLocalChannel<TradingOverlayState>(OVERLAY_STATE_EVENT)
+	const overlayCompleteChannel = createLocalChannel<void>(
+		OVERLAY_COMPLETE_EVENT
+	)
 
 	const tradingOverlay = {
 		// Окно создаётся лениво Rust-командой (mirror createTradingOverlay):
@@ -462,7 +483,9 @@ async function install(): Promise<void> {
 		},
 		update: (state: TradingOverlayState): void => {
 			void import('@tauri-apps/api/event')
-				.then(({ emitTo }) => emitTo('overlay', OVERLAY_STATE_EVENT, state))
+				.then(({ emitTo }) =>
+					emitTo('overlay', OVERLAY_STATE_EVENT, state)
+				)
 				.catch(() => undefined)
 		},
 		// Уничтожает окно (mirror closeTradingOverlay), не прячет.
@@ -589,6 +612,7 @@ async function install(): Promise<void> {
 			await openUrl(url)
 		},
 		updates,
+		autostart,
 		onAuthCallback: (callback: (url: string) => void) => {
 			if (typeof callback !== 'function')
 				throw new TypeError('Expected callback')

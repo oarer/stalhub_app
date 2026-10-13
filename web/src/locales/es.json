@@ -3783,6 +3783,7 @@
       "status_unsupported": "Las actualizaciones no están disponibles en esta plataforma",
       "status_up_to_date": "Tienes la última versión",
       "title": "Actualizaciones de la aplicación",
+      "startup_title": "Iniciar con el sistema",
       "toggle_error": "No se pudo cambiar la configuración de actualización",
       "version": "Versión de la aplicación",
       "version_desc": "Compilación actual instalada en este dispositivo",
@@ -3828,6 +3829,12 @@
       "draw_undo": "Deshacer",
       "draw_clear": "Borrar",
       "borderless_warn": "Para ver la mira sobre el juego, pon el modo de pantalla en «Pantalla completa en ventana (modo compatibilidad)»"
+    },
+    "startup": {
+      "title": "Iniciar con el sistema",
+      "enabled": "Iniciar Stalhub al entrar",
+      "description": "Iniciar automáticamente la aplicación al entrar en el sistema",
+      "error": "No se pudo cambiar el inicio automático"
     },
     "window": {
       "title": "Ventana",

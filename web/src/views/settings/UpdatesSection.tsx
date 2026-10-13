@@ -24,24 +24,33 @@ export default function UpdatesSection() {
 	const [state, setState] = useState<DesktopUpdateState | null>(null)
 
 	useEffect(() => {
-		const bridge = window.stalhubDesktop?.updates
-		if (!bridge) return
-		setApi(bridge)
 		let mounted = true
-		void bridge
-			.info()
-			.then((next) => {
+		let unsubscribe: (() => void) | null = null
+
+		const attach = () => {
+			if (unsubscribe) return
+			const bridge = window.stalhubDesktop?.updates
+			if (!bridge) return
+			setApi(bridge)
+			void bridge
+				.info()
+				.then((next) => {
+					if (mounted) setState(next)
+				})
+				.catch(() => {
+					if (mounted) setState(null)
+				})
+			unsubscribe = bridge.onStatus((next) => {
 				if (mounted) setState(next)
 			})
-			.catch(() => {
-				if (mounted) setState(null)
-			})
-		const unsubscribe = bridge.onStatus((next) => {
-			if (mounted) setState(next)
-		})
+		}
+
+		window.addEventListener('stalhub:bridge-ready', attach)
+		attach()
 		return () => {
 			mounted = false
-			unsubscribe()
+			window.removeEventListener('stalhub:bridge-ready', attach)
+			unsubscribe?.()
 		}
 	}, [])
 

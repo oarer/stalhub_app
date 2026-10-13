@@ -7,6 +7,7 @@ import ChangeTheme from '@/shared/layouts/nav/components/ChangeTheme'
 import { Section } from '@/views/me/components/Section'
 import { SettingRow } from '@/views/me/components/settings/SettingRow'
 import DataSettings from '@/views/settings/DataSettings'
+import StartupSection from '@/views/settings/StartupSection'
 import UpdatesSection from '@/views/settings/UpdatesSection'
 import WindowSection from '@/views/settings/WindowSection'
 
@@ -35,12 +36,20 @@ export default function SettingsView() {
 				</div>
 			</Section>
 			<UpdatesSection />
-			<Section icon="lucide:crosshair" title={t('settings.crosshair.title')}>
+			<StartupSection />
+			<Section
+				icon="lucide:crosshair"
+				title={t('settings.crosshair.title')}
+			>
 				<SettingRow
 					description={t('settings.crosshair.page_desc')}
 					title={t('settings.crosshair.title')}
 				>
-					<CLink href="/settings/crosshair" size="sm" variant="bordered">
+					<CLink
+						href="/settings/crosshair"
+						size="sm"
+						variant="bordered"
+					>
 						{t('settings.crosshair.open')}
 					</CLink>
 				</SettingRow>

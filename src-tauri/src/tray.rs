@@ -74,6 +74,7 @@ fn main_window(app: &AppHandle) -> Option<tauri::WebviewWindow> {
 
 fn show_main(app: &AppHandle) -> bool {
     if let Some(window) = main_window(app) {
+        let _ = window.unminimize();
         let result = window.show().and_then(|_| window.set_focus()).is_ok();
         if result {
             let _ = window.emit("stalhub:window-visibility", true);
@@ -152,7 +153,7 @@ pub fn build_tray(app: &AppHandle) -> Result<(), String> {
             {
                 let app = tray.app_handle();
                 let visible = main_window(app)
-                    .map(|w| w.is_visible().unwrap_or(true))
+                    .map(|w| w.is_visible().unwrap_or(true) && !w.is_minimized().unwrap_or(false))
                     .unwrap_or(true);
                 if visible {
                     hide_main(app);

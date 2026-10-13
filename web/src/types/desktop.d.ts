@@ -34,6 +34,11 @@ export type DesktopUpdatesApi = {
 	onStatus(callback: (state: DesktopUpdateState) => void): () => void
 }
 
+export type DesktopAutostartApi = {
+	info(): Promise<boolean>
+	setEnabled(enabled: boolean): Promise<boolean>
+}
+
 export type CrosshairPreset = 'cross' | 'dot' | 'ring' | 'custom'
 
 export type CrosshairStroke = {
@@ -82,6 +87,7 @@ declare global {
 			beginAuth(url: string): Promise<void>
 			openExternal(url: string): Promise<void>
 			updates?: DesktopUpdatesApi
+			autostart?: DesktopAutostartApi
 			onAuthCallback(callback: (url: string) => void): () => void
 			onImport(callback: (url: string) => void): () => void
 			tradingOverlay?: {

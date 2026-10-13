@@ -12,6 +12,7 @@
     "notification:default",
     "clipboard-manager:default",
     "process:default",
+    "autostart:default",
     "os:default",
     "deep-link:default",
     "updater:default",

@@ -3786,6 +3786,7 @@
       "status_unsupported": "Updates are not available on this platform",
       "status_up_to_date": "You have the latest version",
       "title": "Application updates",
+      "startup_title": "Start with the system",
       "toggle_error": "Could not change update settings",
       "version": "App version",
       "version_desc": "Current build installed on this device",
@@ -3831,6 +3832,12 @@
       "draw_undo": "Undo",
       "draw_clear": "Clear",
       "borderless_warn": "For the crosshair to show over the game, set the in-game display mode to “Fullscreen windowed (compatibility mode)”"
+    },
+    "startup": {
+      "title": "Start with the system",
+      "enabled": "Launch Stalhub at login",
+      "description": "Start the application automatically when you sign in",
+      "error": "Could not change startup setting"
     },
     "window": {
       "title": "Window",

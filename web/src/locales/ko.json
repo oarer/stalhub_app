@@ -3783,6 +3783,7 @@
       "status_unsupported": "이 플랫폼에서는 업데이트를 사용할 수 없습니다",
       "status_up_to_date": "최신 버전을 사용 중입니다",
       "title": "앱 업데이트",
+      "startup_title": "시스템과 함께 시작",
       "toggle_error": "업데이트 설정을 변경할 수 없습니다",
       "version": "앱 버전",
       "version_desc": "이 기기에 설치된 현재 빌드",
@@ -3828,6 +3829,12 @@
       "draw_undo": "되돌리기",
       "draw_clear": "지우기",
       "borderless_warn": "게임 위에 조준선을 표시하려면 게임 내 디스플레이 모드를 «전체 화면 창 모드 (호환 모드)»로 설정하세요"
+    },
+    "startup": {
+      "title": "시스템과 함께 시작",
+      "enabled": "로그인 시 Stalhub 시작",
+      "description": "시스템에 로그인할 때 앱을 자동으로 시작합니다",
+      "error": "자동 시작 설정을 변경할 수 없습니다"
     },
     "window": {
       "title": "창",
