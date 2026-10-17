@@ -252,27 +252,30 @@ pub fn server_blocker_apply(blocked_addresses: Vec<String>) -> Result<String, St
         ips.retain(|ip| !ip.is_empty());
         if ips.is_empty() {
             // Нечего блокировать — просто чистим правило (= всё разрешено).
-            let _ = run_netsh(&["advfirewall", "firewall", "delete", "rule", &format!("name=\"{RULE_NAME}\"")]);
+            let _ = run_netsh(&["advfirewall", "firewall", "delete", "rule", &format!("name={RULE_NAME}")]);
             return Ok("Блокировок нет: правило удалено, все сервера разрешены".to_string());
         }
         if ips.len() > 500 {
             return Err("Слишком много IP для одного правила (max 500)".to_string());
         }
         // Удаляем старое правило (ошибка «not found» — не ошибка).
-        let _ = run_netsh(&["advfirewall", "firewall", "delete", "rule", &format!("name=\"{RULE_NAME}\"")]);
+        let _ = run_netsh(&["advfirewall", "firewall", "delete", "rule", &format!("name={RULE_NAME}")]);
         let remoteip = ips.join(",");
+        // ВАЖНО: не вкладывать кавычки в значения аргументов (name="...").
+        // Command::args сам обернёт значение с пробелами в кавычки, а вложенные
+        // кавычки netsh не распарсит и напечатает справку вместо применения правила.
         let out = run_netsh(&[
             "advfirewall",
             "firewall",
             "add",
             "rule",
-            &format!("name=\"{RULE_NAME}\""),
+            &format!("name={RULE_NAME}"),
             "dir=out",
             "action=block",
             "enable=yes",
             "profile=any",
             &format!("remoteip={remoteip}"),
-            "description=\"Stalhub: блокировка игровых серверов с высоким пингом\"",
+            "description=Stalhub: блокировка игровых серверов с высоким пингом",
         ])?;
         Ok(format!("Заблокировано IP: {}. {out}", ips.len()).trim().to_string())
     }
@@ -280,7 +283,7 @@ pub fn server_blocker_apply(blocked_addresses: Vec<String>) -> Result<String, St
 
 #[tauri::command]
 pub fn server_blocker_clear() -> Result<String, String> {
-    let out = run_netsh(&["advfirewall", "firewall", "delete", "rule", &format!("name=\"{RULE_NAME}\"")])?;
+    let out = run_netsh(&["advfirewall", "firewall", "delete", "rule", &format!("name={RULE_NAME}")])?;
     Ok(out)
 }
 
@@ -303,26 +306,19 @@ pub fn server_blocker_status() -> FirewallStatus {
             "firewall",
             "show",
             "rule",
-            &format!("name=\"{RULE_NAME}\""),
+            &format!("name={RULE_NAME}"),
             "verbose",
         ]);
         match show {
             Ok(text) => {
-                // "No rules match" => правила нет.
-                if text.contains("No rules match") {
-                    FirewallStatus {
-                        admin,
-                        rule_exists: false,
-                        blocked_ips: vec![],
-                        supported: true,
-                    }
-                } else {
-                    FirewallStatus {
-                        admin,
-                        rule_exists: true,
-                        blocked_ips: parse_remoteips(&text),
-                        supported: true,
-                    }
+                // "No rules match" — английский вывод; на локализованных Windows
+                // текст другой, поэтому опираемся на фактическое наличие IP.
+                let blocked = parse_remoteips(&text);
+                FirewallStatus {
+                    admin,
+                    rule_exists: !blocked.is_empty(),
+                    blocked_ips: blocked,
+                    supported: true,
                 }
             }
             Err(_) => FirewallStatus {

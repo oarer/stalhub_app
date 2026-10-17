@@ -155,9 +155,9 @@ jobs:
             src-tauri/target/release/bundle/nsis/*.exe
             src-tauri/target/release/bundle/msi/*.msi
             src-tauri/target/release/bundle/dmg/*.dmg
-            # Всё из updater/: .sig, latest.json и архивы для скачивания
-            # (nsis.zip / AppImage.tar.gz) — latest.json ссылается на них.
-            src-tauri/target/release/bundle/updater/*
+            # Updater-артефакты v2: sig-файлы лежат рядом с основной сборкой.
+            src-tauri/target/release/bundle/nsis/*.exe.sig
+            src-tauri/target/release/bundle/appimage/*.AppImage.sig
           if-no-files-found: error
 
   android:
@@ -309,10 +309,62 @@ jobs:
           fi
           name=$(basename "$apk")
           node -e "const fs=require('fs');const m={version:process.env.VERSION,url:'https://github.com/oarer/stalhub_app/releases/download/'+process.env.TAG+'/'+process.argv[1]};fs.writeFileSync('release-assets/android-update.json',JSON.stringify(m,null,2)+'\n')" "$name"
+      # Манифест настольного апдейтера (createUpdaterArtifacts: true).
+      # tauri-action здесь работает в build-only режиме и latest.json не создаёт —
+      # собираем его сами из exe/AppImage и их .sig файлов.
+      - name: Find updater assets
+        id: updater-assets
+        shell: bash
+        run: |
+          exe=$(find release-assets -name '*-setup.exe' | head -1)
+          appimg=$(find release-assets -name '*.AppImage' | head -1)
+          echo "exe=$exe" >> "$GITHUB_OUTPUT"
+          echo "appimg=$appimg" >> "$GITHUB_OUTPUT"
+          if [ -z "$exe" ] && [ -z "$appimg" ]; then
+            echo "::warning::No desktop updater assets found"
+          fi
+      - name: Generate updater manifest
+        shell: bash
+        env:
+          TAG: ${{ needs.version.outputs.tag }}
+          VERSION: ${{ needs.version.outputs.version }}
+          EXE: ${{ steps.updater-assets.outputs.exe }}
+          APPIMG: ${{ steps.updater-assets.outputs.appimg }}
+        run: |
+          if [ -z "$EXE" ] && [ -z "$APPIMG" ]; then
+            echo "Skipping latest.json (no assets)"
+            exit 0
+          fi
+          node -e '
+            const fs = require("fs");
+            const v = process.env.VERSION, tag = process.env.TAG;
+            const base = "https://github.com/oarer/stalhub_app/releases/download/" + tag + "/";
+            const platforms = {};
+            for (const [key, file] of [
+              ["windows-x86_64", process.env.EXE],
+              ["linux-x86_64", process.env.APPIMG],
+            ]) {
+              if (!file) continue;
+              const sig = file + ".sig";
+              platforms[key] = {
+                signature: fs.existsSync(sig) ? fs.readFileSync(sig, "utf8").trim() : "",
+                url: base + file.split("/").pop(),
+              };
+            }
+            fs.writeFileSync("release-assets/latest.json", JSON.stringify({
+              version: v,
+              pub_date: new Date().toISOString(),
+              platforms,
+            }, null, 2) + "\n");
+            console.log("latest.json:", JSON.stringify(platforms));
+          '
       - uses: softprops/action-gh-release@v3
         with:
           tag_name: ${{ needs.version.outputs.tag }}
           name: Stalhub ${{ needs.version.outputs.tag }}
-          prerelease: true
+          # GitHub `releases/latest` не показывает пре-релизы, а апдейтер
+          # смотрит на releases/latest/download/latest.json — релиз обязателен
+          # стабильный, иначе апдейт никогда не найдётся.
+          prerelease: false
           generate_release_notes: true
           files: release-assets/**/*
