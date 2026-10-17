@@ -128,11 +128,20 @@ export default function ServerStatusView() {
 
 	return (
 		<section className="mx-auto max-w-380 space-y-8 px-4 pt-32 pb-12 sm:px-6">
-			<h1
-				className={`${mtsExtended.className} font-semibold text-[28px] leading-none`}
-			>
-				{t('servers.title')}
-			</h1>
+			<div className="flex flex-wrap items-end justify-between gap-3">
+				<h1
+					className={`${mtsExtended.className} font-semibold text-[28px] leading-none`}
+				>
+					{t('servers.title')}
+				</h1>
+				<a
+					className="flex items-center gap-1.5 rounded-xl bg-primary px-3.5 py-2 font-semibold text-primary-foreground text-sm transition-opacity hover:opacity-85"
+					href="/servers/block"
+				>
+					<Icon className="text-base" icon="lucide:shield" />
+					Блокировщик серверов
+				</a>
+			</div>
 
 			<div className="space-y-4 rounded-xl bg-card px-5 py-4 shadow-lg ring-2 ring-primary/50 md:bg-card/50 md:backdrop-blur-md">
 				<div className="flex items-center justify-between gap-3">

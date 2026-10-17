@@ -5,6 +5,7 @@ mod crosshair;
 mod crosshair_win;
 mod deeplink;
 mod overlay;
+mod server_blocker;
 mod tray;
 mod update_android;
 
@@ -28,6 +29,13 @@ pub fn run() {
             deeplink::renderer_not_ready,
             overlay::trading_overlay_open,
             overlay::trading_overlay_close,
+            server_blocker::server_blocker_fetch,
+            server_blocker::server_blocker_ping,
+            server_blocker::server_blocker_admin,
+            server_blocker::server_blocker_apply,
+            server_blocker::server_blocker_clear,
+            server_blocker::server_blocker_status,
+            server_blocker::server_blocker_restart_elevated,
             tray::window_close_behavior_get,
             tray::window_close_behavior_set,
             tray::window_close_answer,

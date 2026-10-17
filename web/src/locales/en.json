@@ -327,7 +327,13 @@
           },
           "servers": {
             "label": "Servers",
-            "description": "Server online"
+            "description": "Server online",
+            "sub_menu": {
+              "status": "Online",
+              "block": "Server blocker"
+            },
+            "blockLabel": "Server blocker",
+            "blockDescription": "Block servers via Firewall"
           },
           "balance": {
             "label": "Balance",
@@ -3873,5 +3879,47 @@
     "tray": "To tray",
     "close": "Quit",
     "error": "Action failed"
+  },
+  "serverBlocker": {
+    "title": "Server blocker",
+    "browserWarning": "You're in a browser: the server list is visible, but <b>ping and blocking are only available in the Stalhub desktop app on Windows</b> (it needs TCP socket and Firewall access).",
+    "windowsOnly": "Blocking is only supported on Windows.",
+    "noAdmin": "The app is running <b>without administrator rights</b> — Firewall rules won't be applied.",
+    "restartAsAdmin": "Restart as admin",
+    "ruleActive": "Blocking active: {count} IP",
+    "noRules": "No blocks",
+    "runningAsAdmin": "Running as admin",
+    "withoutAdmin": "Without admin rights",
+    "clearAll": "Clear all blocks",
+    "keepLabel": "Keep:",
+    "checkPing": "Check ping",
+    "globeLegend": "Green — kept, red — fully blocked, yellow — partially.",
+    "kept": "Kept:",
+    "toBlock": "To block:",
+    "blockRest": "Block the rest",
+    "selectPool": "Select/clear the whole pool",
+    "noResponse": "no response",
+    "loadFailed": "Failed to load the server list for the region.",
+    "regions": {
+      "RU": "Russia / CIS (RU)",
+      "EU": "Europe (EU)",
+      "NA": "North America (NA)",
+      "NEA": "North-East Asia (NEA)",
+      "SEA": "South-East Asia / Oceania (SEA)"
+    },
+    "globe": {
+      "drag": "Drag to rotate…",
+      "hint": "Drag to rotate · click a dot to toggle a pool",
+      "error": "Couldn't render the globe (WebGL unavailable) — the server list below works as usual."
+    },
+    "toasts": {
+      "loadFailed": "Failed to load servers: {error}",
+      "pingDesktopOnly": "Ping check is only available in the Stalhub desktop app",
+      "pingResult": "Measured: {total} servers, unreachable: {unreachable}. Kept {kept}.",
+      "pingNoResponse": "No server responds — blocking wasn't applied, everything is kept.",
+      "pingError": "Ping failed: {error}",
+      "blockDesktopOnly": "Blocking only works in the desktop app on Windows",
+      "cannotBlockAll": "You can't block everything: keep at least one server"
+    }
   }
 }

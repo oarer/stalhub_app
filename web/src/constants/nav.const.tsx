@@ -55,8 +55,7 @@ export const NAV_STRUCTURE: NavGroup[] = [
 				icon: 'lucide:table',
 				href: '/calcs/buy',
 				labelKey: 'nav.groups.calculators.items.buy.label',
-				descriptionKey:
-					'nav.groups.calculators.items.buy.description',
+				descriptionKey: 'nav.groups.calculators.items.buy.description',
 			},
 			{
 				key: 'art',
@@ -191,6 +190,14 @@ export const NAV_STRUCTURE: NavGroup[] = [
 				href: '/servers',
 				labelKey: 'nav.groups.other.items.servers.label',
 				descriptionKey: 'nav.groups.other.items.servers.description',
+			},
+			{
+				key: 'servers_block',
+				icon: 'lucide:shield',
+				href: '/servers/block',
+				labelKey: 'nav.groups.other.items.servers.blockLabel',
+				descriptionKey:
+					'nav.groups.other.items.servers.blockDescription',
 			},
 			{
 				key: 'balance',

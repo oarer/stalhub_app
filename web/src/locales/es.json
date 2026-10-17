@@ -360,7 +360,13 @@
           },
           "servers": {
             "label": "Серверы",
-            "description": "Онлайн серверов"
+            "description": "Онлайн серверов",
+            "sub_menu": {
+              "status": "En línea",
+              "block": "Bloqueador de servidores"
+            },
+            "blockLabel": "Bloqueador de servidores",
+            "blockDescription": "Bloquear servidores mediante Firewall"
           },
           "balance": {
             "label": "Balance",
@@ -3870,5 +3876,47 @@
     "tray": "A la bandeja",
     "close": "Cerrar",
     "error": "Acción fallida"
+  },
+  "serverBlocker": {
+    "title": "Bloqueador de servidores",
+    "browserWarning": "Estás en el navegador: la lista de servidores es visible, pero <b>el ping y el bloqueo solo están disponibles en la app de escritorio de Stalhub para Windows</b> (necesita acceso a sockets TCP y al Firewall).",
+    "windowsOnly": "El bloqueo solo es compatible con Windows.",
+    "noAdmin": "La aplicación se ejecuta <b>sin derechos de administrador</b> — las reglas del Firewall no se aplicarán.",
+    "restartAsAdmin": "Reiniciar como administrador",
+    "ruleActive": "Bloqueo activo: {count} IP",
+    "noRules": "Sin bloqueos",
+    "runningAsAdmin": "Ejecutándose como admin",
+    "withoutAdmin": "Sin derechos de admin",
+    "clearAll": "Quitar todos los bloqueos",
+    "keepLabel": "Dejar:",
+    "checkPing": "Comprobar ping",
+    "globeLegend": "Verde — dejados, rojo — totalmente bloqueados, amarillo — parcialmente.",
+    "kept": "Dejados:",
+    "toBlock": "A bloquear:",
+    "blockRest": "Bloquear el resto",
+    "selectPool": "Seleccionar/quitar todo el pool",
+    "noResponse": "no responde",
+    "loadFailed": "No se pudo cargar la lista de servidores de la región.",
+    "regions": {
+      "RU": "Rusia / CEI (RU)",
+      "EU": "Europa (EU)",
+      "NA": "Norteamérica (NA)",
+      "NEA": "Asia Nororiental (NEA)",
+      "SEA": "Sudeste Asiático / Oceanía (SEA)"
+    },
+    "globe": {
+      "drag": "Arrastra para girar…",
+      "hint": "Arrastra para girar · clic en un punto para activar/desactivar un pool",
+      "error": "No se pudo dibujar el globo (WebGL no disponible) — la lista de servidores de abajo funciona igual."
+    },
+    "toasts": {
+      "loadFailed": "No se pudieron cargar los servidores: {error}",
+      "pingDesktopOnly": "La comprobación de ping solo está disponible en la app de escritorio de Stalhub",
+      "pingResult": "Medidos: {total} servidores, no disponibles: {unreachable}. Dejados {kept}.",
+      "pingNoResponse": "Ningún servidor responde — no se aplicó el bloqueo, se dejó todo.",
+      "pingError": "El ping falló: {error}",
+      "blockDesktopOnly": "El bloqueo solo funciona en la app de escritorio para Windows",
+      "cannotBlockAll": "No puedes bloquear todo: deja al menos un servidor"
+    }
   }
 }
