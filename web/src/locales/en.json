@@ -3920,6 +3920,9 @@
       "pingError": "Ping failed: {error}",
       "blockDesktopOnly": "Blocking only works in the desktop app on Windows",
       "cannotBlockAll": "You can't block everything: keep at least one server"
-    }
+    },
+    "msk1Protected": "MSK1 cannot be fully blocked: msk1-1/msk1-2 are essential for logging into the game",
+    "blockedByRule": "in block: {count} IP",
+    "refreshStatus": "Refresh status"
   }
 }

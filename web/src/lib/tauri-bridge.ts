@@ -318,6 +318,9 @@ async function install(): Promise<void> {
 					})
 					return { ...updateState }
 				}
+
+				let totalLen = 0
+				let received = 0
 				const current = update
 				emitUpdate({
 					supported: true,
@@ -329,9 +332,22 @@ async function install(): Promise<void> {
 				void current
 					.downloadAndInstall((event) => {
 						if (event.event === 'Started') {
+							totalLen = event.data.contentLength ?? 0
+							received = 0
 							emitUpdate({ status: 'downloading', percent: 0 })
 						} else if (event.event === 'Progress') {
-							emitUpdate({ status: 'downloading' })
+
+							received += event.data.chunkLength ?? 0
+							const percent =
+								totalLen > 0
+									? Math.min(
+											100,
+											Math.round(
+												(received / totalLen) * 100
+											)
+										)
+									: null
+							emitUpdate({ status: 'downloading', percent })
 						} else if (event.event === 'Finished') {
 							emitUpdate({ status: 'downloaded', percent: 100 })
 						}

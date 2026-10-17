@@ -20,6 +20,7 @@ import {
 	getBlockerStatus,
 	pingBlockerServers,
 	restartElevated,
+	stripPort,
 } from '@/services/server-blocker/server-blocker.service'
 import type {
 	BlockerFirewallStatus,
@@ -42,6 +43,11 @@ const ServerBlockerGlobe = dynamic(
 	}
 )
 const KEEP_OPTIONS = [1, 2, 3, 5, 10]
+
+// MSK1 (его туннели msk1-1/msk1-2) является точкой входа в игру: хотя бы один
+// адрес этого пула всегда остаётся разрешённым.
+const PROTECTED_POOL_NAME = 'MSK1'
+const isProtected = (name: string) => name.toUpperCase() === PROTECTED_POOL_NAME
 
 export default function ServerBlockerView() {
 	const t = useTranslations()
@@ -72,6 +78,31 @@ export default function ServerBlockerView() {
 		[pools]
 	)
 
+	const msk1 = useMemo(() => pools.find((p) => isProtected(p.name)), [pools])
+
+	const enforceMsk1 = useCallback(
+		(next: Set<string>): Set<string> => {
+			if (!msk1) return next
+			if (msk1.tunnels.some((t) => next.has(t.address))) return next
+			const pings = msk1.tunnels
+				.map((tt) => ({
+					address: tt.address,
+					ms: pingByAddress.get(tt.address)?.avgMs ?? Infinity,
+				}))
+				.sort((a, b) => a.ms - b.ms)
+			if (pings.length === 0) return next
+			// Нет данных о пинге — берём первый (адрес туннеля с наименьшим пингом).
+			next.add((pings.find((p) => p.ms !== Infinity) ?? pings[0]).address)
+			return next
+		},
+		[msk1, pingByAddress]
+	)
+
+	const refreshStatus = useCallback(async () => {
+		const st = await getBlockerStatus().catch(() => null)
+		if (st) setFwStatus(st)
+	}, [])
+
 	const loadRegion = useCallback(
 		async (r: BlockerRegion) => {
 			setLoading(true)
@@ -86,6 +117,7 @@ export default function ServerBlockerView() {
 						)
 					)
 				)
+				void refreshStatus()
 			} catch (e) {
 				toast.error(
 					t('serverBlocker.toasts.loadFailed', {
@@ -97,7 +129,7 @@ export default function ServerBlockerView() {
 				setLoading(false)
 			}
 		},
-		[t]
+		[refreshStatus, t]
 	)
 
 	useEffect(() => {
@@ -123,7 +155,8 @@ export default function ServerBlockerView() {
 				sorted.slice(0, keepCount).map((r) => r.address)
 			)
 			// Если вообще ничего не пингуется — оставляем всё, чтобы не заблокировать игру полностью.
-			setAllowed(sorted.length > 0 ? keep : new Set(allAddresses))
+			const fallback = new Set(allAddresses)
+			setAllowed(sorted.length > 0 ? enforceMsk1(keep) : fallback)
 			const unreachable = results.filter((r) => !r.ok).length
 			toast.success(
 				sorted.length > 0
@@ -143,9 +176,23 @@ export default function ServerBlockerView() {
 		} finally {
 			setPinging(false)
 		}
-	}, [allAddresses, desktop, keepCount, t])
+	}, [allAddresses, desktop, enforceMsk1, keepCount, t])
 
 	const toggleTunnel = (address: string) => {
+		const owner = pools.find((p) =>
+			p.tunnels.some((x) => x.address === address)
+		)
+		if (
+			owner &&
+			isProtected(owner.name) &&
+			allowed.has(address) &&
+			owner.tunnels.every(
+				(x) => x.address === address || !allowed.has(x.address)
+			)
+		) {
+			toast.error(t('serverBlocker.msk1Protected'))
+			return
+		}
 		setAllowed((prev) => {
 			const next = new Set(prev)
 			if (next.has(address)) next.delete(address)
@@ -155,18 +202,33 @@ export default function ServerBlockerView() {
 	}
 
 	const togglePool = (pool: BlockerPool) => {
+		const allIn = pool.tunnels.every((t) => allowed.has(t.address))
+		if (allIn && isProtected(pool.name)) {
+			toast.error(t('serverBlocker.msk1Protected'))
+			return
+		}
 		setAllowed((prev) => {
 			const next = new Set(prev)
 			const allIn = pool.tunnels.every((t) => next.has(t.address))
 			if (allIn) pool.tunnels.forEach((t) => next.delete(t.address))
 			else pool.tunnels.forEach((t) => next.add(t.address))
-			return next
+			return enforceMsk1(next)
 		})
 	}
 
 	const blockedAddresses = useMemo(
 		() => allAddresses.filter((a) => !allowed.has(a)),
 		[allAddresses, allowed]
+	)
+
+	const ruleIps = useMemo(
+		() =>
+			new Set(
+				(fwStatus?.ruleExists ? fwStatus.blockedIps : []).map((ip) =>
+					stripPort(ip)
+				)
+			),
+		[fwStatus]
 	)
 
 	const handleApply = async () => {
@@ -178,9 +240,16 @@ export default function ServerBlockerView() {
 			toast.error(t('serverBlocker.toasts.cannotBlockAll'))
 			return
 		}
+
+		const nextAllowed = enforceMsk1(new Set(allowed))
+		if (nextAllowed !== allowed) {
+			setAllowed(nextAllowed)
+			toast.info(t('serverBlocker.msk1Protected'))
+		}
+		const nextBlocked = allAddresses.filter((a) => !nextAllowed.has(a))
 		setApplying(true)
 		try {
-			const msg = await applyBlockerRule(blockedAddresses)
+			const msg = await applyBlockerRule(nextBlocked)
 			toast.success(msg)
 			const st = await getBlockerStatus().catch(() => null)
 			if (st) setFwStatus(st)
@@ -300,6 +369,16 @@ export default function ServerBlockerView() {
 							{t('serverBlocker.clearAll')}
 						</Button>
 					)}
+					<Button
+						aria-label={t('serverBlocker.refreshStatus')}
+						className="gap-2 px-2"
+						onClick={() => void refreshStatus()}
+						size="sm"
+						title={t('serverBlocker.refreshStatus')}
+						variant="ghost"
+					>
+						<Icon className="text-base" icon="lucide:refresh-cw" />
+					</Button>
 				</div>
 			)}
 
@@ -423,6 +502,9 @@ export default function ServerBlockerView() {
 						const allowedInPool = pool.tunnels.filter((t) =>
 							allowed.has(t.address)
 						).length
+						const blockedByRule = pool.tunnels.filter((t) =>
+							ruleIps.has(stripPort(t.address))
+						).length
 						const fullyBlocked = allowedInPool === 0
 						const partially =
 							allowedInPool > 0 &&
@@ -486,6 +568,17 @@ export default function ServerBlockerView() {
 									>
 										{allowedInPool}/{pool.tunnels.length}
 									</Badge>
+									{fwStatus?.ruleExists &&
+										blockedByRule > 0 && (
+											<Badge variant="danger">
+												{t(
+													'serverBlocker.blockedByRule',
+													{
+														count: blockedByRule,
+													}
+												)}
+											</Badge>
+										)}
 								</div>
 								<div className="flex flex-col gap-1.5">
 									{pool.tunnels.map((t) => {

@@ -331,7 +331,8 @@ pub fn server_blocker_status() -> FirewallStatus {
     }
 }
 
-/// Перезапуск приложения с правами админа (UAC-запрос). Текущий процесс завершается вызывающим кодом.
+/// Перезапуск приложения с правами админа (UAC-запрос). Текущий процесс
+/// завершается в фоновом потоке после успешного запуска повышенного экземпляра.
 #[tauri::command]
 pub fn server_blocker_restart_elevated() -> Result<String, String> {
     #[cfg(not(target_os = "windows"))]
@@ -342,21 +343,57 @@ pub fn server_blocker_restart_elevated() -> Result<String, String> {
     {
         let exe = std::env::current_exe().map_err(|e| format!("current_exe: {e}"))?;
         let exe_str = exe.to_string_lossy().to_string();
-        // Start-Process -Verb RunAs показывает UAC-диалог.
-        let status = Command::new("powershell")
-            .args([
-                "-NoProfile",
-                "-Command",
-                &format!("Start-Process -FilePath '{exe_str}' -Verb RunAs"),
-            ])
-            .status()
-            .map_err(|e| format!("powershell: {e}"))?;
-        if status.success() {
-            Ok("Перезапуск с правами администратора запущен".to_string())
-        } else {
-            Err("Не удалось запросить права администратора".to_string())
-        }
+        exe_runas(&exe_str, "--stalhub-elevated")?;
+        // Закрываем старый (безправный) экземпляр из фонового потока.
+        // Важно успеть до single-instance: повышенный экземпляр при старте
+        // уходит в первичный процесс и мгновенно закрывается, если старый жив.
+        std::thread::spawn(|| {
+            std::thread::sleep(Duration::from_millis(400));
+            std::process::exit(0);
+        });
+        Ok("Запрошены права администратора (UAC)".to_string())
     }
+}
+
+/// ShellExecuteExW с глаголом runas — прямая элевация без PowerShell.
+#[cfg(target_os = "windows")]
+fn exe_runas(path: &str, arg: &str) -> Result<(), String> {
+    use std::os::windows::ffi::OsStrExt;
+
+    use windows_sys::Win32::Foundation::GetLastError;
+    use windows_sys::Win32::UI::Shell::{
+        ShellExecuteExW, SEE_MASK_NOASYNC, SHELLEXECUTEINFOW,
+    };
+
+    // SEE_MASK_NOASYNC — вызов выполняется синхронно и возвращает
+    // осмысленный код ошибки (например, ERROR_CANCELLED).
+    let wide = |s: &str| {
+        std::ffi::OsStr::new(s)
+            .encode_wide()
+            .chain(std::iter::once(0))
+            .collect::<Vec<u16>>()
+    };
+    let file = wide(path);
+    let verb = wide("runas");
+    let params = wide(arg);
+
+    let mut info: SHELLEXECUTEINFOW = unsafe { std::mem::zeroed() };
+    info.cbSize = std::mem::size_of::<SHELLEXECUTEINFOW>() as u32;
+    info.fMask = SEE_MASK_NOASYNC;
+    info.lpVerb = verb.as_ptr();
+    info.lpFile = file.as_ptr();
+    info.lpParameters = params.as_ptr();
+    info.nShow = 1; // SW_SHOWNORMAL
+    let ok = unsafe { ShellExecuteExW(&mut info) };
+    if ok == 0 {
+        let code = unsafe { GetLastError() };
+        return Err(if code == 1223 {
+            "Запрос прав отменён".to_string()
+        } else {
+            format!("ShellExecuteExW failed: код {code}")
+        });
+    }
+    Ok(())
 }
 
 #[cfg(test)]

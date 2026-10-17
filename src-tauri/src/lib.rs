@@ -14,6 +14,13 @@ use tauri::Manager;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
+    // Повышенный при перезапуске (см. server_blocker_restart_elevated):
+    // даём старому безправному экземпляру успеть завершиться, иначе
+    // single-instance отправит повышенный экземпляр в него и закроет.
+    #[cfg(target_os = "windows")]
+    if std::env::args().any(|a| a == "--stalhub-elevated") {
+        std::thread::sleep(std::time::Duration::from_millis(900));
+    }
     let builder = tauri::Builder::default()
         .manage(deeplink::PendingLinks::default())
         .invoke_handler(tauri::generate_handler![

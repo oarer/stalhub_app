@@ -3917,6 +3917,9 @@
       "pingError": "핑 실패: {error}",
       "blockDesktopOnly": "차단은 Windows 데스크톱 앱에서만 작동합니다",
       "cannotBlockAll": "전부 차단할 수 없습니다: 서버를 하나 이상 유지하세요"
-    }
+    },
+    "msk1Protected": "MSK1을 전부 차단할 수 없습니다: msk1-1/msk1-2는 게임 접속에 필수입니다",
+    "blockedByRule": "차단 중: {count} IP",
+    "refreshStatus": "상태 새로고침"
   }
 }

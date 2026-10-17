@@ -3917,6 +3917,9 @@
       "pingError": "El ping falló: {error}",
       "blockDesktopOnly": "El bloqueo solo funciona en la app de escritorio para Windows",
       "cannotBlockAll": "No puedes bloquear todo: deja al menos un servidor"
-    }
+    },
+    "msk1Protected": "No se puede bloquear MSK1 por completo: msk1-1/msk1-2 son esenciales para entrar al juego",
+    "blockedByRule": "bloqueados: {count} IP",
+    "refreshStatus": "Actualizar estado"
   }
 }

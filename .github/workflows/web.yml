@@ -191,7 +191,6 @@ jobs:
         with:
           distribution: temurin
           java-version: 21
-          # Кэш Gradle (зависимости + wrapper): второй большой выигрыш.
           cache: gradle
       - uses: android-actions/setup-android@v4
         with:

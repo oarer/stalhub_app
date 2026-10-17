@@ -44,3 +44,7 @@ stalhub-installer = { path = "plugins/installer" }
 # xcap не поддерживает Android (X11/CoreGraphics-only), остальное кроссплатформенно.
 [target.'cfg(not(target_os = "android"))'.dependencies]
 xcap = "0.2"
+
+# ShellExecuteExW (runas) для элевации в блокировщике серверов.
+[target.'cfg(target_os = "windows")'.dependencies]
+windows-sys = { version = "0.59", features = ["Win32_Foundation", "Win32_UI_Shell", "Win32_System_Registry"] }
