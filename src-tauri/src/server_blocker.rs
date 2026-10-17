@@ -169,7 +169,7 @@ fn run_netsh(args: &[&str]) -> Result<String, String> {
             .args(args)
             .output()
             .map_err(|e| format!("netsh: {e}"))?;
-        let text = format(
+        let text = format!(
             "{}{}",
             String::from_utf8_lossy(&out.stdout),
             String::from_utf8_lossy(&out.stderr)
