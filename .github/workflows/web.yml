@@ -197,7 +197,18 @@ jobs:
         with:
           # The deprecated `tools` SDK package was removed from Google's repository.
           packages: platform-tools
-      - run: sdkmanager "platforms;android-34" "build-tools;34.0.0" "ndk;27.0.12077973"
+      # ("Error reading Zip content from a SeekableByteChannel") — ретраим.
+      - name: Install Android SDK packages
+        shell: bash
+        run: |
+          for i in 1 2 3; do
+            if sdkmanager "platforms;android-34" "build-tools;34.0.0" "ndk;27.0.12077973"; then
+              exit 0
+            fi
+            echo "::warning::sdkmanager attempt $i failed, retrying in 30s..."
+            sleep 30
+          done
+          exit 1
       - name: Check Android signing secrets
         shell: bash
         env:
