@@ -2,7 +2,8 @@
 //!
 //! Отдельный layered window (`WS_EX_LAYERED | WS_EX_TRANSPARENT |
 //! WS_EX_TOPMOST | WS_EX_NOACTIVATE | WS_EX_TOOLWINDOW`) поверх игры.
-//! Невидимый фон вырезается color-key (magenta), сам прицел рисуется GDI.
+//! Кадр собирается в 32-bit DIB и целиком передаётся через
+//! `UpdateLayeredWindow`, поэтому компоновщик не видит промежуточного состояния.
 //!
 //! Окно НЕ на весь экран, а ровно под bounding box прицела (+запас):
 //! компоновщик смешивает только крошечную область, поэтому нагрузка
@@ -55,6 +56,54 @@ mod win {
     }
 
     #[repr(C)]
+    #[derive(Clone, Copy, Default)]
+    pub struct SIZE {
+        pub cx: i32,
+        pub cy: i32,
+    }
+
+    #[repr(C)]
+    #[derive(Clone, Copy, Default)]
+    pub struct BITMAPINFOHEADER {
+        pub biSize: u32,
+        pub biWidth: i32,
+        pub biHeight: i32,
+        pub biPlanes: u16,
+        pub biBitCount: u16,
+        pub biCompression: u32,
+        pub biSizeImage: u32,
+        pub biXPelsPerMeter: i32,
+        pub biYPelsPerMeter: i32,
+        pub biClrUsed: u32,
+        pub biClrImportant: u32,
+    }
+
+    #[repr(C)]
+    #[derive(Clone, Copy, Default)]
+    pub struct RGBQUAD {
+        pub rgbBlue: u8,
+        pub rgbGreen: u8,
+        pub rgbRed: u8,
+        pub rgbReserved: u8,
+    }
+
+    #[repr(C)]
+    #[derive(Clone, Copy, Default)]
+    pub struct BITMAPINFO {
+        pub bmiHeader: BITMAPINFOHEADER,
+        pub bmiColors: [RGBQUAD; 1],
+    }
+
+    #[repr(C)]
+    #[derive(Clone, Copy, Default)]
+    pub struct BLENDFUNCTION {
+        pub BlendOp: u8,
+        pub BlendFlags: u8,
+        pub SourceConstantAlpha: u8,
+        pub AlphaFormat: u8,
+    }
+
+    #[repr(C)]
     pub struct WNDCLASSW {
         pub style: u32,
         pub lpfnWndProc: WNDPROC,
@@ -92,15 +141,16 @@ mod win {
     pub const SWP_NOSIZE: u32 = 0x0001;
     pub const SWP_NOACTIVATE: u32 = 0x0010;
     pub const SWP_SHOWWINDOW: u32 = 0x0040;
-    pub const LWA_COLORKEY: u32 = 0x0001;
-    pub const LWA_ALPHA: u32 = 0x0002;
     pub const SM_CXSCREEN: i32 = 0;
     pub const SM_CYSCREEN: i32 = 1;
-    pub const WM_PAINT: u32 = 0x000F;
     pub const PS_SOLID: i32 = 0;
     pub const HOLLOW_BRUSH: i32 = 5;
-    pub const SRCCOPY: u32 = 0x00CC_0020;
-    /// COLORREF magenta для color-key: 0x00BBGGRR.
+    pub const BI_RGB: u32 = 0;
+    pub const DIB_RGB_COLORS: u32 = 0;
+    pub const ULW_ALPHA: u32 = 0x0002;
+    pub const AC_SRC_OVER: u8 = 0;
+    pub const AC_SRC_ALPHA: u8 = 1;
+    /// COLORREF magenta для временного фона bitmap: 0x00BBGGRR.
     pub const KEY_COLOR: u32 = 0x00FF_00FF;
 
     #[link(name = "user32")]
@@ -131,7 +181,17 @@ mod win {
             cy: i32,
             uFlags: u32,
         ) -> i32;
-        pub fn SetLayeredWindowAttributes(hwnd: HWND, crKey: u32, bAlpha: u8, dwFlags: u32) -> i32;
+        pub fn UpdateLayeredWindow(
+            hwnd: HWND,
+            hdcDst: HDC,
+            pptDst: *const POINT,
+            psize: *const SIZE,
+            hdcSrc: HDC,
+            pptSrc: *const POINT,
+            crKey: u32,
+            pblend: *const BLENDFUNCTION,
+            dwFlags: u32,
+        ) -> i32;
         pub fn GetSystemMetrics(nIndex: i32) -> i32;
         pub fn GetMessageW(
             lpMsg: *mut MSG,
@@ -140,7 +200,6 @@ mod win {
             wMsgFilterMax: u32,
         ) -> i32;
         pub fn DispatchMessageW(lpmsg: *const MSG) -> LRESULT;
-        pub fn InvalidateRect(hWnd: HWND, lpRect: *const RECT, bErase: i32) -> i32;
     }
 
     #[link(name = "gdi32")]
@@ -148,7 +207,14 @@ mod win {
         pub fn GetDC(hWnd: HWND) -> HDC;
         pub fn ReleaseDC(hWnd: HWND, hDc: HDC) -> i32;
         pub fn CreateCompatibleDC(hdc: HDC) -> HDC;
-        pub fn CreateCompatibleBitmap(hdc: HDC, cx: i32, cy: i32) -> HBITMAP;
+        pub fn CreateDIBSection(
+            hdc: HDC,
+            pbmi: *const BITMAPINFO,
+            iUsage: u32,
+            ppvBits: *mut *mut c_void,
+            hSection: isize,
+            dwOffset: u32,
+        ) -> HBITMAP;
         pub fn SelectObject(hdc: HDC, h: HGDIOBJ) -> HGDIOBJ;
         pub fn DeleteObject(ho: HGDIOBJ) -> i32;
         pub fn DeleteDC(hdc: HDC) -> i32;
@@ -158,17 +224,6 @@ mod win {
         pub fn FillRect(hdc: HDC, lprc: *const RECT, hbr: HBRUSH) -> i32;
         pub fn Ellipse(hdc: HDC, left: i32, top: i32, right: i32, bottom: i32) -> i32;
         pub fn Polyline(hdc: HDC, apt: *const POINT, cpt: i32) -> i32;
-        pub fn BitBlt(
-            hdc: HDC,
-            x: i32,
-            y: i32,
-            cx: i32,
-            cy: i32,
-            hdcSrc: HDC,
-            x1: i32,
-            y1: i32,
-            rop: u32,
-        ) -> i32;
     }
 
     #[link(name = "kernel32")]
@@ -373,7 +428,7 @@ pub fn is_visible() -> bool {
 /// Показать окно (создать при первом вызове) и нарисовать конфиг.
 pub fn show(config: CrosshairConfig) -> Result<bool, String> {
     ensure_thread()?;
-    let (hwnd, (x, y, w, h)) = {
+    let (hwnd, config, (x, y, w, h)) = {
         let mut m = manager()
             .lock()
             .map_err(|_| "crosshair lock poisoned".to_string())?;
@@ -384,22 +439,13 @@ pub fn show(config: CrosshairConfig) -> Result<bool, String> {
         let hwnd = m
             .hwnd
             .ok_or_else(|| "crosshair window unavailable".to_string())?;
-        (hwnd, bounds)
+        (hwnd, m.config.clone(), bounds)
     };
     unsafe {
         // Окно ровно под контент: компоновщик трогает только эти пиксели.
-        SetWindowPos(
-            hwnd,
-            HWND_TOPMOST,
-            x,
-            y,
-            w,
-            h,
-            SWP_NOACTIVATE | SWP_SHOWWINDOW,
-        );
+        SetWindowPos(hwnd, HWND_TOPMOST, x, y, w, h, SWP_NOACTIVATE);
+        update_layer(hwnd, &config, x, y, w, h)?;
         ShowWindow(hwnd, SW_SHOWNOACTIVATE);
-        refresh_layer(hwnd);
-        InvalidateRect(hwnd, std::ptr::null(), 1);
     }
     Ok(true)
 }
@@ -421,11 +467,16 @@ pub fn hide() -> bool {
 
 /// Новый конфиг: сохранить и перерисовать, если окно видимо.
 pub fn apply(config: CrosshairConfig) -> bool {
-    let (hwnd, visible, bounds) = match manager().lock() {
+    let (hwnd, visible, config, bounds) = match manager().lock() {
         Ok(mut m) => {
             m.config = config;
             let (sw, sh) = screen_size();
-            (m.hwnd, m.visible, content_box(&m.config, sw, sh))
+            (
+                m.hwnd,
+                m.visible,
+                m.config.clone(),
+                content_box(&m.config, sw, sh),
+            )
         }
         Err(_) => return false,
     };
@@ -444,22 +495,106 @@ pub fn apply(config: CrosshairConfig) -> bool {
                 h,
                 SWP_NOACTIVATE | SWP_SHOWWINDOW,
             );
-            refresh_layer(hwnd);
-            InvalidateRect(hwnd, std::ptr::null(), 1);
+            return update_layer(hwnd, &config, x, y, w, h).is_ok();
         }
-        return true;
     }
     false
 }
 
-/// Обновить прозрачность color-key слоя под текущий конфиг.
-unsafe fn refresh_layer(hwnd: HWND) {
-    let opacity = manager()
-        .lock()
-        .ok()
-        .map(|m| m.config.opacity)
-        .unwrap_or(255);
-    SetLayeredWindowAttributes(hwnd, KEY_COLOR, opacity, LWA_COLORKEY | LWA_ALPHA);
+unsafe fn update_layer(
+    hwnd: HWND,
+    config: &CrosshairConfig,
+    x: i32,
+    y: i32,
+    w: i32,
+    h: i32,
+) -> Result<(), String> {
+    let screen_dc = GetDC(0);
+    if screen_dc == 0 || screen_dc == -1 {
+        return Err("GetDC failed".to_string());
+    }
+    let memory_dc = CreateCompatibleDC(screen_dc);
+    if memory_dc == 0 {
+        ReleaseDC(0, screen_dc);
+        return Err("CreateCompatibleDC failed".to_string());
+    }
+
+    let mut bits: *mut std::ffi::c_void = std::ptr::null_mut();
+    let bitmap_info = BITMAPINFO {
+        bmiHeader: BITMAPINFOHEADER {
+            biSize: std::mem::size_of::<BITMAPINFOHEADER>() as u32,
+            biWidth: w,
+            biHeight: -h,
+            biPlanes: 1,
+            biBitCount: 32,
+            biCompression: BI_RGB,
+            ..Default::default()
+        },
+        bmiColors: [RGBQUAD::default()],
+    };
+    let bitmap = CreateDIBSection(screen_dc, &bitmap_info, DIB_RGB_COLORS, &mut bits, 0, 0);
+    if bitmap == 0 || bits.is_null() {
+        DeleteDC(memory_dc);
+        ReleaseDC(0, screen_dc);
+        return Err("CreateDIBSection failed".to_string());
+    }
+
+    let old_bitmap = SelectObject(memory_dc, bitmap);
+    let background = CreateSolidBrush(KEY_COLOR);
+    let full = RECT {
+        left: 0,
+        top: 0,
+        right: w,
+        bottom: h,
+    };
+    FillRect(memory_dc, &full, background);
+    DeleteObject(background);
+
+    let (sw, sh) = screen_size();
+    for shape in layout_shapes(sw, sh, config) {
+        draw_shape(memory_dc, &shape, config, x, y);
+    }
+
+    let pixels = std::slice::from_raw_parts_mut(bits as *mut u32, (w * h) as usize);
+    for pixel in pixels {
+        if *pixel & 0x00FF_FFFF == KEY_COLOR {
+            *pixel = 0;
+        } else {
+            *pixel |= u32::from(config.opacity) << 24;
+        }
+    }
+
+    let destination = POINT { x, y };
+    let source = POINT { x: 0, y: 0 };
+    let size = SIZE { cx: w, cy: h };
+    let blend = BLENDFUNCTION {
+        BlendOp: AC_SRC_OVER,
+        BlendFlags: 0,
+        SourceConstantAlpha: 255,
+        AlphaFormat: AC_SRC_ALPHA,
+    };
+    let updated = UpdateLayeredWindow(
+        hwnd,
+        0,
+        &destination,
+        &size,
+        memory_dc,
+        &source,
+        0,
+        &blend,
+        ULW_ALPHA,
+    );
+
+    SelectObject(memory_dc, old_bitmap);
+    DeleteObject(bitmap);
+    DeleteDC(memory_dc);
+    ReleaseDC(0, screen_dc);
+
+    if updated == 0 {
+        Err("UpdateLayeredWindow failed".to_string())
+    } else {
+        Ok(())
+    }
 }
 
 fn screen_size() -> (i32, i32) {
@@ -543,7 +678,6 @@ fn overlay_thread_main(ready: Sender<Result<(), String>>) {
             let _ = ready.send(Err("CreateWindowExW failed".to_string()));
             return;
         }
-        SetLayeredWindowAttributes(hwnd, KEY_COLOR, 255, LWA_COLORKEY | LWA_ALPHA);
         if manager().lock().map(|mut m| m.hwnd = Some(hwnd)).is_err() {
             let _ = ready.send(Err("crosshair lock poisoned".to_string()));
             return;
@@ -564,51 +698,9 @@ unsafe extern "system" fn wnd_proc(
     wparam: WPARAM,
     lparam: LPARAM,
 ) -> LRESULT {
-    if msg == WM_PAINT {
-        paint(hwnd);
-        return 0;
-    }
+    // Layered window content is submitted atomically through
+    // UpdateLayeredWindow; it does not need a WM_PAINT render path.
     DefWindowProcW(hwnd, msg, wparam, lparam)
-}
-
-unsafe fn paint(hwnd: HWND) {
-    let (config, bounds) = match manager().lock() {
-        Ok(m) => {
-            let (sw, sh) = screen_size();
-            let bounds = content_box(&m.config, sw, sh);
-            (m.config.clone(), bounds)
-        }
-        Err(_) => return,
-    };
-    let (ox, oy, w, h) = bounds;
-    let hdc = GetDC(hwnd);
-    if hdc == 0 || hdc == -1 {
-        return;
-    }
-    // Двойная буферизация в memory DC: сначала key-фон, потом фигуры.
-    // Фигуры в экранных координатах — сдвигаем на origin окна.
-    let mem = CreateCompatibleDC(hdc);
-    let bmp = CreateCompatibleBitmap(hdc, w, h);
-    let old = SelectObject(mem, bmp);
-    let bg = CreateSolidBrush(KEY_COLOR);
-    let full = RECT {
-        left: 0,
-        top: 0,
-        right: w,
-        bottom: h,
-    };
-    FillRect(mem, &full, bg);
-    DeleteObject(bg);
-
-    for shape in layout_shapes(screen_size().0, screen_size().1, &config) {
-        draw_shape(mem, &shape, &config, ox, oy);
-    }
-
-    BitBlt(hdc, 0, 0, w, h, mem, 0, 0, SRCCOPY);
-    SelectObject(mem, old);
-    DeleteObject(bmp);
-    DeleteDC(mem);
-    ReleaseDC(hwnd, hdc);
 }
 
 unsafe fn draw_shape(hdc: HDC, shape: &Shape, cfg: &CrosshairConfig, ox: i32, oy: i32) {

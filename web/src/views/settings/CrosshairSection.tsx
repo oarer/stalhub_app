@@ -326,7 +326,7 @@ export default function CrosshairSection() {
 		if (timer.current) clearTimeout(timer.current)
 		timer.current = setTimeout(() => {
 			void api.set(next).catch(() => toast.error(t('save_error')))
-		}, 150)
+		}, 500)
 	}
 
 	const patch = (part: Partial<CrosshairConfig>) => {
